@@ -1,33 +1,3 @@
-pub fn init_lang_detect() {
-    // https://crates.io/crates/lingua
-    use lingua::{Language, LanguageDetectorBuilder};
-    let languages = vec![
-        Language::Chinese,
-        Language::Japanese,
-        Language::English,
-        Language::Korean,
-        Language::French,
-        Language::Spanish,
-        Language::German,
-        Language::Russian,
-        Language::Italian,
-        Language::Portuguese,
-        Language::Turkish,
-        Language::Arabic,
-        Language::Vietnamese,
-        Language::Thai,
-        Language::Indonesian,
-        Language::Malay,
-        Language::Hindi,
-        Language::Mongolian,
-        Language::Bokmal,
-        Language::Nynorsk,
-        Language::Persian,
-        Language::Ukrainian,
-    ];
-    let detector = LanguageDetectorBuilder::from_languages(&languages).build();
-    let _ = detector.detect_language_of("Hello Language");
-}
 #[tauri::command]
 pub fn lang_detect(text: &str) -> Result<&str, ()> {
     use lingua::{Language, LanguageDetectorBuilder};

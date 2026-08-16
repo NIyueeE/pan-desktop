@@ -3,6 +3,7 @@
 # Pot (A cute translator)
 
 > A cross-platform translator application ([Telegram Group](https://t.me/pot_app))
+> This fork is a lite edition: only selection translation, input translation and OCR translation are kept. The only translation backend is a custom OpenAI Chat Completions compatible API (configurable endpoint / model / API key / prompt), and OCR is limited to the system OCR engine and Tesseract.
 
 ![License](https://img.shields.io/github/license/pot-app/pot-desktop.svg)
 ![Tauri](https://img.shields.io/badge/Tauri-1.6.8-blue?logo=tauri)

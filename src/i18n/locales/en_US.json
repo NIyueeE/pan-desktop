@@ -272,7 +272,8 @@
                     "model": "Model",
                     "stream": "Stream Mode",
                     "prompt_description": "By customizing the Prompt, you can customize the behavior of OpenAI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
-                    "add": "Add Prompt"
+                    "add": "Add Prompt",
+                    "compatible_hint": "Compatible with any OpenAI Chat Completions API. Enter the provider base URL (root domain or /v1), or a full /chat/completions endpoint."
                 },
                 "geminipro": {
                     "title": "Gemini Pro",

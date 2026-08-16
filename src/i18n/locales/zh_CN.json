@@ -272,7 +272,8 @@
                     "model": "模型",
                     "stream": "流式输出",
                     "prompt_description": "通过自定义Prompt自定义OpenAI行为, $text $from $to $detect 将会被替换为 待翻译文本，源语言，目标语言和检测到的语言。",
-                    "add": "添加 Prompt"
+                    "add": "添加 Prompt",
+                    "compatible_hint": "兼容所有 OpenAI Chat Completions 协议的接口：填写服务商 Base URL（根域名或 /v1）即可，也可直接填写完整的 /chat/completions 地址。"
                 },
                 "geminipro": {
                     "title": "Gemini Pro",

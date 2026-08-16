@@ -5,19 +5,20 @@ import { defaultRequestArguments } from './Config';
 export async function translate(text, from, to, options) {
     const { config, setResult, detect } = options;
 
-    let { service, requestPath, model, apiKey, stream, promptList, requestArguments } = config;
+    let { requestPath, model, apiKey, stream, promptList, requestArguments } = config;
 
     if (!/https?:\/\/.+/.test(requestPath)) {
         requestPath = `https://${requestPath}`;
     }
     const apiUrl = new URL(requestPath);
 
-    // in openai like api, /v1 is not required
-    if (service === 'openai' && !apiUrl.pathname.endsWith('/chat/completions')) {
-        // not openai like, populate completion endpoint
-        apiUrl.pathname += apiUrl.pathname.endsWith('/') ? '' : '/';
-        apiUrl.pathname += 'v1/chat/completions';
+    // 类 OpenAI Chat Completions 兼容协议：
+    // 填写根域名、/v1、/api/v1 会自动补全；填写完整 /chat/completions 地址则原样使用。
+    let pathname = apiUrl.pathname.replace(/\/+$/, '');
+    if (!pathname.endsWith('/chat/completions')) {
+        pathname = pathname.endsWith('/v1') ? `${pathname}/chat/completions` : `${pathname}/v1/chat/completions`;
     }
+    apiUrl.pathname = pathname;
 
     // 兼容旧版
     if (promptList === undefined) {
@@ -42,24 +43,16 @@ export async function translate(text, from, to, options) {
         };
     });
 
-    const headers =
-        service === 'openai'
-            ? {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${apiKey}`,
-              }
-            : {
-                  'Content-Type': 'application/json',
-                  'api-key': apiKey,
-              };
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+    };
     const body = {
         ...JSON.parse(requestArguments ?? defaultRequestArguments),
         stream: stream,
         messages: promptList,
     };
-    if (service === 'openai') {
-        body['model'] = model;
-    }
+    body['model'] = model;
     if (stream) {
         const res = await window.fetch(apiUrl.href, {
             method: 'POST',

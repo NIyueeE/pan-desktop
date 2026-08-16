@@ -2,8 +2,8 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from
 import { useTranslation } from 'react-i18next';
 import React from 'react';
 
-import { createServiceInstanceKey } from '../../../../../../utils/service_instance';
 import * as builtinServices from '../../../../../../services/recognize';
+import { createServiceInstanceKey } from '../../../../../../utils/service_instance';
 import { osType } from '../../../../../../utils/env';
 
 export default function SelectModal(props) {
@@ -33,7 +33,7 @@ export default function SelectModal(props) {
                                             startContent={
                                                 <img
                                                     src={
-                                                        x === 'system'
+                                                        builtinServices[x].info.icon === 'system'
                                                             ? `logo/${osType}.svg`
                                                             : builtinServices[x].info.icon
                                                     }

@@ -3,6 +3,7 @@
 # Pot (派了个萌的翻译器)
 
 > 🌈 一个跨平台的划词翻译软件 ([QQ 频道](https://pd.qq.com/s/akns94e1r))
+> 本 Fork 为精简版：仅保留划词翻译、输入翻译、OCR 翻译；翻译服务仅支持自定义 OpenAI Chat Completions 兼容 API（可配置请求地址、模型、API Key、Prompt），OCR 识别仅保留系统 OCR 与 Tesseract。
 
 ![License](https://img.shields.io/github/license/pot-app/pot-desktop.svg)
 ![Tauri](https://img.shields.io/badge/Tauri-1.6.8-blue?logo=tauri)

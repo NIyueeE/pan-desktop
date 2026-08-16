@@ -3,7 +3,7 @@ import { Button } from '@nextui-org/react';
 import React from 'react';
 
 export function Config(props) {
-    const { updateServiceList, onClose } = props;
+    const { instanceKey, updateServiceList, onClose } = props;
     const { t } = useTranslation();
 
     return (
@@ -13,7 +13,7 @@ export function Config(props) {
                 <Button
                     fullWidth
                     onPress={() => {
-                        updateServiceList('system');
+                        updateServiceList(instanceKey);
                         onClose();
                     }}
                 >
