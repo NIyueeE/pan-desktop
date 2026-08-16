@@ -1,20 +1,21 @@
 import { Button, Card, CardBody, CardFooter, ButtonGroup, Chip, Tooltip, Spacer } from '@nextui-org/react';
 import React, { useEffect, useRef, useState } from 'react';
-import { writeText } from '@tauri-apps/api/clipboard';
-import { appWindow } from '@tauri-apps/api/window';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { MdContentCopy } from 'react-icons/md';
 import { MdSmartButton } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { HiTranslate } from 'react-icons/hi';
 import { LuDelete } from 'react-icons/lu';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { atom, useAtom } from 'jotai';
 
 import { getServiceName } from '../../../../utils/service_instance';
 import { useConfig, useSyncAtom } from '../../../../hooks';
 import * as recognizeServices from '../../../../services/recognize';
 import detect from '../../../../utils/lang_detect';
+const appWindow = getCurrentWebviewWindow();
 
 export const sourceTextAtom = atom('');
 export const detectLanguageAtom = atom('');
@@ -45,7 +46,7 @@ export default function SourceArea(props) {
     const handleRecognizeResult = (v) => {
         let newText = v.trim();
         if (deleteNewline) {
-            newText = v.replace(/\-\s+/g, '').replace(/\s+/g, ' ');
+            newText = v.replace(/-\s+/g, '').replace(/\s+/g, ' ');
         }
         if (incrementalTranslate) {
             setSourceText((old) => {
@@ -95,7 +96,7 @@ export default function SourceArea(props) {
             setWindowType('[SELECTION_TRANSLATE]');
             let newText = text.trim();
             if (deleteNewline) {
-                newText = text.replace(/\-\s+/g, '').replace(/\s+/g, ' ');
+                newText = text.replace(/-\s+/g, '').replace(/\s+/g, ' ');
             }
             if (incrementalTranslate) {
                 setSourceText((old) => {
@@ -134,7 +135,7 @@ export default function SourceArea(props) {
                 handleNewText(event.payload);
             });
         }
-    }, [hideWindow]);
+    }, [hideWindow]); // eslint-disable-line react-hooks/exhaustive-deps -- listener re-registers only when hideWindow changes
 
     useEffect(() => {
         if (
@@ -148,7 +149,7 @@ export default function SourceArea(props) {
                 handleNewText(v);
             });
         }
-    }, [deleteNewline, incrementalTranslate, recognizeLanguage, recognizeServiceList, hideWindow]);
+    }, [deleteNewline, incrementalTranslate, recognizeLanguage, recognizeServiceList, hideWindow]); // eslint-disable-line react-hooks/exhaustive-deps -- initial text is loaded once when OCR config is ready
 
     useEffect(() => {
         if (textAreaRef.current) {
@@ -213,7 +214,7 @@ export default function SourceArea(props) {
                                     variant='light'
                                     size='sm'
                                     onPress={() => {
-                                        const newText = sourceText.replace(/\-\s+/g, '').replace(/\s+/g, ' ');
+                                        const newText = sourceText.replace(/-\s+/g, '').replace(/\s+/g, ' ');
                                         setSourceText(newText);
                                         detect_language(newText).then(() => {
                                             syncSourceText();

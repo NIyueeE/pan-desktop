@@ -1,34 +1,37 @@
 use dirs::cache_dir;
 
-#[tauri::command(async)]
+#[tauri::command]
 #[cfg(target_os = "windows")]
 pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, String> {
-    use windows::core::HSTRING;
     use windows::Globalization::Language;
     use windows::Graphics::Imaging::BitmapDecoder;
     use windows::Media::Ocr::OcrEngine;
     use windows::Storage::{FileAccessMode, StorageFile};
+    use windows::core::HSTRING;
 
     let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+    app_cache_dir_path.push(&app_handle.config().identifier);
     app_cache_dir_path.push("pot_screenshot_cut.png");
 
     let path = app_cache_dir_path.to_string_lossy().replace("\\\\?\\", "");
 
-    let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path))
+    let (_file, bitmap) = tauri::async_runtime::block_on(async {
+        let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path))
+            .unwrap()
+            .await
+            .unwrap();
+
+        let decoder = BitmapDecoder::CreateWithIdAsync(
+            BitmapDecoder::PngDecoderId().unwrap(),
+            &file.OpenAsync(FileAccessMode::Read).unwrap().await.unwrap(),
+        )
         .unwrap()
-        .get()
+        .await
         .unwrap();
 
-    let bitmap = BitmapDecoder::CreateWithIdAsync(
-        BitmapDecoder::PngDecoderId().unwrap(),
-        &file.OpenAsync(FileAccessMode::Read).unwrap().get().unwrap(),
-    )
-    .unwrap()
-    .get()
-    .unwrap();
-
-    let bitmap = bitmap.GetSoftwareBitmapAsync().unwrap().get().unwrap();
+        let bitmap = decoder.GetSoftwareBitmapAsync().unwrap().await.unwrap();
+        (file, bitmap)
+    });
 
     let engine = match lang {
         "auto" => OcrEngine::TryCreateFromUserProfileLanguages(),
@@ -42,14 +45,12 @@ pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, St
     };
 
     match engine {
-        Ok(v) => Ok(v
-            .RecognizeAsync(&bitmap)
-            .unwrap()
-            .get()
-            .unwrap()
-            .Text()
-            .unwrap()
-            .to_string_lossy()),
+        Ok(v) => Ok(tauri::async_runtime::block_on(async {
+            v.RecognizeAsync(&bitmap).unwrap().await.unwrap()
+        })
+        .Text()
+        .unwrap()
+        .to_string_lossy()),
         Err(e) => {
             if e.to_string().contains("0x00000000") {
                 Err("Language package not installed!\n\nSee: https://learn.microsoft.com/zh-cn/windows/powertoys/text-extractor#supported-languages".to_string())
@@ -64,16 +65,16 @@ pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, St
 #[cfg(target_os = "macos")]
 pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, String> {
     let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+    app_cache_dir_path.push(&app_handle.config().identifier);
     app_cache_dir_path.push("pot_screenshot_cut.png");
 
     let arch = std::env::consts::ARCH;
-    let bin_path = match app_handle
-        .path_resolver()
-        .resolve_resource(format!("resources/ocr-{arch}-apple-darwin"))
-    {
-        Some(v) => v,
-        None => return Err("Failed to resolve ocr binary".to_string()),
+    let bin_path = match app_handle.path().resolve(
+        format!("resources/ocr-{arch}-apple-darwin"),
+        tauri::path::BaseDirectory::Resource,
+    ) {
+        Ok(v) => v,
+        Err(_) => return Err("Failed to resolve ocr binary".to_string()),
     };
 
     match std::process::Command::new("chmod")
@@ -107,12 +108,13 @@ pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, St
 #[cfg(target_os = "linux")]
 pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, String> {
     let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+    app_cache_dir_path.push(&app_handle.config().identifier);
     app_cache_dir_path.push("pot_screenshot_cut.png");
-    let mut args = ["", ""];
-    if lang != "auto" {
-        args = ["-l", lang];
-    }
+    let args = if lang == "auto" {
+        ["", ""]
+    } else {
+        ["-l", lang]
+    };
 
     let output = match std::process::Command::new("tesseract")
         .arg(app_cache_dir_path.to_str().unwrap())
@@ -140,11 +142,10 @@ pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, St
                     "Language data not installed!\nPlease try install tesseract-ocr-eng"
                         .to_string(),
                 );
-            } else {
-                return Err(format!(
-                    "Language data not installed!\nPlease try install tesseract-ocr-{lang}"
-                ));
             }
+            return Err(format!(
+                "Language data not installed!\nPlease try install tesseract-ocr-{lang}"
+            ));
         }
         Err(content)
     }

@@ -1,44 +1,45 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss
+)]
+
 #[cfg(target_os = "macos")]
 use std::fs;
 
+use crate::APP;
+use crate::StringWrapper;
 use crate::config::get;
 use crate::config::set;
-use crate::StringWrapper;
-use crate::APP;
 #[cfg(target_os = "macos")]
 use dirs::cache_dir;
 use log::{info, warn};
+use tauri::Emitter;
+use tauri::Listener;
 use tauri::Manager;
 use tauri::Monitor;
-use tauri::Window;
-use tauri::WindowBuilder;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-use window_shadows::set_shadow;
+use tauri::WebviewUrl;
+use tauri::WebviewWindow;
+use tauri::WebviewWindowBuilder;
 
 // Get daemon window instance
-fn get_daemon_window() -> Window {
+fn get_daemon_window() -> WebviewWindow {
     let app_handle = APP.get().unwrap();
-    match app_handle.get_window("daemon") {
-        Some(v) => v,
-        None => {
-            warn!("Daemon window not found, create new daemon window!");
-            WindowBuilder::new(
-                app_handle,
-                "daemon",
-                tauri::WindowUrl::App("daemon.html".into()),
-            )
+    app_handle.get_webview_window("daemon").unwrap_or_else(|| {
+        warn!("Daemon window not found, create new daemon window!");
+        WebviewWindowBuilder::new(app_handle, "daemon", WebviewUrl::App("daemon.html".into()))
             .title("Daemon")
             .additional_browser_args("--disable-web-security")
             .visible(false)
             .build()
             .unwrap()
-        }
-    }
+    })
 }
 
 // Get monitor where the mouse is currently located
 fn get_current_monitor(x: i32, y: i32) -> Monitor {
-    info!("Mouse position: {}, {}", x, y);
+    info!("Mouse position: {x}, {y}");
     let daemon_window = get_daemon_window();
     let monitors = daemon_window.available_monitors().unwrap();
 
@@ -51,7 +52,7 @@ fn get_current_monitor(x: i32, y: i32) -> Monitor {
             && y >= position.y
             && y <= (position.y + size.height as i32)
         {
-            info!("Current Monitor: {:?}", m);
+            info!("Current Monitor: {m:?}");
             return m;
         }
     }
@@ -60,7 +61,7 @@ fn get_current_monitor(x: i32, y: i32) -> Monitor {
 }
 
 // Creating a window on the mouse monitor
-fn build_window(label: &str, title: &str) -> (Window, bool) {
+fn build_window(label: &str, title: &str) -> (WebviewWindow, bool) {
     use mouse_position::mouse_position::{Mouse, Position};
 
     let mouse_position = match Mouse::get_mouse_position() {
@@ -74,24 +75,17 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
     let position = current_monitor.position();
 
     let app_handle = APP.get().unwrap();
-    match app_handle.get_window(label) {
-        Some(v) => {
-            info!("Window existence: {}", label);
-            v.set_focus().unwrap();
-            (v, true)
-        }
-        None => {
-            info!("Window not existence, Creating new window: {}", label);
-            let mut builder = tauri::WindowBuilder::new(
-                app_handle,
-                label,
-                tauri::WindowUrl::App("index.html".into()),
-            )
-            .position(position.x.into(), position.y.into())
-            .additional_browser_args("--disable-web-security")
-            .focused(true)
-            .title(title)
-            .visible(false);
+    app_handle.get_webview_window(label).map_or_else(
+        || {
+            info!("Window not existence, Creating new window: {label}");
+            let mut builder =
+                WebviewWindowBuilder::new(app_handle, label, WebviewUrl::App("index.html".into()))
+                    .position(position.x.into(), position.y.into())
+                    .use_https_scheme(true)
+                    .additional_browser_args("--disable-web-security")
+                    .focused(true)
+                    .title(title)
+                    .visible(false);
 
             #[cfg(target_os = "macos")]
             {
@@ -104,15 +98,15 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
                 builder = builder.transparent(true).decorations(false);
             }
             let window = builder.build().unwrap();
-
-            if label != "screenshot" {
-                #[cfg(not(target_os = "linux"))]
-                set_shadow(&window, true).unwrap_or_default();
-            }
             let _ = window.current_monitor();
             (window, false)
-        }
-    }
+        },
+        |v| {
+            info!("Window existence: {label}");
+            v.set_focus().unwrap();
+            (v, true)
+        },
+    )
 }
 
 pub fn config_window() {
@@ -124,7 +118,7 @@ pub fn config_window() {
     window.center().unwrap();
 }
 
-fn translate_window() -> Window {
+fn translate_window() -> WebviewWindow {
     use mouse_position::mouse_position::{Mouse, Position};
     // Mouse physical position
     let mut mouse_position = match Mouse::get_mouse_position() {
@@ -140,20 +134,20 @@ fn translate_window() -> Window {
     }
     window.set_skip_taskbar(true).unwrap();
     // Get Translate Window Size
-    let width = match get("translate_window_width") {
-        Some(v) => v.as_i64().unwrap(),
-        None => {
+    let width = get("translate_window_width").map_or_else(
+        || {
             set("translate_window_width", 350);
             350
-        }
-    };
-    let height = match get("translate_window_height") {
-        Some(v) => v.as_i64().unwrap(),
-        None => {
+        },
+        |v| v.as_i64().unwrap(),
+    );
+    let height = get("translate_window_height").map_or_else(
+        || {
             set("translate_window_height", 420);
             420
-        }
-    };
+        },
+        |v| v.as_i64().unwrap(),
+    );
 
     let monitor = window.current_monitor().unwrap().unwrap();
     let dpi = monitor.scale_factor();
@@ -165,61 +159,50 @@ fn translate_window() -> Window {
         ))
         .unwrap();
 
-    let position_type = match get("translate_window_position") {
-        Some(v) => v.as_str().unwrap().to_string(),
-        None => "mouse".to_string(),
-    };
+    let position_type = get("translate_window_position")
+        .map_or_else(|| "mouse".to_string(), |v| v.as_str().unwrap().to_string());
 
-    match position_type.as_str() {
-        "mouse" => {
-            // Adjust window position
-            let monitor_size = monitor.size();
-            let monitor_size_width = monitor_size.width as f64;
-            let monitor_size_height = monitor_size.height as f64;
-            let monitor_position = monitor.position();
-            let monitor_position_x = monitor_position.x as f64;
-            let monitor_position_y = monitor_position.y as f64;
+    if position_type.as_str() == "mouse" {
+        // Adjust window position
+        let monitor_size = monitor.size();
+        let monitor_size_width = f64::from(monitor_size.width);
+        let monitor_size_height = f64::from(monitor_size.height);
+        let monitor_position = monitor.position();
+        let monitor_position_x = f64::from(monitor_position.x);
+        let monitor_position_y = f64::from(monitor_position.y);
 
-            if mouse_position.x as f64 + width as f64 * dpi
-                > monitor_position_x + monitor_size_width
-            {
-                mouse_position.x -= (width as f64 * dpi) as i32;
-                if (mouse_position.x as f64) < monitor_position_x {
-                    mouse_position.x = monitor_position_x as i32;
-                }
+        if (width as f64).mul_add(dpi, f64::from(mouse_position.x))
+            > monitor_position_x + monitor_size_width
+        {
+            mouse_position.x -= (width as f64 * dpi) as i32;
+            if f64::from(mouse_position.x) < monitor_position_x {
+                mouse_position.x = monitor_position_x as i32;
             }
-            if mouse_position.y as f64 + height as f64 * dpi
-                > monitor_position_y + monitor_size_height
-            {
-                mouse_position.y -= (height as f64 * dpi) as i32;
-                if (mouse_position.y as f64) < monitor_position_y {
-                    mouse_position.y = monitor_position_y as i32;
-                }
+        }
+        if (height as f64).mul_add(dpi, f64::from(mouse_position.y))
+            > monitor_position_y + monitor_size_height
+        {
+            mouse_position.y -= (height as f64 * dpi) as i32;
+            if f64::from(mouse_position.y) < monitor_position_y {
+                mouse_position.y = monitor_position_y as i32;
             }
+        }
 
-            window
-                .set_position(tauri::PhysicalPosition::new(
-                    mouse_position.x,
-                    mouse_position.y,
-                ))
-                .unwrap();
-        }
-        _ => {
-            let position_x = match get("translate_window_position_x") {
-                Some(v) => v.as_i64().unwrap(),
-                None => 0,
-            };
-            let position_y = match get("translate_window_position_y") {
-                Some(v) => v.as_i64().unwrap(),
-                None => 0,
-            };
-            window
-                .set_position(tauri::PhysicalPosition::new(
-                    (position_x as f64) * dpi,
-                    (position_y as f64) * dpi,
-                ))
-                .unwrap();
-        }
+        window
+            .set_position(tauri::PhysicalPosition::new(
+                mouse_position.x,
+                mouse_position.y,
+            ))
+            .unwrap();
+    } else {
+        let position_x = get("translate_window_position_x").map_or(0, |v| v.as_i64().unwrap());
+        let position_y = get("translate_window_position_y").map_or(0, |v| v.as_i64().unwrap());
+        window
+            .set_position(tauri::PhysicalPosition::new(
+                (position_x as f64) * dpi,
+                (position_y as f64) * dpi,
+            ))
+            .unwrap();
     }
 
     window
@@ -250,10 +233,8 @@ pub fn input_translate() {
         .unwrap()
         .replace_range(.., "[INPUT_TRANSLATE]");
     let window = translate_window();
-    let position_type = match get("translate_window_position") {
-        Some(v) => v.as_str().unwrap().to_string(),
-        None => "mouse".to_string(),
-    };
+    let position_type = get("translate_window_position")
+        .map_or_else(|| "mouse".to_string(), |v| v.as_str().unwrap().to_string());
     if position_type == "mouse" {
         window.center().unwrap();
     }
@@ -274,18 +255,10 @@ pub fn image_translate() {
 }
 
 #[cfg(not(target_os = "macos"))]
-fn screenshot_window() -> Window {
+fn screenshot_window() -> WebviewWindow {
     let (window, _exists) = build_window("screenshot", "Screenshot");
 
     window.set_skip_taskbar(true).unwrap();
-    #[cfg(target_os = "macos")]
-    {
-        let monitor = window.current_monitor().unwrap().unwrap();
-        let size = monitor.size();
-        window.set_decorations(false).unwrap();
-        window.set_size(*size).unwrap();
-    }
-
     #[cfg(not(target_os = "macos"))]
     window.set_fullscreen(true).unwrap();
 
@@ -298,7 +271,7 @@ pub fn ocr_translate() {
     {
         let app_handle = APP.get().unwrap();
         let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-        app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+        app_cache_dir_path.push(&app_handle.config().identifier);
         if !app_cache_dir_path.exists() {
             // 创建目录
             fs::create_dir_all(&app_cache_dir_path).expect("Create Cache Dir Failed");
@@ -314,7 +287,6 @@ pub fn ocr_translate() {
             .output()
         {
             image_translate();
-            ();
         }
     }
     #[cfg(not(target_os = "macos"))]
@@ -323,7 +295,7 @@ pub fn ocr_translate() {
         let window_ = window.clone();
         window.listen("success", move |event| {
             image_translate();
-            window_.unlisten(event.id())
+            window_.unlisten(event.id());
         });
     }
 }

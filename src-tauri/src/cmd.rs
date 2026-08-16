@@ -1,8 +1,8 @@
-use crate::config::get;
-use crate::config::StoreWrapper;
-use crate::error::Error;
-use crate::StringWrapper;
 use crate::APP;
+use crate::StringWrapper;
+use crate::config::StoreWrapper;
+use crate::config::get;
+use crate::error::Error;
 use log::{error, info};
 use tauri::Manager;
 
@@ -14,17 +14,17 @@ pub fn get_text(state: tauri::State<StringWrapper>) -> String {
 #[tauri::command]
 pub fn reload_store() {
     let state = APP.get().unwrap().state::<StoreWrapper>();
-    let mut store = state.0.lock().unwrap();
-    store.load().unwrap();
+    let store = state.0.lock().unwrap();
+    store.reload().unwrap();
 }
 
 #[tauri::command]
 pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri::AppHandle) {
     use dirs::cache_dir;
     use image::GenericImage;
-    info!("Cut image: {}x{}+{}+{}", width, height, left, top);
+    info!("Cut image: {width}x{height}+{left}+{top}");
     let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+    app_cache_dir_path.push(&app_handle.config().identifier);
     app_cache_dir_path.push("pot_screenshot.png");
     if !app_cache_dir_path.exists() {
         return;
@@ -40,7 +40,7 @@ pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri
     app_cache_dir_path.pop();
     app_cache_dir_path.push("pot_screenshot_cut.png");
     match img2.to_image().save(&app_cache_dir_path) {
-        Ok(_) => {}
+        Ok(()) => {}
         Err(e) => {
             error!("{:?}", e.to_string());
         }
@@ -49,15 +49,15 @@ pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri
 
 #[tauri::command]
 pub fn get_base64(app_handle: tauri::AppHandle) -> String {
-    use base64::{engine::general_purpose, Engine as _};
+    use base64::{Engine as _, engine::general_purpose};
     use dirs::cache_dir;
     use std::fs::File;
     use std::io::Read;
     let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+    app_cache_dir_path.push(&app_handle.config().identifier);
     app_cache_dir_path.push("pot_screenshot_cut.png");
     if !app_cache_dir_path.exists() {
-        return "".to_string();
+        return String::new();
     }
     let mut file = File::open(app_cache_dir_path).unwrap();
     let mut vec = Vec::new();
@@ -65,7 +65,7 @@ pub fn get_base64(app_handle: tauri::AppHandle) -> String {
         Ok(_) => {}
         Err(e) => {
             error!("{:?}", e.to_string());
-            return "".to_string();
+            return String::new();
         }
     }
     let base64 = general_purpose::STANDARD.encode(&vec);
@@ -80,7 +80,7 @@ pub fn copy_img(app_handle: tauri::AppHandle, width: usize, height: usize) -> Re
     use std::borrow::Cow;
 
     let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+    app_cache_dir_path.push(&app_handle.config().identifier);
     app_cache_dir_path.push("pot_screenshot_cut.png");
     let data = ImageReader::open(app_cache_dir_path)?.decode()?;
 
@@ -89,40 +89,46 @@ pub fn copy_img(app_handle: tauri::AppHandle, width: usize, height: usize) -> Re
         height,
         bytes: Cow::from(data.as_bytes()),
     };
-    let result = Clipboard::new()?.set_image(img)?;
-    Ok(result)
+    Clipboard::new()?.set_image(img)?;
+    Ok(())
 }
 
 #[tauri::command]
-pub fn set_proxy() -> Result<bool, ()> {
+pub fn set_proxy() -> bool {
     let host = match get("proxy_host") {
         Some(v) => v.as_str().unwrap().to_string(),
-        None => return Err(()),
+        None => return false,
     };
     let port = match get("proxy_port") {
         Some(v) => v.as_i64().unwrap(),
-        None => return Err(()),
+        None => return false,
     };
     let no_proxy = match get("no_proxy") {
         Some(v) => v.as_str().unwrap().to_string(),
-        None => return Err(()),
+        None => return false,
     };
-    let proxy = format!("http://{}:{}", host, port);
+    let proxy = format!("http://{host}:{port}");
 
-    std::env::set_var("http_proxy", &proxy);
-    std::env::set_var("https_proxy", &proxy);
-    std::env::set_var("all_proxy", &proxy);
-    std::env::set_var("no_proxy", &no_proxy);
-    Ok(true)
+    // SAFETY: executed once at startup / from the config page before spawning workers.
+    unsafe {
+        std::env::set_var("http_proxy", &proxy);
+        std::env::set_var("https_proxy", &proxy);
+        std::env::set_var("all_proxy", &proxy);
+        std::env::set_var("no_proxy", &no_proxy);
+    }
+    true
 }
 
 #[tauri::command]
-pub fn unset_proxy() -> Result<bool, ()> {
-    std::env::remove_var("http_proxy");
-    std::env::remove_var("https_proxy");
-    std::env::remove_var("all_proxy");
-    std::env::remove_var("no_proxy");
-    Ok(true)
+pub fn unset_proxy() -> bool {
+    // SAFETY: executed from the config page before spawning workers.
+    unsafe {
+        std::env::remove_var("http_proxy");
+        std::env::remove_var("https_proxy");
+        std::env::remove_var("all_proxy");
+        std::env::remove_var("no_proxy");
+    }
+    true
 }
 
 #[tauri::command]
@@ -134,10 +140,6 @@ pub fn font_list() -> Result<Vec<String>, Error> {
 }
 
 #[tauri::command]
-pub fn open_devtools(window: tauri::Window) {
-    if !window.is_devtools_open() {
-        window.open_devtools();
-    } else {
-        window.close_devtools();
-    }
+pub fn open_devtools(window: tauri::WebviewWindow) {
+    window.open_devtools();
 }

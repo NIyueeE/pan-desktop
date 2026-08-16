@@ -1,11 +1,12 @@
-import { fetch, Body } from '@tauri-apps/api/http';
+import { fetch } from '@tauri-apps/plugin-http';
 import { Language } from './info';
 import { defaultRequestArguments } from './Config';
 
 export async function translate(text, from, to, options) {
     const { config, setResult, detect } = options;
 
-    let { requestPath, model, apiKey, stream, promptList, requestArguments } = config;
+    let { requestPath } = config;
+    const { model, apiKey, stream, requestArguments } = config;
 
     if (!/https?:\/\/.+/.test(requestPath)) {
         requestPath = `https://${requestPath}`;
@@ -21,6 +22,8 @@ export async function translate(text, from, to, options) {
     apiUrl.pathname = pathname;
 
     // 兼容旧版
+    let { promptList } = config;
+
     if (promptList === undefined) {
         promptList = [
             {
@@ -71,13 +74,13 @@ export async function translate(text, from, to, options) {
                         return target.trim();
                     }
                     const str = new TextDecoder().decode(value);
-                    let datas = str.split('data:');
+                    const datas = str.split('data:');
                     for (let data of datas) {
                         if (data.trim() !== '' && data.trim() !== '[DONE]') {
                             try {
                                 if (temp !== '') {
                                     data = temp + data.trim();
-                                    let result = JSON.parse(data.trim());
+                                    const result = JSON.parse(data.trim());
                                     if (result.choices[0].delta.content) {
                                         target += result.choices[0].delta.content;
                                         if (setResult) {
@@ -88,7 +91,7 @@ export async function translate(text, from, to, options) {
                                     }
                                     temp = '';
                                 } else {
-                                    let result = JSON.parse(data.trim());
+                                    const result = JSON.parse(data.trim());
                                     if (result.choices[0].delta.content) {
                                         target += result.choices[0].delta.content;
                                         if (setResult) {
@@ -111,13 +114,13 @@ export async function translate(text, from, to, options) {
             throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
         }
     } else {
-        let res = await fetch(apiUrl.href, {
+        const res = await fetch(apiUrl.href, {
             method: 'POST',
             headers: headers,
-            body: Body.json(body),
+            body: JSON.stringify(body),
         });
         if (res.ok) {
-            let result = res.data;
+            const result = await res.json();
             const { choices } = result;
             if (choices) {
                 let target = choices[0].message.content.trim();
@@ -136,7 +139,7 @@ export async function translate(text, from, to, options) {
                 throw JSON.stringify(result);
             }
         } else {
-            throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(res.data)}`;
+            throw `Http Request Error\nHttp Status: ${res.status}\n${JSON.stringify(await res.text())}`;
         }
     }
 }

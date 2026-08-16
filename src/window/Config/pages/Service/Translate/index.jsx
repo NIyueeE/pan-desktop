@@ -30,7 +30,9 @@ export default function Translate() {
         return result;
     };
     const onDragEnd = async (result) => {
-        if (!result.destination) return;
+        if (!result.destination) {
+            return;
+        }
         const items = reorder(translateServiceInstanceList, result.source.index, result.destination.index);
         setTranslateServiceInstanceList(items);
     };

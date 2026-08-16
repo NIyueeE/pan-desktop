@@ -11,20 +11,21 @@ mod system_ocr;
 mod tray;
 mod window;
 
-use cmd::*;
-use config::*;
-use hotkey::*;
-use lang_detect::*;
+use cmd::{
+    copy_img, cut_image, font_list, get_base64, get_text, open_devtools, reload_store, set_proxy,
+    unset_proxy,
+};
+use config::{get, init_config, is_first_run};
+use hotkey::{register_shortcut, register_shortcut_by_frontend};
+use lang_detect::lang_detect;
 use log::info;
 use once_cell::sync::OnceCell;
 use screenshot::screenshot;
 use std::sync::Mutex;
-use system_ocr::*;
-use tauri::api::notification::Notification;
+use system_ocr::system_ocr;
 use tauri::Manager;
-use tauri_plugin_log::LogTarget;
-use tray::*;
-use window::config_window;
+use tauri_plugin_notification::NotificationExt;
+use tray::{init_tray, update_tray};
 
 // Global AppHandle
 pub static APP: OnceCell<tauri::AppHandle> = OnceCell::new();
@@ -32,28 +33,30 @@ pub static APP: OnceCell<tauri::AppHandle> = OnceCell::new();
 // Text to be translated
 pub struct StringWrapper(pub Mutex<String>);
 
+#[allow(clippy::large_stack_frames)]
 fn main() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_single_instance::init(|app, _, cwd| {
-            Notification::new(&app.config().tauri.bundle.identifier)
+            let _ = app
+                .notification()
+                .builder()
                 .title("The program is already running. Please do not start it again!")
                 .body(cwd)
-                .icon("pot")
-                .show()
-                .unwrap();
+                .show();
         }))
-        .plugin(
-            tauri_plugin_log::Builder::default()
-                .targets([LogTarget::LogDir, LogTarget::Stdout])
-                .build(),
-        )
+        .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(tauri_plugin_fs_watch::init())
-        .system_tray(tauri::SystemTray::new())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             info!("============== Start App ==============");
             #[cfg(target_os = "macos")]
@@ -64,7 +67,7 @@ fn main() {
                 info!("MacOS Accessibility Trusted: {}", trusted);
             }
             // Global AppHandle
-            APP.get_or_init(|| app.handle());
+            APP.get_or_init(|| app.handle().clone());
             // Init Config
             info!("Init Config Store");
             init_config(app);
@@ -72,31 +75,30 @@ fn main() {
             if is_first_run() {
                 // Open Config Window
                 info!("First Run, opening config window");
-                config_window();
+                window::config_window();
             }
-            app.manage(StringWrapper(Mutex::new("".to_string())));
+            app.manage(StringWrapper(Mutex::new(String::new())));
+            // Init Tray
+            init_tray(app)?;
             // Update Tray Menu
-            update_tray(app.app_handle(), "".to_string(), "".to_string());
+            update_tray(app.handle().clone(), String::new(), String::new());
             // Register Global Shortcut (仅保留划词翻译 / 输入翻译 / OCR 翻译)
             match register_shortcut("all") {
                 Ok(()) => {}
-                Err(e) => Notification::new(app.config().tauri.bundle.identifier.clone())
-                    .title("Failed to register global shortcut")
-                    .body(&e)
-                    .icon("pot")
-                    .show()
-                    .unwrap(),
-            }
-            match get("proxy_enable") {
-                Some(v) => {
-                    if v.as_bool().unwrap()
-                        && get("proxy_host")
-                            .map_or(false, |host| !host.as_str().unwrap().is_empty())
-                    {
-                        let _ = set_proxy();
-                    }
+                Err(e) => {
+                    let _ = app
+                        .notification()
+                        .builder()
+                        .title("Failed to register global shortcut")
+                        .body(e)
+                        .show();
                 }
-                None => {}
+            }
+            if let Some(v) = get("proxy_enable")
+                && v.as_bool().unwrap()
+                && get("proxy_host").is_some_and(|host| !host.as_str().unwrap().is_empty())
+            {
+                let _ = set_proxy();
             }
             Ok(())
         })
@@ -116,13 +118,13 @@ fn main() {
             lang_detect,
             font_list
         ])
-        .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())
-        .expect("error while running tauri application")
-        // 窗口关闭不退出
-        .run(|_app_handle, event| {
-            if let tauri::RunEvent::ExitRequested { api, .. } = event {
-                api.prevent_exit();
-            }
-        });
+        .expect("error while building tauri application");
+
+    // 窗口关闭不退出
+    app.run(|_app_handle, event| {
+        if let tauri::RunEvent::ExitRequested { api, .. } = event {
+            api.prevent_exit();
+        }
+    });
 }

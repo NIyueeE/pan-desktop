@@ -1,5 +1,6 @@
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { appWindow, currentMonitor } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { currentMonitor } from '@tauri-apps/api/window';
 import { Spacer, Button } from '@nextui-org/react';
 import { AiFillCloseCircle } from 'react-icons/ai';
 import React, { useState, useEffect } from 'react';
@@ -12,7 +13,8 @@ import TargetArea from './components/TargetArea';
 import { osType } from '../../utils/env';
 import { useConfig } from '../../hooks';
 import { store } from '../../utils/store';
-import { info } from 'tauri-plugin-log-api';
+import { info } from '@tauri-apps/plugin-log';
+const appWindow = getCurrentWebviewWindow();
 
 let blurTimeout = null;
 let resizeTimeout = null;
@@ -81,7 +83,9 @@ export default function Translate() {
     };
 
     const onDragEnd = async (result) => {
-        if (!result.destination) return;
+        if (!result.destination) {
+            return;
+        }
         const items = reorder(translateServiceInstanceList, result.source.index, result.destination.index);
         setTranslateServiceInstanceList(items);
     };
@@ -166,7 +170,7 @@ export default function Translate() {
         if (translateServiceInstanceList !== null && recognizeServiceInstanceList !== null) {
             loadServiceInstanceConfigMap();
         }
-    }, [translateServiceInstanceList, recognizeServiceInstanceList]);
+    }, [translateServiceInstanceList, recognizeServiceInstanceList]); // eslint-disable-line react-hooks/exhaustive-deps -- config reload runs only when service lists change
 
     return (
         <div

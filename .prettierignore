@@ -1,6 +1,7 @@
-asset
 dist
 node_modules
 public
 target
 *-lock*
+
+src-tauri/gen

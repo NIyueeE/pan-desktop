@@ -2,8 +2,8 @@
 <component type="desktop-application">
     <id>com.pot_app.pot</id>
     <name>Pot</name>
-    <summary>A text translation and OCR app</summary>
-    <summary xml:lang="zh-Hans">一款跨平台的划词翻译和文字识别软件</summary>
+    <summary>A translation and OCR app powered by OpenAI-compatible APIs</summary>
+    <summary xml:lang="zh-Hans">一款基于 OpenAI 兼容接口的划词翻译和 OCR 翻译软件</summary>
     <developer id="com.pot_app">
         <name>Pylogmon</name>
     </developer>
@@ -12,226 +12,29 @@
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>GPL-3.0-only</project_license>
     <description>
-        <p>A cross-platform software for text translation and recognition.</p>
-        <p xml:lang="zh-Hans">一款跨平台的划词翻译和文字识别软件</p>
-        <p>Features</p>
-        <p xml:lang="zh-Hans">特色功能</p>
+        <p>A cross-platform translator with selection, input and screenshot OCR translation, powered by any OpenAI Chat Completions compatible API.</p>
+        <p xml:lang="zh-Hans">一款支持划词翻译、输入翻译和截图 OCR 翻译的跨平台软件，可接入任意 OpenAI Chat Completions 兼容接口。</p>
         <ul>
-            <li>Parallel translations with multiple services</li>
-            <li xml:lang="zh-Hans">多接口并行翻译</li>
-            <li>OCR with multiple services</li>
-            <li xml:lang="zh-Hans">多接口文字识别</li>
-            <li>Text-to-speech with multiple services</li>
-            <li xml:lang="zh-Hans">多接口语音合成</li>
-            <li>Export to vocabulary apps</li>
-            <li xml:lang="zh-Hans">导出到生词本</li>
-            <li>External calls</li>
-            <li xml:lang="zh-Hans">外部调用</li>
-            <li>Plugin system</li>
-            <li xml:lang="zh-Hans">支持插件系统</li>
+            <li>Selection translation</li>
+            <li xml:lang="zh-Hans">划词翻译</li>
+            <li>Input translation</li>
+            <li xml:lang="zh-Hans">输入翻译</li>
+            <li>Screenshot OCR translation</li>
+            <li xml:lang="zh-Hans">截图 OCR 翻译</li>
+            <li>OpenAI Chat Completions compatible API</li>
+            <li xml:lang="zh-Hans">OpenAI Chat Completions 兼容接口</li>
+            <li>Local OCR engines: system OCR and Tesseract</li>
+            <li xml:lang="zh-Hans">本地 OCR 引擎：系统 OCR 与 Tesseract</li>
             <li>Cross-platform support (Windows, macOS and Linux)</li>
-            <li xml:lang="zh-Hans">支持所有 PC 平台 (Windows, macOS, Linux)</li>
-            <li>Wayland support</li>
-            <li xml:lang="zh-Hans">支持 Wayland (在 KDE、Gnome 以及 Hyprland 上测试)</li>
+            <li xml:lang="zh-Hans">支持 Windows、macOS 和 Linux</li>
             <li>Multi-language support</li>
             <li xml:lang="zh-Hans">多语言支持</li>
         </ul>
     </description>
     <launchable type="desktop-id">com.pot_app.pot.desktop</launchable>
-    <screenshots>
-        <screenshot type="default">
-            <image>https://github.com/pot-app/pot-desktop/raw/2.7.10/asset/1.png</image>
-            <caption>Dark Mode</caption>
-        </screenshot>
-        <screenshot>
-            <image>https://github.com/pot-app/pot-desktop/raw/2.7.10/asset/2.png</image>
-            <caption>Dark/Light Mode</caption>
-        </screenshot>
-        <screenshot>
-            <image>https://github.com/pot-app/pot-desktop/raw/2.7.10/asset/3.png</image>
-            <caption>Light Mode</caption>
-        </screenshot>
-    </screenshots>
     <releases>
-        <release version="3.0.7" date="2025-5-10">
+        <release version="3.0.7" date="2025-05-10">
             <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.7</url>
-            <description>
-                <p>New feature:</p>
-                <ul>
-                    <li>Signed macOS app</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>fix screenshot on macOS</li>
-                    <li>rm tray click event on macOS</li>
-                </ul>
-            </description>
-        </release>
-        <release version="3.0.6" date="2024-10-29">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.6</url>
-            <description>
-                <p>New feature:</p>
-                <ul>
-                    <li>Add builtin lingva service</li>
-                    <li>Add support for hebrew</li>
-                    <li>Improve ui translation</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Builtin ecdict can not be save</li>
-                </ul>
-            </description>
-        </release>
-        <release version="3.0.5" date="2024-06-27">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.5</url>
-            <description>
-                <p>Break Change:</p>
-                <ul>
-                    <li>After version 3.x, old plugins will no longer be available. They will be automatically deleted upon upgrade. Please visit the plugin repository to download and install the new versions. If the plugin developers have not yet updated their plugins, please contact them to request an upgrade.</li>
-                    <li xml:lang="zh-Hans">3.x版本之后旧版插件不再可用，升级后会自动删除旧版插件，请前往插件仓库下载安装新版插件使用，若插件开发者还没适配新版插件，请联系插件开发者升级插件。</li>
-                </ul>
-                <p>New feature:</p>
-                <ul>
-                    <li>Support multiple instance services</li>
-                    <li>Use Javascript plugin system</li>
-                    <li>Enable dev tools</li>
-                    <li>Add Database api for plugin</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Recognize failed</li>
-                    <li>TTS failed</li>
-                    <li>Collection failed</li>
-                    <li>Default Lingva error</li>
-                </ul>
-            </description>
-        </release>
-        <release version="3.0.4" date="2024-06-26">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.4</url>
-            <description>
-                <p>Break Change:</p>
-                <ul>
-                    <li>After version 3.x, old plugins will no longer be available. They will be automatically deleted upon upgrade. Please visit the plugin repository to download and install the new versions. If the plugin developers have not yet updated their plugins, please contact them to request an upgrade.</li>
-                    <li xml:lang="zh-Hans">3.x版本之后旧版插件不再可用，升级后会自动删除旧版插件，请前往插件仓库下载安装新版插件使用，若插件开发者还没适配新版插件，请联系插件开发者升级插件。</li>
-                </ul>
-                <p>New feature:</p>
-                <ul>
-                    <li>Support multiple instance services</li>
-                    <li>Use Javascript plugin system</li>
-                    <li>Enable dev tools</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Recognize failed</li>
-                    <li>TTS failed</li>
-                    <li>Collection failed</li>
-                    <li>Default Lingva error</li>
-                </ul>
-            </description>
-        </release>
-        <release version="3.0.3" date="2024-06-26">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.3</url>
-            <description>
-                <p>Break Change:</p>
-                <ul>
-                    <li>After version 3.x, old plugins will no longer be available. They will be automatically deleted upon upgrade. Please visit the plugin repository to download and install the new versions. If the plugin developers have not yet updated their plugins, please contact them to request an upgrade.</li>
-                    <li xml:lang="zh-Hans">3.x版本之后旧版插件不再可用，升级后会自动删除旧版插件，请前往插件仓库下载安装新版插件使用，若插件开发者还没适配新版插件，请联系插件开发者升级插件。</li>
-                </ul>
-                <p>New feature:</p>
-                <ul>
-                    <li>Support multiple instance services</li>
-                    <li>Use Javascript plugin system</li>
-                    <li>Enable dev tools</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Recognize failed</li>
-                    <li>TTS failed</li>
-                    <li>Collection failed</li>
-                </ul>
-            </description>
-        </release>
-        <release version="3.0.2" date="2024-06-24">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.2</url>
-            <description>
-                <p>Break Change:</p>
-                <ul>
-                    <li>After version 3.x, old plugins will no longer be available. They will be automatically deleted upon upgrade. Please visit the plugin repository to download and install the new versions. If the plugin developers have not yet updated their plugins, please contact them to request an upgrade.</li>
-                    <li xml:lang="zh-Hans">3.x版本之后旧版插件不再可用，升级后会自动删除旧版插件，请前往插件仓库下载安装新版插件使用，若插件开发者还没适配新版插件，请联系插件开发者升级插件。</li>
-                </ul>
-                <p>New feature:</p>
-                <ul>
-                    <li>Support multiple instance services</li>
-                    <li>Use Javascript plugin system</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Recognize failed</li>
-                    <li>TTS failed</li>
-                    <li>Collection failed</li>
-                </ul>
-            </description>
-        </release>
-        <release version="3.0.1" date="2024-06-24">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.1</url>
-            <description>
-                <p>Break Change:</p>
-                <ul>
-                    <li>After version 3.x, old plugins will no longer be available. They will be automatically deleted upon upgrade. Please visit the plugin repository to download and install the new versions. If the plugin developers have not yet updated their plugins, please contact them to request an upgrade.</li>
-                    <li xml:lang="zh-Hans">3.x版本之后旧版插件不再可用，升级后会自动删除旧版插件，请前往插件仓库下载安装新版插件使用，若插件开发者还没适配新版插件，请联系插件开发者升级插件。</li>
-                </ul>
-                <p>New feature:</p>
-                <ul>
-                    <li>Support multiple instance services</li>
-                    <li>Use Javascript plugin system</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Recognize failed</li>
-                    <li>TTS failed</li>
-                </ul>
-            </description>
-        </release>
-        <release version="3.0.0" date="2024-06-23">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.0</url>
-            <description>
-                <p>New feature:</p>
-                <ul>
-                    <li>Support multiple instance services</li>
-                    <li>Use Javascript plugin system</li>
-                </ul>
-            </description>
-        </release>
-        <release version="2.7.10" date="2024-04-14">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/2.7.10</url>
-            <description>
-                <p>Break Change:</p>
-                <ul>
-                    <li>If you encountered crashes after upgrade, please reinstall the latest releases of all plugins</li>
-                    <li xml:lang="zh-Hans">如果更新后遇到闪退问题，请重新安装所有插件的最新版本</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Check whether the directory is not empty before uninstall</li>
-                    <li>Fix OpenAI translation prompt description</li>
-                </ul>
-            </description>
-        </release>
-        <release version="2.7.9" date="2024-03-02">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/2.7.9</url>
-            <description>
-                <p>Break Change:</p>
-                <ul>
-                    <li>If you encountered crashes after upgrade, please reinstall the latest releases of all plugins</li>
-                    <li xml:lang="zh-Hans">如果更新后遇到闪退问题，请重新安装所有插件的最新版本</li>
-                </ul>
-                <p>Bugs fixed:</p>
-                <ul>
-                    <li>Support Ollama local large language models</li>
-                    <li>Support for disabling history</li>
-                </ul>
-            </description>
         </release>
     </releases>
-    <content_rating type="oars-1.1"/>
 </component>

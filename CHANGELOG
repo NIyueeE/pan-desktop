@@ -1,10 +1,9 @@
-## 3.0.7 (2025-5-10)
+# 3.0.7-lite
 
-### New feature:
-
--   signed macOS app
-
-### Bugs fixed:
-
--   fix screenshot on macOS
--   rm tray click event on macOS
+- 仅保留划词翻译、输入翻译和 OCR 翻译
+- 翻译服务仅保留 OpenAI Chat Completions 兼容 API
+- OCR 仅保留系统 OCR 与 Tesseract
+- 移除 TTS、收藏、历史记录、备份、插件系统、本地服务、剪贴板监听与更新器
+- 升级至 Tauri 2 / Rust 2024 / 最新稳定工具链
+- 增加 ESLint、Clippy 严格检查与 CI 质量门禁
+- 品牌名 pot 保持不变

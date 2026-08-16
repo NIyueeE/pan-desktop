@@ -9,38 +9,47 @@ export const useConfig = (key, defaultValue, options = {}) => {
     const { sync = true } = options;
 
     // 同步到Store (State -> Store)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounce() is intentionally stable
     const syncToStore = useCallback(
         debounce((v) => {
             store.set(key, v);
             store.save();
-            let eventKey = key.replaceAll('.', '_').replaceAll('@', ':');
+            const eventKey = key.replaceAll('.', '_').replaceAll('@', ':');
             emit(`${eventKey}_changed`, v);
         }),
         []
     );
 
     // 同步到State (Store -> State)
-    const syncToState = useCallback((v) => {
-        if (v !== null) {
-            setPropertyState(v);
-        } else {
-            store.get(key).then((v) => {
-                if (v === null) {
-                    setPropertyState(defaultValue);
-                    store.set(key, defaultValue);
-                    store.save();
-                } else {
-                    setPropertyState(v);
-                }
-            });
-        }
-    }, []);
+    const syncToState = useCallback(
+        (v) => {
+            if (v !== null) {
+                setPropertyState(v);
+            } else {
+                store.get(key).then((v) => {
+                    if (v === null) {
+                        setPropertyState(defaultValue);
+                        store.set(key, defaultValue);
+                        store.save();
+                    } else {
+                        setPropertyState(v);
+                    }
+                });
+            }
+        },
+        [defaultValue, key, setPropertyState]
+    );
 
-    const setProperty = useCallback((v, forceSync = false) => {
-        setPropertyState(v);
-        const isSync = forceSync || sync;
-        isSync && syncToStore(v);
-    }, []);
+    const setProperty = useCallback(
+        (v, forceSync = false) => {
+            setPropertyState(v);
+            const isSync = forceSync || sync;
+            if (isSync) {
+                syncToStore(v);
+            }
+        },
+        [setPropertyState, sync, syncToStore]
+    );
 
     // 初始化
     useEffect(() => {
@@ -54,7 +63,7 @@ export const useConfig = (key, defaultValue, options = {}) => {
                 f();
             });
         };
-    }, []);
+    }, [key, syncToState]);
 
     return [property, setProperty, getProperty];
 };

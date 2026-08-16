@@ -1,38 +1,83 @@
-name: Package
+name: Build and release
+
 on:
     push:
         branches: [master]
-permissions: write-all
+        tags: ['*']
+    pull_request:
+        branches: [master]
+
+permissions:
+    contents: read
 
 jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: 9
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: rustfmt, clippy
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Check formatting and lint
+              run: |
+                  pnpm format
+                  pnpm lint
+
+            - name: Build frontend and check Rust
+              run: |
+                  pnpm build
+                  cargo check --manifest-path src-tauri/Cargo.toml
+
     change-version:
+        if: github.event_name == 'push'
         runs-on: ubuntu-latest
         outputs:
-            version: ${{ steps.outputstep.outputs.VERSION }}
+            version: ${{ steps.version.outputs.VERSION }}
         steps:
             - name: Checkout
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
 
-            - name: Install git
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+
+            - id: version
+              name: Resolve release version
               run: |
-                  sudo apt-get update
-                  sudo apt-get install -y git
-            - id: outputstep
+                  TAG_VERSION="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)"
+                  if [ -z "$TAG_VERSION" ]; then
+                      TAG_VERSION="$(node -p "require('./package.json').version")"
+                  fi
+                  echo "VERSION=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+
+            - name: Apply version
               run: |
-                  echo "VERSION=$(git describe --tags | sed 's/-[0-9]*-.*//g')" >> "$GITHUB_OUTPUT"
-            - name: Change Version for Windows
-              run: |
-                  sed -i "s/\"version\":.*/\"version\": \"$(git describe --tags | sed 's/-[0-9]*-.*//g')\",/g" package.json
+                  VERSION="${{ steps.version.outputs.VERSION }}"
+                  sed -i "s/\"version\":.*/\"version\": \"${VERSION}\",/g" package.json
+                  sed -i "s/\"version\":.*/\"version\": \"${VERSION}\"/g" src-tauri/tauri.conf.json
+                  sed -i "s/version = \"0.0.0\"/version = \"${VERSION}\"/g" src-tauri/Cargo.toml
 
-                  sed -i "s/\"version\":.*/\"version\": \"$(git describe --tags | sed 's/-[0-9]*-.*//g')\"/g" src-tauri/tauri.conf.json
-
-                  sed -i "s/version = \"0.0.0\"/version = \"$(git describe --tags | sed 's/-[0-9]*-.*//g')\"/g" src-tauri/Cargo.toml
-
-                  echo $(git describe --tags | sed 's/-[0-9]*-.*//g')
-
-            - name: Upload Artifacts for Windows
+            - name: Upload source artifact
               uses: actions/upload-artifact@v4
               with:
                   name: source
@@ -41,128 +86,133 @@ jobs:
                   if-no-files-found: error
 
     build-for-macos:
-        needs: change-version
+        if: github.event_name == 'push'
+        needs: [change-version, lint]
+        permissions:
+            contents: write
         strategy:
             fail-fast: false
             matrix:
-                platform: [macos-latest]
                 target: [aarch64-apple-darwin, x86_64-apple-darwin]
-
-        runs-on: ${{ matrix.platform }}
+        runs-on: macos-latest
         steps:
-            - uses: actions/download-artifact@v4
+            - name: Download source
+              uses: actions/download-artifact@v4
               with:
                   name: source
-            - name: Setup Nodejs
+
+            - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 21
-            - name: Install Rust Stable
-              uses: dtolnay/rust-toolchain@stable
-            - name: install dependencies
-              run: |
-                  rustup target add ${{ matrix.target }}
+                  node-version: 22
+
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
               with:
                   version: 9
-            - name: Install Dependencies
-              run: pnpm install
-            - name: Code Format
-              run: pnpm prettier --write .
-            - name: Build and Package
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.target }}
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build and package
+              env:
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+                  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+                  APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+                  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+                  APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
               run: |
-                  export TAURI_PRIVATE_KEY="${{ secrets.TAURI_PRIVATE_KEY }}"
-                  export TAURI_KEY_PASSWORD="${{ secrets.TAURI_KEY_PASSWORD }}"
-                  export APPLE_SIGNING_IDENTITY="${{ secrets.APPLE_SIGNING_IDENTITY }}"
-                  export APPLE_CERTIFICATE="${{ secrets.APPLE_CERTIFICATE }}"
-                  export APPLE_CERTIFICATE_PASSWORD="${{ secrets.APPLE_CERTIFICATE_PASSWORD }}"
-                  export APPLE_TEAM_ID="${{ secrets.APPLE_TEAM_ID }}"
-                  export APPLE_API_ISSUER="${{ secrets.APPLE_API_ISSUER }}"
-                  export APPLE_API_KEY="${{ secrets.APPLE_API_KEY }}"
-                  export APPLE_ID="${{ secrets.APPLE_ID }}"
-                  export APPLE_PASSWORD="${{ secrets.APPLE_PASSWORD }}"
                   pnpm tauri build --target ${{ matrix.target }}
-                  sudo chmod +x src-tauri/resources/*
                   chmod +x src-tauri/resources/*
-            - name: Upload Artifacts
+
+            - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
                   name: macos_${{ matrix.target }}_dmg
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
                   if-no-files-found: error
-            - name: Upload Release
-              if: startsWith(github.ref, 'refs/tags')
-              uses: softprops/action-gh-release@v1
+
+            - name: Upload release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v2
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
                   files: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+
     build-for-windows:
-        needs: change-version
+        if: github.event_name == 'push'
+        needs: [change-version, lint]
+        permissions:
+            contents: write
         strategy:
             fail-fast: false
             matrix:
-                platform: [windows-latest]
                 target: [x86_64-pc-windows-msvc, i686-pc-windows-msvc, aarch64-pc-windows-msvc]
-                include:
-                    - os: windows-latest
-                      target: x86_64-pc-windows-msvc
-                      toolchain: stable-x86_64-pc-windows-msvc
-                    - os: windows-latest
-                      target: i686-pc-windows-msvc
-                      toolchain: stable-i686-pc-windows-msvc
-                    - os: windows-latest
-                      target: aarch64-pc-windows-msvc
-                      toolchain: stable-aarch64-pc-windows-msvc
-        runs-on: ${{ matrix.platform }}
+        runs-on: windows-latest
         steps:
-            - uses: actions/download-artifact@v4
+            - name: Download source
+              uses: actions/download-artifact@v4
               with:
                   name: source
-            - name: Setup Nodejs
+
+            - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 21
-            - name: Install Rust Stable
-              uses: dtolnay/rust-toolchain@stable
-            - name: install dependencies
-              run: |
-                  rustup target add ${{ matrix.target }}
-                  rustup toolchain install --force-non-host ${{ matrix.toolchain }}
+                  node-version: 22
+
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
               with:
                   version: 9
-            - name: Install Dependencies
-              run: pnpm install
-            - name: Code Format
-              run: pnpm prettier --write .
-            - name: Build and Package
-              run: |
-                  $env:TAURI_PRIVATE_KEY="${{ secrets.TAURI_PRIVATE_KEY }}"
-                  $env:TAURI_KEY_PASSWORD="${{ secrets.TAURI_KEY_PASSWORD }}"
-                  pnpm tauri build -b nsis --target ${{ matrix.target }}
-            - name: Upload Artifacts
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.target }}
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Build and package
+              env:
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+              run: pnpm tauri build -b nsis --target ${{ matrix.target }}
+
+            - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
                   name: windows_${{ matrix.target }}
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
                   if-no-files-found: error
-            - name: Upload Release
-              if: startsWith(github.ref, 'refs/tags')
-              uses: softprops/action-gh-release@v1
+
+            - name: Upload release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v2
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
                   files: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
 
     build-for-linux:
-        needs: change-version
+        if: github.event_name == 'push'
+        needs: [change-version, lint]
+        permissions:
+            contents: write
         strategy:
             fail-fast: false
             matrix:
-                platform: [ubuntu-latest]
                 target:
                     [
                         x86_64-unknown-linux-gnu,
@@ -170,68 +220,62 @@ jobs:
                         aarch64-unknown-linux-gnu,
                         armv7-unknown-linux-gnueabihf,
                     ]
-                include:
-                    - os: ubuntu-latest
-                      target: x86_64-unknown-linux-gnu
-                      toolchain: stable-x86_64-unknown-linux-gnu
-                    - os: ubuntu-latest
-                      target: i686-unknown-linux-gnu
-                      toolchain: stable-i686-unknown-linux-gnu
-                    - os: ubuntu-latest
-                      target: aarch64-unknown-linux-gnu
-                      toolchain: stable-aarch64-unknown-linux-gnu
-                    - os: ubuntu-latest
-                      target: armv7-unknown-linux-gnueabihf
-                      toolchain: stable-armv7-unknown-linux-gnueabihf
-        runs-on: ${{ matrix.platform }}
+        runs-on: ubuntu-latest
         steps:
-            - uses: actions/download-artifact@v4
+            - name: Download source
+              uses: actions/download-artifact@v4
               with:
                   name: source
+
             - name: Build for Linux
               uses: ./.github/actions/build-for-linux
               env:
-                  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-                  TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
               with:
                   target: ${{ matrix.target }}
-                  toolchain: ${{ matrix.toolchain }}
-            - name: Upload Artifacts
+
+            - name: Upload Debian artifact
               uses: actions/upload-artifact@v4
               with:
                   name: linux_${{ matrix.target }}_deb
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
                   if-no-files-found: error
-            - name: Upload Artifacts
+
+            - name: Upload RPM artifact
               uses: actions/upload-artifact@v4
               with:
                   name: linux_${{ matrix.target }}_rpm
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
                   if-no-files-found: error
-            - name: Upload Artifacts
+
+            - name: Upload AppImage artifact
               if: matrix.target == 'x86_64-unknown-linux-gnu'
               uses: actions/upload-artifact@v4
               with:
                   name: linux_${{ matrix.target }}_appimage
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage*
                   if-no-files-found: error
-            - name: Upload Release
-              if: startsWith(github.ref, 'refs/tags') && matrix.target == 'x86_64-unknown-linux-gnu'
-              uses: softprops/action-gh-release@v1
+
+            - name: Upload AppImage release
+              if: startsWith(github.ref, 'refs/tags/') && matrix.target == 'x86_64-unknown-linux-gnu'
+              uses: softprops/action-gh-release@v2
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
                   files: src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage*
-            - name: Upload Release
-              if: startsWith(github.ref, 'refs/tags')
-              uses: softprops/action-gh-release@v1
+
+            - name: Upload Debian release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v2
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
                   files: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            - name: Upload Release
-              if: startsWith(github.ref, 'refs/tags')
-              uses: softprops/action-gh-release@v1
+
+            - name: Upload RPM release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v2
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}

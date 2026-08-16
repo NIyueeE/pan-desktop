@@ -1,29 +1,23 @@
-use crate::{error::Error, APP};
+use crate::APP;
 use dirs::config_dir;
-use log::{info, warn};
-use serde_json::{json, Value};
+use log::info;
+use serde_json::{Value, json};
 use std::sync::Mutex;
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Store, StoreBuilder};
 
-pub struct StoreWrapper(pub Mutex<Store<Wry>>);
+pub struct StoreWrapper(pub Mutex<std::sync::Arc<Store<Wry>>>);
 
-pub fn init_config(app: &mut tauri::App) {
+pub fn init_config(app: &tauri::App) {
     let config_path = config_dir().unwrap();
-    let config_path = config_path.join(app.config().tauri.bundle.identifier.clone());
+    let config_path = config_path.join(app.config().identifier.clone());
     let config_path = config_path.join("config.json");
-    info!("Load config from: {:?}", config_path);
-    let mut store = StoreBuilder::new(app.handle(), config_path).build();
-
-    match store.load() {
-        Ok(_) => info!("Config loaded"),
-        Err(e) => {
-            warn!("Config load error: {:?}", e);
-            info!("Config not found, creating new config");
-        }
-    }
+    info!("Load config from: {}", config_path.display());
+    let store = StoreBuilder::new(app.handle(), config_path)
+        .build()
+        .unwrap();
     app.manage(StoreWrapper(Mutex::new(store)));
-    let _ = check_service_available();
+    check_service_available();
 }
 
 fn sanitize_service_list(key: &str, builtin: &[&str], default: &[&str]) {
@@ -39,13 +33,16 @@ fn sanitize_service_list(key: &str, builtin: &[&str], default: &[&str]) {
             })
             .collect();
         if new_list.is_empty() {
-            new_list = default.iter().map(|s| s.to_string()).collect();
+            new_list = default
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect();
         }
         set(key, new_list);
     }
 }
 
-pub fn check_service_available() -> Result<(), Error> {
+pub fn check_service_available() {
     // 翻译服务仅保留自定义 openai_chat_completions 服务
     sanitize_service_list("translate_service_list", &["openai"], &["openai"]);
     // OCR 翻译仅保留本地识别服务
@@ -54,22 +51,18 @@ pub fn check_service_available() -> Result<(), Error> {
         &["system", "tesseract"],
         &["system", "tesseract"],
     );
-    Ok(())
 }
 
 pub fn get(key: &str) -> Option<Value> {
     let state = APP.get().unwrap().state::<StoreWrapper>();
     let store = state.0.lock().unwrap();
-    match store.get(key) {
-        Some(value) => Some(value.clone()),
-        None => None,
-    }
+    store.get(key)
 }
 
 pub fn set<T: serde::ser::Serialize>(key: &str, value: T) {
     let state = APP.get().unwrap().state::<StoreWrapper>();
-    let mut store = state.0.lock().unwrap();
-    store.insert(key.to_string(), json!(value)).unwrap();
+    let store = state.0.lock().unwrap();
+    store.set(key.to_string(), json!(value));
     store.save().unwrap();
 }
 

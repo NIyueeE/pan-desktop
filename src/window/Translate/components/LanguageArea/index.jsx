@@ -29,14 +29,14 @@ export default function LanguageArea() {
         if (translateTargetLanguage) {
             setTargetLanguage(translateTargetLanguage);
         }
-    }, [translateSourceLanguage, translateTargetLanguage]);
+    }, [translateSourceLanguage, translateTargetLanguage, setSourceLanguage, setTargetLanguage]);
 
     useEffect(() => {
         if (rememberLanguage !== null && rememberLanguage) {
             setTranslateSourceLanguage(sourceLanguage);
             setTranslateTargetLanguage(targetLanguage);
         }
-    }, [sourceLanguage, targetLanguage, rememberLanguage]);
+    }, [sourceLanguage, targetLanguage, rememberLanguage, setTranslateSourceLanguage, setTranslateTargetLanguage]);
 
     return (
         <Card
@@ -90,7 +90,7 @@ export default function LanguageArea() {
                                     if (targetLanguage === translateSecondLanguage) {
                                         setTargetLanguage(translateTargetLanguage);
                                     } else {
-                                        setTargetLanguage(secondLanguage);
+                                        setTargetLanguage(translateSecondLanguage);
                                     }
                                 }
                             }

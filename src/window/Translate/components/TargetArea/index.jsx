@@ -12,9 +12,9 @@ import {
     Tooltip,
 } from '@nextui-org/react';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
-import { sendNotification } from '@tauri-apps/api/notification';
+import { sendNotification } from '@tauri-apps/plugin-notification';
 import React, { useEffect, useState, useRef } from 'react';
-import { writeText } from '@tauri-apps/api/clipboard';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import PulseLoader from 'react-spinners/PulseLoader';
 import { TbTransformFilled } from 'react-icons/tb';
 import { semanticColors } from '@nextui-org/theme';
@@ -32,10 +32,10 @@ import { useConfig } from '../../../../hooks';
 import { sourceTextAtom, detectLanguageAtom } from '../SourceArea';
 import * as builtinServices from '../../../../services/translate';
 
-import { info, error as logError } from 'tauri-plugin-log-api';
+import { info, error as logError } from '@tauri-apps/plugin-log';
 import { INSTANCE_NAME_CONFIG_KEY, getDisplayInstanceName, getServiceName } from '../../../../utils/service_instance';
 
-let translateID = [];
+const translateID = [];
 
 export default function TargetArea(props) {
     const { index, name, translateServiceInstanceList, serviceInstanceConfigMap, ...drag } = props;
@@ -69,7 +69,7 @@ export default function TargetArea(props) {
         if (error) {
             logError(`[${currentTranslateServiceInstanceKey}]happened error: ` + error);
         }
-    }, [error]);
+    }, [error, currentTranslateServiceInstanceKey]);
 
     // 当前实例被删除时回退到第一个实例
     useEffect(() => {
@@ -79,7 +79,7 @@ export default function TargetArea(props) {
         ) {
             setCurrentTranslateServiceInstanceKey(translateServiceInstanceList[0]);
         }
-    }, [translateServiceInstanceList]);
+    }, [translateServiceInstanceList, currentTranslateServiceInstanceKey]);
 
     // listen to translation
     useEffect(() => {
@@ -95,7 +95,7 @@ export default function TargetArea(props) {
             }
             translate();
         }
-    }, [sourceText, sourceLanguage, targetLanguage, autoCopy, hideWindow, currentTranslateServiceInstanceKey]);
+    }, [sourceText, sourceLanguage, targetLanguage, autoCopy, hideWindow, currentTranslateServiceInstanceKey]); // eslint-disable-line react-hooks/exhaustive-deps -- translate() is recreated each render; adding it would re-trigger the request
 
     function invokeOnce(fn) {
         let isInvoke = false;
@@ -111,7 +111,7 @@ export default function TargetArea(props) {
     }
 
     const translate = async () => {
-        let id = nanoid();
+        const id = nanoid();
         translateID[index] = id;
 
         const translateServiceName = getServiceName(currentTranslateServiceInstanceKey);
@@ -130,7 +130,9 @@ export default function TargetArea(props) {
                     config: instanceConfig,
                     detect: detectLanguage,
                     setResult: (v) => {
-                        if (translateID[index] !== id) return;
+                        if (translateID[index] !== id) {
+                            return;
+                        }
                         setResult(v);
                         setHideOnce(false);
                     },
@@ -138,7 +140,9 @@ export default function TargetArea(props) {
                 .then(
                     (v) => {
                         info(`[${currentTranslateServiceInstanceKey}]resolve:` + v);
-                        if (translateID[index] !== id) return;
+                        if (translateID[index] !== id) {
+                            return;
+                        }
                         const target = typeof v === 'string' ? v.trim() : String(v);
                         setResult(target);
                         setIsLoading(false);
@@ -171,7 +175,9 @@ export default function TargetArea(props) {
                     },
                     (e) => {
                         info(`[${currentTranslateServiceInstanceKey}]reject:` + e);
-                        if (translateID[index] !== id) return;
+                        if (translateID[index] !== id) {
+                            return;
+                        }
                         setError(e.toString());
                         setIsLoading(false);
                     }

@@ -1,97 +1,12 @@
 use crate::config::{get, set};
 use crate::window::{config_window, input_translate, ocr_translate};
 use log::info;
-use tauri::CustomMenuItem;
-use tauri::GlobalShortcutManager;
-use tauri::SystemTrayEvent;
-use tauri::SystemTrayMenu;
-use tauri::SystemTrayMenuItem;
-use tauri::SystemTraySubmenu;
-use tauri::{AppHandle, Manager};
+use tauri::menu::{CheckMenuItemBuilder, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-#[tauri::command]
-pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_mode: String) {
-    let tray_handle = app_handle.tray_handle();
-
-    if language.is_empty() {
-        language = match get("app_language") {
-            Some(v) => v.as_str().unwrap().to_string(),
-            None => {
-                set("app_language", "en");
-                "en".to_string()
-            }
-        };
-    }
-    if copy_mode.is_empty() {
-        copy_mode = match get("translate_auto_copy") {
-            Some(v) => v.as_str().unwrap().to_string(),
-            None => {
-                set("translate_auto_copy", "disable");
-                "disable".to_string()
-            }
-        };
-    }
-
-    info!(
-        "Update tray with language: {}, copy mode: {}",
-        language, copy_mode
-    );
-    let (
-        input_translate,
-        ocr_translate,
-        auto_copy,
-        source,
-        target,
-        source_target,
-        disable,
-        config,
-        quit,
-    ) = tray_labels(&language);
-    tray_handle
-        .set_menu(
-            SystemTrayMenu::new()
-                .add_item(CustomMenuItem::new("input_translate", input_translate))
-                .add_item(CustomMenuItem::new("ocr_translate", ocr_translate))
-                .add_submenu(SystemTraySubmenu::new(
-                    auto_copy,
-                    SystemTrayMenu::new()
-                        .add_item(CustomMenuItem::new("copy_source", source))
-                        .add_item(CustomMenuItem::new("copy_target", target))
-                        .add_item(CustomMenuItem::new("copy_source_target", source_target))
-                        .add_native_item(SystemTrayMenuItem::Separator)
-                        .add_item(CustomMenuItem::new("copy_disable", disable)),
-                ))
-                .add_native_item(SystemTrayMenuItem::Separator)
-                .add_item(CustomMenuItem::new("config", config))
-                .add_native_item(SystemTrayMenuItem::Separator)
-                .add_item(CustomMenuItem::new("quit", quit)),
-        )
-        .unwrap();
-    #[cfg(not(target_os = "linux"))]
-    tray_handle
-        .set_tooltip(&format!("pot {}", app_handle.package_info().version))
-        .unwrap();
-
-    match copy_mode.as_str() {
-        "source" => tray_handle
-            .get_item("copy_source")
-            .set_selected(true)
-            .unwrap(),
-        "target" => tray_handle
-            .get_item("copy_target")
-            .set_selected(true)
-            .unwrap(),
-        "source_target" => tray_handle
-            .get_item("copy_source_target")
-            .set_selected(true)
-            .unwrap(),
-        "disable" => tray_handle
-            .get_item("copy_disable")
-            .set_selected(true)
-            .unwrap(),
-        _ => {}
-    }
-}
+pub const TRAY_ID: &str = "pot-tray";
 
 type TrayLabels = (
     &'static str,
@@ -105,6 +20,7 @@ type TrayLabels = (
     &'static str,
 );
 
+#[allow(clippy::too_many_lines)]
 fn tray_labels(language: &str) -> TrayLabels {
     match language {
         "zh_cn" => (
@@ -231,11 +147,97 @@ fn tray_labels(language: &str) -> TrayLabels {
     }
 }
 
-pub fn tray_event_handler<'a>(app: &'a AppHandle, event: SystemTrayEvent) {
-    match event {
-        #[cfg(target_os = "windows")]
-        SystemTrayEvent::LeftClick { .. } => on_tray_click(),
-        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
+pub fn build_tray_menu<R: Runtime, M: Manager<R>>(
+    manager: &M,
+    language: &str,
+    copy_mode: &str,
+) -> tauri::Result<tauri::menu::Menu<R>> {
+    let labels = tray_labels(language);
+
+    let input_translate = MenuItemBuilder::with_id("input_translate", labels.0).build(manager)?;
+    let ocr_translate = MenuItemBuilder::with_id("ocr_translate", labels.1).build(manager)?;
+    let copy_source = CheckMenuItemBuilder::with_id("copy_source", labels.3)
+        .checked(copy_mode == "source")
+        .build(manager)?;
+    let copy_target = CheckMenuItemBuilder::with_id("copy_target", labels.4)
+        .checked(copy_mode == "target")
+        .build(manager)?;
+    let copy_source_target = CheckMenuItemBuilder::with_id("copy_source_target", labels.5)
+        .checked(copy_mode == "source_target")
+        .build(manager)?;
+    let copy_disable = CheckMenuItemBuilder::with_id("copy_disable", labels.6)
+        .checked(copy_mode == "disable")
+        .build(manager)?;
+
+    let auto_copy = SubmenuBuilder::with_id(manager, "auto_copy", labels.2)
+        .item(&copy_source)
+        .item(&copy_target)
+        .item(&copy_source_target)
+        .separator()
+        .item(&copy_disable)
+        .build()?;
+
+    let config = MenuItemBuilder::with_id("config", labels.7).build(manager)?;
+    let quit = MenuItemBuilder::with_id("quit", labels.8).build(manager)?;
+
+    MenuBuilder::new(manager)
+        .item(&input_translate)
+        .item(&ocr_translate)
+        .item(&auto_copy)
+        .separator()
+        .item(&config)
+        .separator()
+        .item(&quit)
+        .build()
+}
+
+#[tauri::command]
+pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_mode: String) {
+    if language.is_empty() {
+        language = get("app_language").map_or_else(
+            || {
+                set("app_language", "en");
+                "en".to_string()
+            },
+            |v| v.as_str().unwrap().to_string(),
+        );
+    }
+    if copy_mode.is_empty() {
+        copy_mode = get("translate_auto_copy").map_or_else(
+            || {
+                set("translate_auto_copy", "disable");
+                "disable".to_string()
+            },
+            |v| v.as_str().unwrap().to_string(),
+        );
+    }
+
+    info!("Update tray with language: {language}, copy mode: {copy_mode}");
+
+    if let Some(tray) = app_handle.tray_by_id(TRAY_ID) {
+        let menu = build_tray_menu(&app_handle, &language, &copy_mode).unwrap();
+        tray.set_menu(Some(menu)).unwrap();
+        #[cfg(not(target_os = "linux"))]
+        tray.set_tooltip(Some(format!("pot {}", app_handle.package_info().version)))
+            .unwrap();
+    }
+}
+
+pub fn init_tray(app: &tauri::App) -> tauri::Result<()> {
+    let language =
+        get("app_language").map_or_else(|| "en".to_string(), |v| v.as_str().unwrap().to_string());
+    let copy_mode = get("translate_auto_copy").map_or_else(
+        || "disable".to_string(),
+        |v| v.as_str().unwrap().to_string(),
+    );
+    let menu = build_tray_menu(app.handle(), &language, &copy_mode)?;
+
+    TrayIconBuilder::with_id(TRAY_ID)
+        .icon(app.default_window_icon().cloned().unwrap())
+        .icon_as_template(true)
+        .show_menu_on_left_click(false)
+        .menu(&menu)
+        .on_menu_event(|app, event| match event.id().as_ref() {
             "input_translate" => input_translate(),
             "copy_source" => on_auto_copy_click(app, "source"),
             "copy_target" => on_auto_copy_click(app, "target"),
@@ -245,20 +247,30 @@ pub fn tray_event_handler<'a>(app: &'a AppHandle, event: SystemTrayEvent) {
             "config" => config_window(),
             "quit" => on_quit_click(app),
             _ => {}
-        },
-        _ => {}
-    }
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                on_tray_click(tray.app_handle());
+            }
+        })
+        .build(app)?;
+    Ok(())
 }
 
-#[cfg(target_os = "windows")]
-fn on_tray_click() {
-    let event = match get("tray_click_event") {
-        Some(v) => v.as_str().unwrap().to_string(),
-        None => {
+#[allow(clippy::match_same_arms)]
+fn on_tray_click(_app: &AppHandle) {
+    let event = get("tray_click_event").map_or_else(
+        || {
             set("tray_click_event", "config");
             "config".to_string()
-        }
-    };
+        },
+        |v| v.as_str().unwrap().to_string(),
+    );
     match event.as_str() {
         "config" => config_window(),
         "translate" => input_translate(),
@@ -269,14 +281,14 @@ fn on_tray_click() {
 }
 
 fn on_auto_copy_click(app: &AppHandle, mode: &str) {
-    info!("Set copy mode to: {}", mode);
+    info!("Set copy mode to: {mode}");
     set("translate_auto_copy", mode);
-    app.emit_all("translate_auto_copy_changed", mode).unwrap();
-    update_tray(app.app_handle(), "".to_string(), mode.to_string());
+    let _ = app.emit("translate_auto_copy_changed", mode);
+    update_tray(app.clone(), String::new(), mode.to_string());
 }
 
 fn on_quit_click(app: &AppHandle) {
-    app.global_shortcut_manager().unregister_all().unwrap();
+    let _ = app.global_shortcut().unregister_all();
     info!("============== Quit App ==============");
     app.exit(0);
 }

@@ -31,7 +31,9 @@ export default function Recognize() {
         return result;
     };
     const onDragEnd = async (result) => {
-        if (!result.destination) return;
+        if (!result.destination) {
+            return;
+        }
         const items = reorder(recognizeServiceInstanceList, result.source.index, result.destination.index);
         setRecognizeServiceInstanceList(items);
     };
