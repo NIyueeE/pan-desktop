@@ -15,15 +15,15 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Setup Node
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v5
               with:
                   node-version: 22
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+              uses: pnpm/action-setup@v5
               with:
                   version: 9
 
@@ -57,12 +57,12 @@ jobs:
             version: ${{ steps.version.outputs.VERSION }}
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   fetch-depth: 0
 
             - name: Setup Node
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v5
               with:
                   node-version: 22
 
@@ -79,11 +79,11 @@ jobs:
               run: |
                   VERSION="${{ steps.version.outputs.VERSION }}"
                   sed -i "s/\"version\":.*/\"version\": \"${VERSION}\",/g" package.json
-                  sed -i "s/\"version\":.*/\"version\": \"${VERSION}\"/g" src-tauri/tauri.conf.json
+                  sed -i "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/g" src-tauri/tauri.conf.json
                   sed -i "s/version = \"0.0.0\"/version = \"${VERSION}\"/g" src-tauri/Cargo.toml
 
             - name: Upload source artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: source
                   path: ./*
@@ -102,17 +102,17 @@ jobs:
         runs-on: macos-latest
         steps:
             - name: Download source
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v7
               with:
                   name: source
 
             - name: Setup Node
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v5
               with:
                   node-version: 22
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+              uses: pnpm/action-setup@v5
               with:
                   version: 9
 
@@ -141,7 +141,7 @@ jobs:
                   chmod +x src-tauri/resources/*
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: macos_${{ matrix.target }}_dmg
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
@@ -149,7 +149,7 @@ jobs:
 
             - name: Upload release
               if: startsWith(github.ref, 'refs/tags/')
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
@@ -167,17 +167,17 @@ jobs:
         runs-on: windows-latest
         steps:
             - name: Download source
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v7
               with:
                   name: source
 
             - name: Setup Node
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v5
               with:
                   node-version: 22
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+              uses: pnpm/action-setup@v5
               with:
                   version: 9
 
@@ -196,7 +196,7 @@ jobs:
               run: pnpm tauri build -b nsis --target ${{ matrix.target }}
 
             - name: Upload artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: windows_${{ matrix.target }}
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
@@ -204,7 +204,7 @@ jobs:
 
             - name: Upload release
               if: startsWith(github.ref, 'refs/tags/')
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
@@ -228,7 +228,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Download source
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v7
               with:
                   name: source
 
@@ -241,14 +241,14 @@ jobs:
                   target: ${{ matrix.target }}
 
             - name: Upload Debian artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: linux_${{ matrix.target }}_deb
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
                   if-no-files-found: error
 
             - name: Upload RPM artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: linux_${{ matrix.target }}_rpm
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
@@ -256,7 +256,7 @@ jobs:
 
             - name: Upload AppImage artifact
               if: matrix.target == 'x86_64-unknown-linux-gnu'
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: linux_${{ matrix.target }}_appimage
                   path: src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage*
@@ -264,7 +264,7 @@ jobs:
 
             - name: Upload AppImage release
               if: startsWith(github.ref, 'refs/tags/') && matrix.target == 'x86_64-unknown-linux-gnu'
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
@@ -272,7 +272,7 @@ jobs:
 
             - name: Upload Debian release
               if: startsWith(github.ref, 'refs/tags/')
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
@@ -280,7 +280,7 @@ jobs:
 
             - name: Upload RPM release
               if: startsWith(github.ref, 'refs/tags/')
-              uses: softprops/action-gh-release@v2
+              uses: softprops/action-gh-release@v3
               with:
                   body_path: CHANGELOG
                   token: ${{ secrets.GITHUB_TOKEN }}
