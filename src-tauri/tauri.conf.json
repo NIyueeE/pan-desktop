@@ -33,7 +33,7 @@
     },
     "productName": "pot",
     "mainBinaryName": "pot",
-    "version": "3.0.7",
+    "version": "4.0.0",
     "identifier": "com.pot-app.desktop",
     "plugins": {
         "shell": {

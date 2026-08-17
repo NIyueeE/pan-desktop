@@ -64,7 +64,7 @@ jobs:
             - id: version
               name: Resolve release version
               run: |
-                  TAG_VERSION="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)"
+                  TAG_VERSION="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^[vV]//' || true)"
                   if [ -z "$TAG_VERSION" ]; then
                       TAG_VERSION="$(node -p "require('./package.json').version")"
                   fi
