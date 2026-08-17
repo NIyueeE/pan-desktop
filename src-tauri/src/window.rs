@@ -16,6 +16,7 @@ use crate::config::set;
 use dirs::cache_dir;
 use log::{info, warn};
 use tauri::Emitter;
+#[cfg(not(target_os = "macos"))]
 use tauri::Listener;
 use tauri::Manager;
 use tauri::Monitor;

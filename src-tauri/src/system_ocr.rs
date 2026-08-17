@@ -1,4 +1,5 @@
 use dirs::cache_dir;
+use tauri::Manager;
 
 #[tauri::command]
 #[cfg(target_os = "windows")]

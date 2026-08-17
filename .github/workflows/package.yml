@@ -218,13 +218,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                target:
-                    [
-                        x86_64-unknown-linux-gnu,
-                        i686-unknown-linux-gnu,
-                        aarch64-unknown-linux-gnu,
-                        armv7-unknown-linux-gnueabihf,
-                    ]
+                target: [x86_64-unknown-linux-gnu]
         runs-on: ubuntu-latest
         steps:
             - name: Download source

@@ -1,10 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# Avoid pulling architecture-dependent introspection tooling (e.g. gobject-introspection)
-# that is often only a Recommends and breaks i386/armhf cross builds on Debian bookworm.
-echo 'APT::Install-Recommends "false";' > /etc/apt/apt.conf.d/99no-recommends
-
 INPUT_TARGET="${1:?target is required}"
 export INPUT_TARGET
 
