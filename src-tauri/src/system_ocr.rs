@@ -1,4 +1,5 @@
 use dirs::cache_dir;
+#[cfg(target_os = "macos")]
 use tauri::Manager;
 
 #[tauri::command]
