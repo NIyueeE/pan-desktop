@@ -24,7 +24,8 @@ if [ "${INPUT_TARGET}" = "x86_64-unknown-linux-gnu" ]; then
         libxdo-dev \
         libxcb1 \
         libxrandr2 \
-        libdbus-1-3
+        libdbus-1-3 \
+        xdg-utils
 elif [ "${INPUT_TARGET}" = "i686-unknown-linux-gnu" ]; then
     dpkg --add-architecture i386
     apt-get update
