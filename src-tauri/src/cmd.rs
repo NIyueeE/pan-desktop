@@ -36,7 +36,18 @@ pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri
             return;
         }
     };
-    let img2 = img.sub_image(left, top, width, height);
+    let img2 = {
+        // Clamp the crop rect to the image bounds; sub_image panics otherwise.
+        let left = left.min(img.width().saturating_sub(1));
+        let top = top.min(img.height().saturating_sub(1));
+        let width = width.min(img.width() - left);
+        let height = height.min(img.height() - top);
+        if width == 0 || height == 0 {
+            error!("Cut image: empty crop rect");
+            return;
+        }
+        img.sub_image(left, top, width, height)
+    };
     app_cache_dir_path.pop();
     app_cache_dir_path.push("pot_screenshot_cut.png");
     match img2.to_image().save(&app_cache_dir_path) {

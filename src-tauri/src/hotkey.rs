@@ -49,30 +49,53 @@ where
 // Register global shortcuts
 pub fn register_shortcut(shortcut: &str) -> Result<(), String> {
     let app_handle = APP.get().unwrap();
+    // Attempt every requested shortcut even when some fail, so one conflicting
+    // key does not silently disable the others.
+    let mut errors: Vec<String> = Vec::new();
     match shortcut {
-        "hotkey_selection_translate" => register(
-            app_handle,
-            "hotkey_selection_translate",
-            selection_translate,
-            "",
-        )?,
-        "hotkey_input_translate" => {
-            register(app_handle, "hotkey_input_translate", input_translate, "")?;
-        }
-        "hotkey_ocr_translate" => register(app_handle, "hotkey_ocr_translate", ocr_translate, "")?,
-        "all" => {
-            register(
+        "hotkey_selection_translate" => {
+            if let Err(e) = register(
                 app_handle,
                 "hotkey_selection_translate",
                 selection_translate,
                 "",
-            )?;
-            register(app_handle, "hotkey_input_translate", input_translate, "")?;
-            register(app_handle, "hotkey_ocr_translate", ocr_translate, "")?;
+            ) {
+                errors.push(e);
+            }
+        }
+        "hotkey_input_translate" => {
+            if let Err(e) = register(app_handle, "hotkey_input_translate", input_translate, "") {
+                errors.push(e);
+            }
+        }
+        "hotkey_ocr_translate" => {
+            if let Err(e) = register(app_handle, "hotkey_ocr_translate", ocr_translate, "") {
+                errors.push(e);
+            }
+        }
+        "all" => {
+            if let Err(e) = register(
+                app_handle,
+                "hotkey_selection_translate",
+                selection_translate,
+                "",
+            ) {
+                errors.push(e);
+            }
+            if let Err(e) = register(app_handle, "hotkey_input_translate", input_translate, "") {
+                errors.push(e);
+            }
+            if let Err(e) = register(app_handle, "hotkey_ocr_translate", ocr_translate, "") {
+                errors.push(e);
+            }
         }
         _ => {}
     }
-    Ok(())
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors.join("\n"))
+    }
 }
 
 #[tauri::command]

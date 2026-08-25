@@ -36,36 +36,25 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (devMode !== null && devMode) {
-            document.addEventListener('keydown', async (e) => {
-                const allowKeys = ['c', 'v', 'x', 'a', 'z', 'y'];
-                if (e.ctrlKey && !allowKeys.includes(e.key.toLowerCase())) {
-                    e.preventDefault();
-                }
-                if (e.key === 'F12') {
-                    await invoke('open_devtools');
-                }
-                if (e.key.startsWith('F') && e.key.length > 1) {
-                    e.preventDefault();
-                }
-                if (e.key === 'Escape') {
-                    await appWindow.close();
-                }
-            });
-        } else {
-            document.addEventListener('keydown', async (e) => {
-                const allowKeys = ['c', 'v', 'x', 'a', 'z', 'y'];
-                if (e.ctrlKey && !allowKeys.includes(e.key.toLowerCase())) {
-                    e.preventDefault();
-                }
-                if (e.key.startsWith('F') && e.key.length > 1) {
-                    e.preventDefault();
-                }
-                if (e.key === 'Escape') {
-                    await appWindow.close();
-                }
-            });
-        }
+        const onKeyDown = async (e) => {
+            const allowKeys = ['c', 'v', 'x', 'a', 'z', 'y'];
+            if (e.ctrlKey && !allowKeys.includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+            if (devMode && e.key === 'F12') {
+                await invoke('open_devtools');
+            }
+            if (e.key.startsWith('F') && e.key.length > 1) {
+                e.preventDefault();
+            }
+            if (e.key === 'Escape') {
+                await appWindow.close();
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+        };
     }, [devMode]);
 
     useEffect(() => {

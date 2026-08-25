@@ -23,6 +23,7 @@ pub fn lang_detect(text: &str) -> String {
         Language::Bokmal,
         Language::Nynorsk,
         Language::Persian,
+        Language::Ukrainian,
     ];
     let detector = LanguageDetectorBuilder::from_languages(&languages).build();
     detector.detect_language_of(text).map_or_else(
