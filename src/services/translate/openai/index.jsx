@@ -57,7 +57,13 @@ export async function translate(text, from, to, options) {
     };
     body['model'] = model;
     if (stream) {
-        const res = await window.fetch(apiUrl.href, {
+        // Use the Tauri HTTP plugin's fetch (not `window.fetch`) so the request
+        // bypasses webview CORS / mixed-content and works without
+        // `--disable-web-security` (which would otherwise break IPC on Windows,
+        // see tauri-apps/tauri#9454). The plugin returns a real `Response`
+        // whose body is a `ReadableStream`, so the rest of the streaming
+        // pipeline is identical to the browser fetch path.
+        const res = await fetch(apiUrl.href, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(body),

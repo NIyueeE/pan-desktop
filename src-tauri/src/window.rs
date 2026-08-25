@@ -31,11 +31,18 @@ use tauri::WebviewWindowBuilder;
 // The `--disable-features` part restores the WebView2 defaults that wry applies
 // when no custom args are set (see tauri-apps/tauri#13092); overriding
 // `additional_browser_args` replaces those defaults entirely.
+//
+// Intentionally NOT including `--disable-web-security`: with that flag,
+// WebView2 omits the `Origin` header on the IPC `fetch`, and tauri's IPC
+// handler rejects the request with "missing Origin header" — which prevents
+// the frontend from booting on Windows (see tauri-apps/tauri#9454).
+// Cross-origin HTTP calls (e.g. Ollama streaming) must go through the
+// `tauri-plugin-http` `fetch`, which runs on the Rust side and is unaffected
+// by webview CORS.
 #[cfg(target_os = "windows")]
-pub const BROWSER_ARGS: &str =
-    "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-web-security";
+pub const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection";
 #[cfg(not(target_os = "windows"))]
-pub const BROWSER_ARGS: &str = "--disable-web-security";
+pub const BROWSER_ARGS: &str = "";
 
 // Get daemon window instance
 fn get_daemon_window() -> WebviewWindow {

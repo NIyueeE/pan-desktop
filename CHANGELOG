@@ -1,3 +1,9 @@
+# 4.1.1-1
+
+## 修复
+
+-   Windows 安装后启动报 `Frontend failed to start: missing Origin header`：4.1.0 为绕开 WebView2 协议问题在 `additionalBrowserArgs` 中加入的 `--disable-web-security` 与 IPC 校验逻辑冲突，导致 WebView2 在 IPC 请求中不再附带 `Origin` 头，Tauri IPC 协议处理器拒绝首个 `invoke`，前端无法启动（已知 Tauri 上游问题 tauri-apps/tauri#9454）。已从 Windows 与其他平台的浏览器参数中移除该 flag；原先依赖该 flag 调用本地 HTTP（Ollama 流式）的代码改走 `tauri-plugin-http` 的 `fetch`，不受 webview CORS 影响。
+
 # 4.1.1
 
 ## 修复（WebDAV 备份同步加固）

@@ -6,7 +6,7 @@
                 "label": "daemon",
                 "visible": false,
                 "url": "daemon.html",
-                "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-web-security",
+                "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection",
                 "useHttpsScheme": false
             }
         ]
