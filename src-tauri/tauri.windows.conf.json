@@ -1,9 +1,15 @@
 {
     "app": {
-        "trayIcon": {
-            "iconPath": "icons/icon.ico",
-            "iconAsTemplate": true
-        }
+        "windows": [
+            {
+                "title": "Daemon",
+                "label": "daemon",
+                "visible": false,
+                "url": "daemon.html",
+                "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-web-security",
+                "useHttpsScheme": false
+            }
+        ]
     },
     "bundle": {
         "windows": {

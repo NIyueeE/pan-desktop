@@ -121,9 +121,12 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    // 窗口关闭不退出
+    // 窗口关闭不退出 (only intercept close-to-tray; explicit app.exit keeps working)
     app.run(|_app_handle, event| {
-        if let tauri::RunEvent::ExitRequested { api, .. } = event {
+        if let tauri::RunEvent::ExitRequested {
+            code: None, api, ..
+        } = event
+        {
             api.prevent_exit();
         }
     });

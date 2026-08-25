@@ -24,6 +24,19 @@ use tauri::WebviewUrl;
 use tauri::WebviewWindow;
 use tauri::WebviewWindowBuilder;
 
+// Must stay identical to the `additionalBrowserArgs` of every window declared in
+// tauri.conf.json / tauri.windows.conf.json. On Windows all webviews share one
+// WebView2 environment only while these arguments match, otherwise windows break.
+//
+// The `--disable-features` part restores the WebView2 defaults that wry applies
+// when no custom args are set (see tauri-apps/tauri#13092); overriding
+// `additional_browser_args` replaces those defaults entirely.
+#[cfg(target_os = "windows")]
+pub const BROWSER_ARGS: &str =
+    "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-web-security";
+#[cfg(not(target_os = "windows"))]
+pub const BROWSER_ARGS: &str = "--disable-web-security";
+
 // Get daemon window instance
 fn get_daemon_window() -> WebviewWindow {
     let app_handle = APP.get().unwrap();
@@ -31,7 +44,7 @@ fn get_daemon_window() -> WebviewWindow {
         warn!("Daemon window not found, create new daemon window!");
         WebviewWindowBuilder::new(app_handle, "daemon", WebviewUrl::App("daemon.html".into()))
             .title("Daemon")
-            .additional_browser_args("--disable-web-security")
+            .additional_browser_args(BROWSER_ARGS)
             .visible(false)
             .build()
             .unwrap()
@@ -82,8 +95,8 @@ fn build_window(label: &str, title: &str) -> (WebviewWindow, bool) {
             let mut builder =
                 WebviewWindowBuilder::new(app_handle, label, WebviewUrl::App("index.html".into()))
                     .position(position.x.into(), position.y.into())
+                    .additional_browser_args(BROWSER_ARGS)
                     .use_https_scheme(true)
-                    .additional_browser_args("--disable-web-security")
                     .focused(true)
                     .title(title)
                     .visible(false);
@@ -97,6 +110,12 @@ fn build_window(label: &str, title: &str) -> (WebviewWindow, bool) {
             #[cfg(not(target_os = "macos"))]
             {
                 builder = builder.transparent(true).decorations(false);
+            }
+            #[cfg(target_os = "windows")]
+            {
+                // Plain http scheme avoids WebView2 quirks with the custom
+                // https://tauri.localhost protocol; it is still a trustworthy origin.
+                builder = builder.use_https_scheme(false);
             }
             let window = builder.build().unwrap();
             let _ = window.current_monitor();
@@ -117,6 +136,10 @@ pub fn config_window() {
         .unwrap();
     window.set_size(tauri::LogicalSize::new(800, 600)).unwrap();
     window.center().unwrap();
+    // Show from the Rust side so the window appears even when the frontend
+    // fails to boot (it also calls `show()` once React mounted).
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 fn translate_window() -> WebviewWindow {
