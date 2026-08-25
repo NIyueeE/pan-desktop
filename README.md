@@ -22,13 +22,14 @@
     -   支持自定义模型、API Key、System/User/Assistant Prompt
     -   支持流式输出和自定义请求参数
 -   本地 OCR：系统 OCR 与 Tesseract
+-   **WebDAV 备份同步**：一键备份/恢复全部配置，支持自动增量备份（详见下文）
 -   自动复制、窗口置顶、窗口位置/大小记忆、代理、开机自启、主题/字体、多语言界面
 
 ### 已移除
 
 -   其他内置翻译服务（DeepL、Bing、Google、Ollama 等）
 -   其他云端 OCR 服务
--   TTS、收藏/生词本、历史记录、备份
+-   TTS、收藏/生词本、历史记录
 -   插件系统、本地 HTTP 服务、剪贴板监听
 -   独立 OCR 识别窗口、应用更新器
 
@@ -97,9 +98,27 @@ pnpm check
 
 Prompt 中可使用 `$text`、`$from`、`$to`、`$detect` 变量。
 
+## WebDAV 备份同步
+
+偏好设置 → **备份** 页面可将全部应用配置（翻译服务、快捷键、界面设置等）备份到任意 WebDAV 网盘（坚果云、Nextcloud、Alist 等）。
+
+1. 填写 WebDAV 地址（如 `https://dav.jianguoyun.com/dav/`）、用户名和应用密码
+2. 点击 **测试连接** 验证配置
+3. **备份**：把当前 `config.json` 上传为远端的一个 JSON 文件（默认名 `pot-config.json`，可自定义）
+4. **恢复备份**：从远端下载并覆盖本地配置，重启应用后完全生效
+
+开启 **自动备份** 后，常驻后台进程会在应用运行期间每小时最多自动上传一次，同一配置在多台设备间可手动「恢复备份」完成同步。
+
+> 备份内容不包含历史数据库等文件，仅覆盖应用设置；WebDAV 凭据保存在本地配置中，请确保设备安全。
+
 ## CI/CD
 
-`.github/workflows/package.yml` 会在 PR 上执行格式检查、ESLint、Clippy、前端构建和 `cargo check`；推送 master 或 tag 时分别构建 macOS、Windows、Linux 安装包并上传 Release。
+`.github/workflows/package.yml` 会在 PR 上执行格式检查、ESLint、Clippy、前端构建和 `cargo check`；推送 main 或 tag 时分别构建 macOS、Windows、Linux 安装包并上传 Release。
+
+-   支持 `workflow_dispatch` 手动触发
+-   同一分支的旧构建自动取消（concurrency）
+-   pnpm store 与 Rust 依赖缓存（Swatinem/rust-cache），显著缩短构建时间
+-   所有任务设有超时上限，避免挂起消耗额度
 
 ## License
 

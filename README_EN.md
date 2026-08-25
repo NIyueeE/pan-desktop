@@ -22,13 +22,14 @@ The `pot` brand name is intentionally unchanged for now.
     -   Custom model, API key and System/User/Assistant prompts
     -   Streaming output and custom request arguments
 -   Local OCR: system OCR and Tesseract
+-   **WebDAV backup & sync**: one-click backup/restore of the whole configuration with optional automatic backups (see below)
 -   Auto copy, always on top, window position/size memory, proxy, autostart, theme/font, i18n
 
 ### Removed
 
 -   All other built-in translation services (DeepL, Bing, Google, Ollama, etc.)
 -   Other cloud OCR services
--   TTS, collection/flashcards, history, backup
+-   TTS, collection/flashcards, history
 -   Plugin system, local HTTP server, clipboard monitor
 -   Standalone OCR window and the built-in updater
 
@@ -97,9 +98,27 @@ pnpm check
 
 Prompts support the `$text`, `$from`, `$to` and `$detect` variables.
 
+## WebDAV backup & sync
+
+Config → **Backup** lets you back up the entire application configuration (translation services, hotkeys, UI settings, …) to any WebDAV service (Jianguoyun, Nextcloud, Alist, etc.).
+
+1. Enter the WebDAV URL (e.g. `https://dav.jianguoyun.com/dav/`), username and app password
+2. Click **Test Connection** to verify
+3. **Backup** uploads your `config.json` as a single JSON document (default name `pot-config.json`, customizable)
+4. **Restore** downloads the remote backup and overwrites local settings; restart the app for everything to take effect
+
+With **Auto Backup** enabled, the resident background process uploads at most once per hour while the app is running; on other machines use **Restore** to sync the same configuration.
+
+> Backups contain application settings only. WebDAV credentials are stored in the local configuration — keep your device safe.
+
 ## CI/CD
 
-`.github/workflows/package.yml` runs formatting, ESLint, Clippy, the frontend build and `cargo check` on PRs; pushes to master or tags build macOS, Windows and Linux installers and publish them to a Release.
+`.github/workflows/package.yml` runs formatting, ESLint, Clippy, the frontend build and `cargo check` on PRs; pushes to main or tags build macOS, Windows and Linux installers and publish them to a Release.
+
+-   Manual runs via `workflow_dispatch`
+-   Superseded builds on the same branch are cancelled automatically (concurrency)
+-   pnpm store and Rust dependency caching (Swatinem/rust-cache) for much faster builds
+-   All jobs have timeout limits to avoid burning minutes on hangs
 
 ## License
 
