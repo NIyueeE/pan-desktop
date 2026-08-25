@@ -78,6 +78,9 @@ pnpm lint:fix
 
 # Full check
 pnpm check
+
+# WebDAV client tests
+pnpm test:webdav
 ```
 
 ## OpenAI compatible service configuration
@@ -105,11 +108,19 @@ Config → **Backup** lets you back up the entire application configuration (tra
 1. Enter the WebDAV URL (e.g. `https://dav.jianguoyun.com/dav/`), username and app password
 2. Click **Test Connection** to verify
 3. **Backup** uploads your `config.json` as a single JSON document (default name `pot-config.json`, customizable)
-4. **Restore** downloads the remote backup and overwrites local settings; restart the app for everything to take effect
+4. **Restore** downloads the remote backup and overwrites local settings (**full replace**: keys missing from the backup are removed; a confirmation is shown); restart the app for everything to take effect
 
 With **Auto Backup** enabled, the resident background process uploads at most once per hour while the app is running; on other machines use **Restore** to sync the same configuration.
 
 > Backups contain application settings only. WebDAV credentials are stored in the local configuration — keep your device safe.
+
+### WebDAV client tests
+
+`scripts/test-webdav.mjs` runs the real client code against a built-in mock WebDAV server with zero Node dependencies — covering the smoke cycle and edge cases (path traversal, bad credentials, malformed remote payloads, missing directories, 2 MB values, request timeouts):
+
+```bash
+pnpm test:webdav
+```
 
 ## CI/CD
 

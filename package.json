@@ -14,7 +14,9 @@
         "lint:fix": "eslint src --fix && cargo clippy --manifest-path src-tauri/Cargo.toml --fix --allow-dirty --allow-staged --all-targets -- -D warnings",
         "format": "prettier --check . && cargo fmt --manifest-path src-tauri/Cargo.toml --check",
         "format:fix": "prettier --write . && cargo fmt --manifest-path src-tauri/Cargo.toml --all",
-        "check": "pnpm format && pnpm lint && vite build && cargo check --manifest-path src-tauri/Cargo.toml"
+        "check": "pnpm format && pnpm lint && vite build && cargo check --manifest-path src-tauri/Cargo.toml",
+        "test:webdav": "node scripts/test-webdav.mjs",
+        "test": "pnpm test:webdav"
     },
     "dependencies": {
         "@nextui-org/react": "^2.4.8",

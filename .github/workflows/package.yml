@@ -57,6 +57,9 @@ jobs:
                   pnpm format
                   pnpm lint
 
+            - name: WebDAV client tests
+              run: pnpm test:webdav
+
             - name: Build frontend and check Rust
               run: |
                   pnpm build
