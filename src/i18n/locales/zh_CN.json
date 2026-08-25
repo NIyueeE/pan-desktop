@@ -194,7 +194,14 @@
                 "list": "备份列表",
                 "load_success": "载入备份成功",
                 "backup_success": "备份成功",
-                "empty": "您还没有备份"
+                "empty": "您还没有备份",
+                "filename": "备份文件名",
+                "test": "测试连接",
+                "test_success": "WebDAV 连接成功",
+                "auto_sync": "自动备份",
+                "auto_sync_desc": "开启后，应用运行期间每小时最多自动备份一次配置到 WebDAV。",
+                "last_synced": "上次同步：",
+                "need_url": "请先填写 WebDAV 地址"
             },
             "about": {
                 "label": "关于应用",

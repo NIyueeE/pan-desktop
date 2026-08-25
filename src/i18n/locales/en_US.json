@@ -194,7 +194,14 @@
                 "list": "Backup List",
                 "load_success": "Load Backup Success",
                 "backup_success": "Backup Success",
-                "empty": "You have not backed up yet"
+                "empty": "You have not backed up yet",
+                "filename": "Backup File Name",
+                "test": "Test Connection",
+                "test_success": "WebDAV connection successful",
+                "auto_sync": "Auto Backup",
+                "auto_sync_desc": "When enabled, the configuration is automatically backed up to WebDAV at most once per hour while the app is running.",
+                "last_synced": "Last synced: ",
+                "need_url": "Please fill in the WebDAV URL first"
             },
             "about": {
                 "label": "About",
