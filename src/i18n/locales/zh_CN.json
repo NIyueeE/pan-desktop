@@ -201,7 +201,8 @@
                 "auto_sync": "自动备份",
                 "auto_sync_desc": "开启后，应用运行期间每小时最多自动备份一次配置到 WebDAV。",
                 "last_synced": "上次同步：",
-                "need_url": "请先填写 WebDAV 地址"
+                "need_url": "请先填写 WebDAV 地址",
+                "restore_confirm": "恢复备份将覆盖当前的全部设置，确定继续吗？"
             },
             "about": {
                 "label": "关于应用",

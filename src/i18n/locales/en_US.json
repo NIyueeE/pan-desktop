@@ -201,7 +201,8 @@
                 "auto_sync": "Auto Backup",
                 "auto_sync_desc": "When enabled, the configuration is automatically backed up to WebDAV at most once per hour while the app is running.",
                 "last_synced": "Last synced: ",
-                "need_url": "Please fill in the WebDAV URL first"
+                "need_url": "Please fill in the WebDAV URL first",
+                "restore_confirm": "Restoring will overwrite ALL current settings with the remote backup. Continue?"
             },
             "about": {
                 "label": "About",

@@ -79,6 +79,10 @@ export default function Backup() {
         if (!ready()) {
             return;
         }
+        // Restoring overwrites every local setting — require explicit consent.
+        if (!window.confirm(t('config.backup.restore_confirm'))) {
+            return;
+        }
         showResult(
             (async () => {
                 const payload = await downloadBackup(webdavUrl, webdavUsername, webdavPassword, webdavFilename);
