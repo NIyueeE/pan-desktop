@@ -4,7 +4,12 @@ import { useGetState } from './useGetState';
 import { store } from '../utils/store';
 import { debounce } from '../utils';
 
-export const useConfig = (key, defaultValue, options = {}) => {
+// `undefined` must never reach the store or the UI: components render
+// `t(`prefix.${value}`)` directly, so an undefined value leaks
+// "prefix.undefined" into dropdown labels. Treat it exactly like null.
+const isUnset = (v) => v === null || v === undefined;
+
+export const useConfig = (key, defaultValue = null, options = {}) => {
     const [property, setPropertyState, getProperty] = useGetState(null);
     const { sync = true } = options;
 
@@ -35,16 +40,18 @@ export const useConfig = (key, defaultValue, options = {}) => {
     // 同步到State (Store -> State)
     const syncToState = useCallback(
         (v) => {
-            if (v !== null) {
+            if (!isUnset(v)) {
                 setPropertyState(v);
             } else {
-                store.get(key).then((v) => {
-                    if (v === null) {
+                store.get(key).then((stored) => {
+                    if (isUnset(stored)) {
                         setPropertyState(defaultValue);
-                        store.set(key, defaultValue);
-                        store.save();
+                        if (!isUnset(defaultValue)) {
+                            store.set(key, defaultValue);
+                            store.save();
+                        }
                     } else {
-                        setPropertyState(v);
+                        setPropertyState(stored);
                     }
                 });
             }
@@ -54,6 +61,11 @@ export const useConfig = (key, defaultValue, options = {}) => {
 
     const setProperty = useCallback(
         (v, forceSync = false) => {
+            if (isUnset(v)) {
+                // A component should never push undefined into the config;
+                // ignore it instead of nulling the stored value.
+                return;
+            }
             setPropertyState(v);
             const isSync = forceSync || sync;
             if (isSync) {

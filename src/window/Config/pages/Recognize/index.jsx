@@ -9,7 +9,7 @@ import { Button } from '@nextui-org/react';
 import { Card } from '@nextui-org/react';
 import React from 'react';
 
-import { languageList } from '../../../../utils/language';
+import { languageLabel, languageList } from '../../../../utils/language';
 import { useConfig } from '../../../../hooks';
 
 export default function Recognize() {
@@ -24,7 +24,7 @@ export default function Recognize() {
                     {recognizeLanguage !== null && (
                         <Dropdown>
                             <DropdownTrigger>
-                                <Button variant='bordered'>{t(`languages.${recognizeLanguage}`)}</Button>
+                                <Button variant='bordered'>{languageLabel(t, recognizeLanguage)}</Button>
                             </DropdownTrigger>
                             <DropdownMenu
                                 aria-label='recognize language'

@@ -108,4 +108,21 @@ describe('Service page', () => {
             expect(within(dialog).getAllByText('OpenAI').length).toBe(1);
         });
     });
+
+    it('config modal renders a fully populated form for a brand-new instance', async () => {
+        const user = userEvent.setup();
+        await bootConfig('/service');
+        await waitFor(() => {
+            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+        });
+        await user.click(screen.getByText('Add Builtin Service'));
+        const dialog = await screen.findByRole('dialog');
+        await user.click(within(dialog).getAllByText('OpenAI')[0]);
+
+        // every input must be populated (no uncontrolled/undefined fields)
+        await waitFor(() => {
+            expect(screen.getByLabelText('Request Path')).toHaveValue('https://api.openai.com/v1/chat/completions');
+            expect(screen.getByLabelText('Model')).toHaveValue('gpt-3.5-turbo');
+        });
+    });
 });

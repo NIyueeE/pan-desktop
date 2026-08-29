@@ -9,7 +9,7 @@ import { Button } from '@nextui-org/react';
 import { Card } from '@nextui-org/react';
 import React from 'react';
 
-import { languageList } from '../../../../utils/language';
+import { languageLabel, languageList } from '../../../../utils/language';
 import { useConfig } from '../../../../hooks/useConfig';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -41,7 +41,7 @@ export default function Translate() {
                         {sourceLanguage !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`languages.${sourceLanguage}`)}</Button>
+                                    <Button variant='bordered'>{languageLabel(t, sourceLanguage)}</Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='source language'
@@ -63,7 +63,7 @@ export default function Translate() {
                         {targetLanguage !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`languages.${targetLanguage}`)}</Button>
+                                    <Button variant='bordered'>{languageLabel(t, targetLanguage)}</Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='target language'
@@ -84,7 +84,7 @@ export default function Translate() {
                         {secondLanguage !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`languages.${secondLanguage}`)}</Button>
+                                    <Button variant='bordered'>{languageLabel(t, secondLanguage)}</Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='second language'
@@ -109,7 +109,9 @@ export default function Translate() {
                         {autoCopy !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`config.translate.${autoCopy}`)}</Button>
+                                    <Button variant='bordered'>
+                                        {t(`config.translate.${autoCopy}`, { defaultValue: autoCopy })}
+                                    </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='auto copy'
@@ -209,7 +211,9 @@ export default function Translate() {
                         {windowPosition !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`config.translate.${windowPosition}`)}</Button>
+                                    <Button variant='bordered'>
+                                        {t(`config.translate.${windowPosition}`, { defaultValue: windowPosition })}
+                                    </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='window position'

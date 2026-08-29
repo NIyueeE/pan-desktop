@@ -4,12 +4,15 @@ import { BiTransferAlt } from 'react-icons/bi';
 import React, { useEffect } from 'react';
 import { atom, useAtom, useAtomValue } from 'jotai';
 
-import { languageList } from '../../../../utils/language';
+import { languageLabel, languageList } from '../../../../utils/language';
 import { detectLanguageAtom } from '../SourceArea';
 import { useConfig } from '../../../../hooks';
 
-export const sourceLanguageAtom = atom();
-export const targetLanguageAtom = atom();
+// Atoms must start with the same defaults as their useConfig counterparts,
+// otherwise the language dropdowns render `languages.undefined` on first
+// paint (and whenever the config value has not loaded yet).
+export const sourceLanguageAtom = atom('auto');
+export const targetLanguageAtom = atom('zh_cn');
 
 export default function LanguageArea() {
     const [rememberLanguage] = useConfig('translate_remember_language', false);
@@ -32,7 +35,10 @@ export default function LanguageArea() {
     }, [translateSourceLanguage, translateTargetLanguage, setSourceLanguage, setTargetLanguage]);
 
     useEffect(() => {
-        if (rememberLanguage !== null && rememberLanguage) {
+        // Never persist while the selections are not loaded yet — writing
+        // `undefined` here used to null the config keys and leave the
+        // dropdowns stuck on "languages.undefined".
+        if (rememberLanguage && sourceLanguage && targetLanguage) {
             setTranslateSourceLanguage(sourceLanguage);
             setTranslateTargetLanguage(targetLanguage);
         }
@@ -51,7 +57,7 @@ export default function LanguageArea() {
                                 radius='sm'
                                 variant='light'
                             >
-                                {t(`languages.${sourceLanguage}`)}
+                                {languageLabel(t, sourceLanguage)}
                             </Button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -106,7 +112,7 @@ export default function LanguageArea() {
                                 radius='sm'
                                 variant='light'
                             >
-                                {t(`languages.${targetLanguage}`)}
+                                {languageLabel(t, targetLanguage)}
                             </Button>
                         </DropdownTrigger>
                         <DropdownMenu

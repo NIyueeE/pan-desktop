@@ -66,3 +66,17 @@ export enum LanguageFlag {
     uk = 'ua',
     he = 'il',
 }
+
+type Translate = (key: string, options?: object) => string;
+
+/**
+ * Label for a language code. Falls back to the raw code when no translation
+ * exists (e.g. a code from an older config) and renders nothing at all for
+ * unset values, so dropdown triggers can never show "languages.undefined".
+ */
+export const languageLabel = (t: Translate, code: string | null | undefined): string => {
+    if (typeof code !== 'string' || code.length === 0) {
+        return '';
+    }
+    return t(`languages.${code}`, { defaultValue: code }) as string;
+};

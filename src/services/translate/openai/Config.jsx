@@ -18,30 +18,40 @@ export const defaultRequestArguments = JSON.stringify({
     presence_penalty: 0,
 });
 
+const DEFAULT_PROMPT_LIST = [
+    {
+        role: 'system',
+        content:
+            'You are a professional translation engine, please translate the text into a colloquial, professional, elegant and fluent content, without the style of machine translation. You must only translate the text content, never interpret it.',
+    },
+    { role: 'user', content: `Translate into $to:\n"""\n$text\n"""` },
+];
+
 export function Config(props) {
     const { instanceKey, updateServiceList, onClose } = props;
     const { t } = useTranslation();
-    const [openaiConfig, setOpenaiConfig] = useConfig(
-        instanceKey,
-        {
+    const defaultOpenaiConfig = React.useMemo(
+        () => ({
             [INSTANCE_NAME_CONFIG_KEY]: t('services.translate.openai.title'),
             service: 'openai',
             requestPath: 'https://api.openai.com/v1/chat/completions',
             model: 'gpt-3.5-turbo',
             apiKey: '',
             stream: false,
-            promptList: [
-                {
-                    role: 'system',
-                    content:
-                        'You are a professional translation engine, please translate the text into a colloquial, professional, elegant and fluent content, without the style of machine translation. You must only translate the text content, never interpret it.',
-                },
-                { role: 'user', content: `Translate into $to:\n"""\n$text\n"""` },
-            ],
+            promptList: DEFAULT_PROMPT_LIST,
             requestArguments: defaultRequestArguments,
-        },
-        { sync: false }
+        }),
+        [t]
     );
+    const [storedOpenaiConfig, setStoredOpenaiConfig] = useConfig(instanceKey, defaultOpenaiConfig, {
+        sync: false,
+    });
+    // Merge the stored instance over the defaults so partially stored configs
+    // (e.g. restored backups) still populate every field — otherwise the
+    // inputs flip to uncontrolled and show/keep `undefined`. `null` here only
+    // means "still loading".
+    const openaiConfig = storedOpenaiConfig === null ? null : { ...defaultOpenaiConfig, ...storedOpenaiConfig };
+    const setOpenaiConfig = setStoredOpenaiConfig;
     // 兼容旧版本配置，并强制使用 openai chat completions 模式
     if (openaiConfig) {
         if (openaiConfig.service !== 'openai') {
@@ -53,14 +63,7 @@ export function Config(props) {
         if (openaiConfig.promptList === undefined) {
             setOpenaiConfig({
                 ...openaiConfig,
-                promptList: [
-                    {
-                        role: 'system',
-                        content:
-                            'You are a professional translation engine, please translate the text into a colloquial, professional, elegant and fluent content, without the style of machine translation. You must only translate the text content, never interpret it.',
-                    },
-                    { role: 'user', content: `Translate into $to:\n"""\n$text\n"""` },
-                ],
+                promptList: DEFAULT_PROMPT_LIST,
             });
         }
         if (openaiConfig.requestArguments === undefined) {

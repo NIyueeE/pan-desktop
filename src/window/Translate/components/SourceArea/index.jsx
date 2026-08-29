@@ -12,6 +12,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { atom, useAtom } from 'jotai';
 
 import { getServiceName } from '../../../../utils/service_instance';
+import { languageLabel } from '../../../../utils/language';
 import { useConfig, useSyncAtom } from '../../../../hooks';
 import * as recognizeServices from '../../../../services/recognize';
 import detect from '../../../../utils/lang_detect';
@@ -248,7 +249,7 @@ export default function SourceArea(props) {
                                 variant='dot'
                                 className='my-auto'
                             >
-                                {t(`languages.${detectLanguage}`)}
+                                {languageLabel(t, detectLanguage)}
                             </Chip>
                         )}
                     </div>

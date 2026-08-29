@@ -109,7 +109,7 @@ export default function General() {
                                         variant='bordered'
                                         startContent={<span className={`fi fi-${LanguageFlag[appLanguage]}`} />}
                                     >
-                                        {languageName[appLanguage]}
+                                        {languageName[appLanguage] ?? appLanguage}
                                     </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
@@ -244,7 +244,9 @@ export default function General() {
                         {appTheme !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`config.general.theme.${appTheme}`)}</Button>
+                                    <Button variant='bordered'>
+                                        {t(`config.general.theme.${appTheme}`, { defaultValue: appTheme })}
+                                    </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='app theme'
@@ -372,7 +374,9 @@ export default function General() {
                         {appFontSize !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`config.general.font_size.${appFontSize}`)}</Button>
+                                    <Button variant='bordered'>
+                                        {t(`config.general.font_size.${appFontSize}`, { defaultValue: appFontSize })}
+                                    </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='window position'
@@ -398,7 +402,9 @@ export default function General() {
                         {trayClickEvent !== null && (
                             <Dropdown>
                                 <DropdownTrigger>
-                                    <Button variant='bordered'>{t(`config.general.event.${trayClickEvent}`)}</Button>
+                                    <Button variant='bordered'>
+                                        {t(`config.general.event.${trayClickEvent}`, { defaultValue: trayClickEvent })}
+                                    </Button>
                                 </DropdownTrigger>
                                 <DropdownMenu
                                     aria-label='tray click event'
