@@ -13,6 +13,13 @@ import TargetArea from './components/TargetArea';
 import { osType } from '../../utils/env';
 import { useConfig } from '../../hooks';
 import { store } from '../../utils/store';
+import {
+    sanitizeServiceInstanceList,
+    BUILTIN_TRANSLATE_SERVICES,
+    BUILTIN_RECOGNIZE_SERVICES,
+    DEFAULT_TRANSLATE_SERVICE_LIST,
+    DEFAULT_RECOGNIZE_SERVICE_LIST,
+} from '../../utils/service_instance';
 import { info } from '@tauri-apps/plugin-log';
 const appWindow = getCurrentWebviewWindow();
 
@@ -71,6 +78,18 @@ export default function Translate() {
         'openai',
     ]);
     const [recognizeServiceInstanceList] = useConfig('recognize_service_list', ['system', 'tesseract']);
+    // Sanitise both lists so configs restored from other pot builds cannot
+    // crash this window on unknown services.
+    const safeTranslateList = sanitizeServiceInstanceList(
+        translateServiceInstanceList,
+        BUILTIN_TRANSLATE_SERVICES,
+        DEFAULT_TRANSLATE_SERVICE_LIST
+    );
+    const safeRecognizeList = sanitizeServiceInstanceList(
+        recognizeServiceInstanceList,
+        BUILTIN_RECOGNIZE_SERVICES,
+        DEFAULT_RECOGNIZE_SERVICE_LIST
+    );
     const [hideLanguage] = useConfig('hide_language', false);
     const [pined, setPined] = useState(false);
     const [serviceInstanceConfigMap, setServiceInstanceConfigMap] = useState(null);
@@ -86,7 +105,7 @@ export default function Translate() {
         if (!result.destination) {
             return;
         }
-        const items = reorder(translateServiceInstanceList, result.source.index, result.destination.index);
+        const items = reorder(safeTranslateList, result.source.index, result.destination.index);
         setTranslateServiceInstanceList(items);
     };
     // 是否自动关闭窗口
@@ -158,10 +177,10 @@ export default function Translate() {
 
     const loadServiceInstanceConfigMap = async () => {
         const config = {};
-        for (const serviceInstanceKey of translateServiceInstanceList) {
+        for (const serviceInstanceKey of safeTranslateList) {
             config[serviceInstanceKey] = (await store.get(serviceInstanceKey)) ?? {};
         }
-        for (const serviceInstanceKey of recognizeServiceInstanceList) {
+        for (const serviceInstanceKey of safeRecognizeList) {
             config[serviceInstanceKey] = (await store.get(serviceInstanceKey)) ?? {};
         }
         setServiceInstanceConfigMap({ ...config });
@@ -170,7 +189,7 @@ export default function Translate() {
         if (translateServiceInstanceList !== null && recognizeServiceInstanceList !== null) {
             loadServiceInstanceConfigMap();
         }
-    }, [translateServiceInstanceList, recognizeServiceInstanceList]); // eslint-disable-line react-hooks/exhaustive-deps -- config reload runs only when service lists change
+    }, [safeTranslateList, safeRecognizeList]); // eslint-disable-line react-hooks/exhaustive-deps -- config reload runs only when service lists change
 
     return (
         <div
@@ -238,9 +257,8 @@ export default function Translate() {
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
                                 >
-                                    {translateServiceInstanceList !== null &&
-                                        serviceInstanceConfigMap !== null &&
-                                        translateServiceInstanceList.map((serviceInstanceKey, index) => {
+                                    {serviceInstanceConfigMap !== null &&
+                                        safeTranslateList.map((serviceInstanceKey, index) => {
                                             const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
                                             const enable = config['enable'] ?? true;
 
@@ -259,9 +277,7 @@ export default function Translate() {
                                                                 {...provided.dragHandleProps}
                                                                 index={index}
                                                                 name={serviceInstanceKey}
-                                                                translateServiceInstanceList={
-                                                                    translateServiceInstanceList
-                                                                }
+                                                                translateServiceInstanceList={safeTranslateList}
                                                                 serviceInstanceConfigMap={serviceInstanceConfigMap}
                                                             />
                                                             <Spacer y={2} />

@@ -5,18 +5,19 @@ use log::{info, warn};
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
+fn stored_hotkey(name: &str) -> String {
+    get(name).map_or_else(String::new, |v| {
+        v.as_str()
+            .map_or_else(String::new, std::string::ToString::to_string)
+    })
+}
+
 fn register<F>(app_handle: &AppHandle, name: &str, handler: F, key: &str) -> Result<(), String>
 where
     F: Fn() + Send + Sync + 'static,
 {
     let hotkey = if key.is_empty() {
-        get(name).map_or_else(
-            || {
-                set(name, "");
-                String::new()
-            },
-            |v| v.as_str().unwrap().to_string(),
-        )
+        stored_hotkey(name)
     } else {
         key.to_string()
     };
@@ -101,6 +102,29 @@ pub fn register_shortcut(shortcut: &str) -> Result<(), String> {
 #[tauri::command]
 pub fn register_shortcut_by_frontend(name: &str, shortcut: &str) -> Result<(), String> {
     let app_handle = APP.get().unwrap();
+    let global_shortcut = app_handle.global_shortcut();
+
+    let old = stored_hotkey(name);
+    if shortcut.is_empty() {
+        // Clearing the binding: drop the registered shortcut and persist.
+        if !old.is_empty()
+            && let Err(e) = global_shortcut.unregister(old.as_str())
+        {
+            warn!("Failed to unregister global shortcut: {old} {e:?}");
+        }
+        set(name, "");
+        info!("Cleared global shortcut for {name}");
+        return Ok(());
+    }
+
+    // Already bound to exactly this key (e.g. registered at startup): nothing
+    // left to do, and re-registering would fail with AlreadyRegistered.
+    if old == shortcut && global_shortcut.is_registered(shortcut) {
+        return Ok(());
+    }
+
+    // Register the new binding first; if it fails the previous one stays
+    // intact so the hotkey is never silently lost.
     match name {
         "hotkey_selection_translate" => register(
             app_handle,
@@ -117,7 +141,15 @@ pub fn register_shortcut_by_frontend(name: &str, shortcut: &str) -> Result<(), S
         "hotkey_ocr_translate" => {
             register(app_handle, "hotkey_ocr_translate", ocr_translate, shortcut)?;
         }
-        _ => {}
+        _ => return Err(format!("Unknown shortcut name: {name}")),
     }
+
+    // Swap succeeded: release the previous binding for this action.
+    if !old.is_empty()
+        && let Err(e) = global_shortcut.unregister(old.as_str())
+    {
+        warn!("Failed to unregister old global shortcut: {old} {e:?}");
+    }
+    set(name, shortcut);
     Ok(())
 }

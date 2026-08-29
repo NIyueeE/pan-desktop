@@ -81,9 +81,12 @@ export default function SourceArea(props) {
             const serviceInstanceKey = recognizeServiceList[0];
             const serviceName = getServiceName(serviceInstanceKey);
             const instanceConfig = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
-            if (recognizeLanguage in recognizeServices[serviceName].Language) {
-                recognizeServices[serviceName]
-                    .recognize(base64, recognizeServices[serviceName].Language[recognizeLanguage], {
+            const recognizeService = recognizeServices[serviceName];
+            if (recognizeService === undefined) {
+                setSourceText(`Unknown recognize service: ${serviceName}`);
+            } else if (recognizeLanguage in recognizeService.Language) {
+                recognizeService
+                    .recognize(base64, recognizeService.Language[recognizeLanguage], {
                         config: instanceConfig,
                     })
                     .then(handleRecognizeResult, (e) => {

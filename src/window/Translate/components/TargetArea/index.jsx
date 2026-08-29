@@ -60,6 +60,16 @@ export default function TargetArea(props) {
     const textAreaRef = useRef();
     const theme = useTheme();
 
+    // Configs restored from other pot builds may reference removed services;
+    // degrade to an error card instead of crashing the window.
+    const service = builtinServices[getServiceName(currentTranslateServiceInstanceKey)];
+
+    useEffect(() => {
+        if (service === undefined) {
+            setError(`Unknown service: ${getServiceName(currentTranslateServiceInstanceKey)}`);
+        }
+    }, [service, currentTranslateServiceInstanceKey]);
+
     function getInstanceName(instanceKey, serviceNameSupplier) {
         const instanceConfig = serviceInstanceConfigMap[instanceKey] ?? {};
         return getDisplayInstanceName(instanceConfig[INSTANCE_NAME_CONFIG_KEY], serviceNameSupplier);
@@ -115,7 +125,11 @@ export default function TargetArea(props) {
         translateID[index] = id;
 
         const translateServiceName = getServiceName(currentTranslateServiceInstanceKey);
-        const LanguageEnum = builtinServices[translateServiceName].Language;
+        if (service === undefined) {
+            setError(`Unknown service: ${translateServiceName}`);
+            return;
+        }
+        const LanguageEnum = service.Language;
         if (sourceLanguage in LanguageEnum && targetLanguage in LanguageEnum) {
             let newTargetLanguage = targetLanguage;
             if (sourceLanguage === 'auto' && targetLanguage === detectLanguage) {
@@ -221,10 +235,7 @@ export default function TargetArea(props) {
                                 className='bg-transparent'
                                 startContent={
                                     <img
-                                        src={
-                                            builtinServices[getServiceName(currentTranslateServiceInstanceKey)].info
-                                                .icon
-                                        }
+                                        src={service?.info?.icon ?? ''}
                                         className='h-[20px] my-auto'
                                     />
                                 }
@@ -251,7 +262,7 @@ export default function TargetArea(props) {
                                         key={instanceKey}
                                         startContent={
                                             <img
-                                                src={builtinServices[getServiceName(instanceKey)].info.icon}
+                                                src={builtinServices[getServiceName(instanceKey)]?.info?.icon ?? ''}
                                                 className='h-[20px] my-auto'
                                             />
                                         }
@@ -351,7 +362,11 @@ export default function TargetArea(props) {
                                             newSourceLanguage = 'auto';
                                         }
                                         const translateServiceName = getServiceName(currentTranslateServiceInstanceKey);
-                                        const LanguageEnum = builtinServices[translateServiceName].Language;
+                                        if (service === undefined) {
+                                            setError(`Unknown service: ${translateServiceName}`);
+                                            return;
+                                        }
+                                        const LanguageEnum = service.Language;
                                         if (newSourceLanguage in LanguageEnum && newTargetLanguage in LanguageEnum) {
                                             setIsLoading(true);
                                             setHide(true);

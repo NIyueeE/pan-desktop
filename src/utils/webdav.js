@@ -1,5 +1,11 @@
 import { fetch } from '@tauri-apps/plugin-http';
 import { appVersion } from './env';
+import {
+    BUILTIN_RECOGNIZE_SERVICES,
+    BUILTIN_TRANSLATE_SERVICES,
+    DEFAULT_RECOGNIZE_SERVICE_LIST,
+    DEFAULT_TRANSLATE_SERVICE_LIST,
+} from './service_instance';
 
 /**
  * Minimal WebDAV client for config backup/sync.
@@ -10,6 +16,42 @@ import { appVersion } from './env';
 
 export const DEFAULT_BACKUP_FILENAME = 'pot-config.json';
 export const DEFAULT_TIMEOUT_MS = 30_000;
+
+// Service lists from a different pot build may reference removed services;
+// they must never reach the render tree (it would crash the config window).
+const SERVICE_LIST_KEYS = {
+    translate_service_list: {
+        builtin: BUILTIN_TRANSLATE_SERVICES,
+        fallback: DEFAULT_TRANSLATE_SERVICE_LIST,
+    },
+    recognize_service_list: {
+        builtin: BUILTIN_RECOGNIZE_SERVICES,
+        fallback: DEFAULT_RECOGNIZE_SERVICE_LIST,
+    },
+};
+
+/**
+ * Drop service-list entries whose service is no longer built-in and replace
+ * corrupted (non-array) values with the defaults.
+ * @param {Object} data raw backup payload data
+ * @returns {Object} sanitized copy
+ */
+export function sanitizeRestoredData(data) {
+    const result = { ...data };
+    for (const [key, { builtin, fallback }] of Object.entries(SERVICE_LIST_KEYS)) {
+        const value = result[key];
+        if (value === undefined) {
+            continue;
+        }
+        if (!Array.isArray(value)) {
+            result[key] = [...fallback];
+            continue;
+        }
+        const cleaned = value.filter((entry) => typeof entry === 'string' && builtin.includes(entry.split('@')[0]));
+        result[key] = cleaned.length > 0 ? cleaned : [...fallback];
+    }
+    return result;
+}
 
 const normalizeBase = (url) =>
     String(url ?? '')
@@ -30,14 +72,28 @@ const timeoutSignal = (timeoutMs) => {
     }
 };
 
+// btoa() throws on non-Latin1 characters; encode UTF-8 explicitly so
+// usernames/passwords with e.g. Chinese characters work.
+const basicAuthToken = (username, password) => {
+    const raw = `${username ?? ''}:${password ?? ''}`;
+    if (typeof TextEncoder !== 'undefined') {
+        const bytes = new TextEncoder().encode(raw);
+        let binary = '';
+        for (const byte of bytes) {
+            binary += String.fromCharCode(byte);
+        }
+        return btoa(binary);
+    }
+    return btoa(unescape(encodeURIComponent(raw)));
+};
+
 const requestInit = (username, password, extra = {}, options = {}) => {
     const init = {
         ...extra,
         signal: timeoutSignal(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     };
     if ((username ?? '') !== '' || (password ?? '') !== '') {
-        const token = btoa(`${username}:${password}`);
-        init.headers = { ...init.headers, Authorization: `Basic ${token}` };
+        init.headers = { ...init.headers, Authorization: `Basic ${basicAuthToken(username, password)}` };
     }
     return init;
 };
@@ -119,6 +175,14 @@ async function putDocument(fileUrl, body, username, password, options) {
  */
 export async function uploadBackup(store, url, username, password, filename, options = {}) {
     assertHttpUrl(url);
+    // Pick up changes other windows persisted since this store was loaded.
+    if (typeof store.reload === 'function') {
+        try {
+            await store.reload();
+        } catch {
+            // best effort: keep backing up the in-memory state
+        }
+    }
     // entries() resolves to Array<[key, value]>
     const data = Object.fromEntries(await store.entries());
     const payload = JSON.stringify({
@@ -182,13 +246,14 @@ export async function downloadBackup(url, username, password, filename, options 
  * the error propagates.
  */
 export async function applyBackup(store, payload) {
-    const entries = Object.entries(payload.data);
+    const data = sanitizeRestoredData(payload.data);
+    const entries = Object.entries(data);
     try {
         for (const [key, value] of entries) {
             await store.set(key, value);
         }
         for (const key of await store.keys()) {
-            if (!(key in payload.data)) {
+            if (!(key in data)) {
                 await store.delete(key);
             }
         }

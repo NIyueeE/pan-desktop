@@ -7,7 +7,10 @@
             "write_clipboard": "寫入剪貼簿",
             "plugin": "外掛程式",
             "coming": "即將推出…",
-            "clear": "清除"
+            "clear": "清除",
+            "error_boundary_title": "頁面出錯了",
+            "error_boundary_desc": "渲染此頁面時發生錯誤。可以點擊重試；若仍然出現，請重啟應用。",
+            "error_boundary_retry": "重試"
         },
         "languages": {
             "auto": "自動偵測",
@@ -153,7 +156,8 @@
                 "ocr_translate": "截圖翻譯",
                 "is_register": "該快速鍵已被註冊",
                 "success": "快速鍵註冊成功",
-                "set_hotkey": "按下設定快速鍵"
+                "set_hotkey": "按下設定快速鍵",
+                "cleared": "快捷鍵已清除"
             },
             "service": {
                 "label": "服務設定",

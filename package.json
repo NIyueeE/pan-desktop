@@ -1,7 +1,7 @@
 {
     "name": "pot",
     "private": true,
-    "version": "4.1.2",
+    "version": "4.1.3",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -14,9 +14,11 @@
         "lint:fix": "eslint src --fix && cargo clippy --manifest-path src-tauri/Cargo.toml --fix --allow-dirty --allow-staged --all-targets -- -D warnings",
         "format": "prettier --check . && cargo fmt --manifest-path src-tauri/Cargo.toml --check",
         "format:fix": "prettier --write . && cargo fmt --manifest-path src-tauri/Cargo.toml --all",
-        "check": "pnpm format && pnpm lint && vite build && cargo check --manifest-path src-tauri/Cargo.toml",
+        "check": "pnpm format && pnpm lint && pnpm test && vite build && cargo check --manifest-path src-tauri/Cargo.toml && cargo test --manifest-path src-tauri/Cargo.toml",
         "test:webdav": "node scripts/test-webdav.mjs",
-        "test": "pnpm test:webdav"
+        "test:ui": "vitest run",
+        "test:rs": "cargo test --manifest-path src-tauri/Cargo.toml",
+        "test": "pnpm test:webdav && pnpm test:ui && pnpm test:rs"
     },
     "dependencies": {
         "@nextui-org/react": "^2.4.8",
@@ -54,16 +56,22 @@
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@tauri-apps/cli": "^2.11.4",
+        "@testing-library/dom": "^10.4.1",
+        "@testing-library/jest-dom": "^7.0.1",
+        "@testing-library/react": "^16.3.3",
+        "@testing-library/user-event": "^14.6.6",
         "@vitejs/plugin-react": "^4.3.3",
         "autoprefixer": "^10.4.20",
         "eslint": "^10.8.1",
         "eslint-plugin-react-hooks": "^7.1.1",
         "globals": "^17.11.0",
+        "jsdom": "^30.0.1",
         "postcss": "^8.4.47",
         "prettier": "3.3.2",
         "tailwindcss": "^3.4.14",
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.67.0",
-        "vite": "^5.4.10"
+        "vite": "^5.4.10",
+        "vitest": "^2.1.9"
     }
 }

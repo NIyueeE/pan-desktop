@@ -20,6 +20,18 @@ export const useConfig = (key, defaultValue, options = {}) => {
         []
     );
 
+    // 立即写入（无防抖）。用于保存关键配置（如快捷键），避免写入前窗口
+    // 关闭或后续读取到过期值。
+    const writeThrough = useCallback(
+        (v) => {
+            store.set(key, v);
+            store.save();
+            const eventKey = key.replaceAll('.', '_').replaceAll('@', ':');
+            emit(`${eventKey}_changed`, v);
+        },
+        [key]
+    );
+
     // 同步到State (Store -> State)
     const syncToState = useCallback(
         (v) => {
@@ -45,10 +57,17 @@ export const useConfig = (key, defaultValue, options = {}) => {
             setPropertyState(v);
             const isSync = forceSync || sync;
             if (isSync) {
-                syncToStore(v);
+                if (forceSync) {
+                    writeThrough(v);
+                    // Cancel any pending debounced write so it cannot later
+                    // overwrite the fresh value with a stale one.
+                    syncToStore.cancel?.();
+                } else {
+                    syncToStore(v);
+                }
             }
         },
-        [setPropertyState, sync, syncToStore]
+        [setPropertyState, sync, syncToStore, writeThrough]
     );
 
     // 初始化

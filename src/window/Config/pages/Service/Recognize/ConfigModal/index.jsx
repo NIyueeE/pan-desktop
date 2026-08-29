@@ -10,8 +10,9 @@ export default function ConfigModal(props) {
     const { serviceInstanceKey, isOpen, onOpenChange, updateServiceInstanceList } = props;
 
     const serviceName = getServiceName(serviceInstanceKey);
+    const service = builtinServices[serviceName];
     const { t } = useTranslation();
-    const ConfigComponent = builtinServices[serviceName].Config;
+    const ConfigComponent = service?.Config;
 
     return (
         <Modal
@@ -23,25 +24,27 @@ export default function ConfigModal(props) {
                 {(onClose) => (
                     <>
                         <ModalHeader>
-                            <img
-                                src={
-                                    serviceName === 'system'
-                                        ? `logo/${osType}.svg`
-                                        : builtinServices[serviceName].info.icon
-                                }
-                                className='h-[24px] w-[24px] my-auto'
-                                draggable={false}
-                            />
+                            {service !== undefined && (
+                                <img
+                                    src={serviceName === 'system' ? `logo/${osType}.svg` : service.info.icon}
+                                    className='h-[24px] w-[24px] my-auto'
+                                    draggable={false}
+                                />
+                            )}
                             <Spacer x={2} />
                             {t(`services.recognize.${serviceName}.title`)}
                         </ModalHeader>
                         <ModalBody>
-                            <ConfigComponent
-                                name={serviceName}
-                                instanceKey={serviceInstanceKey}
-                                updateServiceList={updateServiceInstanceList}
-                                onClose={onClose}
-                            />
+                            {service !== undefined ? (
+                                <ConfigComponent
+                                    name={serviceName}
+                                    instanceKey={serviceInstanceKey}
+                                    updateServiceList={updateServiceInstanceList}
+                                    onClose={onClose}
+                                />
+                            ) : (
+                                <></>
+                            )}
                         </ModalBody>
                         <ModalFooter>
                             <Button

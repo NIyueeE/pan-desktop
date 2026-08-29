@@ -5,6 +5,7 @@ import { Card, Divider } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 
 import WindowControl from '../../components/WindowControl';
+import ErrorBoundary from '../../components/ErrorBoundary';
 import SideBar from './components/SideBar';
 import { osType } from '../../utils/env';
 import { useConfig } from '../../hooks';
@@ -74,7 +75,7 @@ export default function Config() {
                         osType === 'Linux' ? 'h-[calc(100vh-38px)]' : 'h-[calc(100vh-36px)]'
                     }`}
                 >
-                    {page}
+                    <ErrorBoundary resetKey={location.pathname}>{page}</ErrorBoundary>
                 </div>
             </div>
         </>

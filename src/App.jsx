@@ -6,6 +6,7 @@ import React, { useEffect } from 'react';
 import { useTheme } from 'next-themes';
 
 import { invoke } from '@tauri-apps/api/core';
+import ErrorBoundary from './components/ErrorBoundary';
 import Screenshot from './window/Screenshot';
 import Translate from './window/Translate';
 import { store } from './utils/store';
@@ -99,5 +100,9 @@ export default function App() {
         }
     }, [appFont, appFallbackFont, appFontSize]);
 
-    return <BrowserRouter>{windowMap[appWindow.label]}</BrowserRouter>;
+    return (
+        <BrowserRouter>
+            <ErrorBoundary resetKey={appWindow.label}>{windowMap[appWindow.label]}</ErrorBoundary>
+        </BrowserRouter>
+    );
 }

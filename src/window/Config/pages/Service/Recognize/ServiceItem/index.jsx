@@ -16,8 +16,9 @@ export default function ServiceItem(props) {
     const [serviceInstanceConfig] = useConfig(serviceInstanceKey, {});
 
     const serviceName = getServiceName(serviceInstanceKey);
+    const service = builtinServices[serviceName];
 
-    return serviceInstanceConfig !== null ? (
+    return serviceInstanceConfig !== null && service !== undefined ? (
         <div className='bg-content2 rounded-md px-[10px] py-[20px] flex justify-between'>
             <div className='flex'>
                 <div
@@ -29,7 +30,7 @@ export default function ServiceItem(props) {
 
                 <Spacer x={2} />
                 <img
-                    src={serviceName === 'system' ? `logo/${osType}.svg` : builtinServices[serviceName].info.icon}
+                    src={serviceName === 'system' ? `logo/${osType}.svg` : service.info.icon}
                     className='h-[24px] w-[24px] my-auto'
                     draggable={false}
                 />

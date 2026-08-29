@@ -1,21 +1,62 @@
 use crate::APP;
 use crate::StringWrapper;
-use crate::config::StoreWrapper;
-use crate::config::get;
+use crate::config::{StoreWrapper, get};
 use crate::error::Error;
-use log::{error, info};
+use log::{error, info, warn};
 use tauri::Manager;
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 #[tauri::command]
 pub fn get_text(state: tauri::State<StringWrapper>) -> String {
     return state.0.lock().unwrap().to_string();
 }
 
+// Keys that require re-applying global state (hotkeys / tray) when they
+// change on disk. `reload_store` is triggered by the config watcher on every
+// save, so the re-apply must stay cheap unless one of these really changed.
+const HOTKEY_KEYS: [&str; 3] = [
+    "hotkey_selection_translate",
+    "hotkey_input_translate",
+    "hotkey_ocr_translate",
+];
+const TRAY_KEYS: [&str; 2] = ["app_language", "translate_auto_copy"];
+
+fn snapshot_keys(keys: &[&str]) -> Vec<Option<serde_json::Value>> {
+    keys.iter().map(|key| crate::config::get(key)).collect()
+}
+
 #[tauri::command]
 pub fn reload_store() {
+    let hotkeys_before = snapshot_keys(&HOTKEY_KEYS);
+    let tray_before = snapshot_keys(&TRAY_KEYS);
     let state = APP.get().unwrap().state::<StoreWrapper>();
     let store = state.0.lock().unwrap();
-    store.reload().unwrap();
+    if let Err(e) = store.reload() {
+        error!("Failed to reload config store: {e:?}");
+        return;
+    }
+    drop(store);
+    // The config may have been replaced externally (e.g. WebDAV restore);
+    // re-run the builtin-service sanitising so removed services cannot break
+    // the UI.
+    crate::config::check_service_available();
+    let hotkeys_changed = hotkeys_before != snapshot_keys(&HOTKEY_KEYS);
+    let tray_changed = tray_before != snapshot_keys(&TRAY_KEYS);
+    if !hotkeys_changed && !tray_changed {
+        return;
+    }
+    // Make restored settings effective without a restart: rebuild the tray
+    // menu and re-register the global shortcuts from the new config.
+    let app_handle = APP.get().unwrap();
+    if hotkeys_changed {
+        let _ = app_handle.global_shortcut().unregister_all();
+        if let Err(e) = crate::hotkey::register_shortcut("all") {
+            warn!("Failed to re-register global shortcuts after config reload: {e}");
+        }
+    }
+    if tray_changed {
+        crate::tray::update_tray(app_handle.clone(), String::new(), String::new());
+    }
 }
 
 #[tauri::command]

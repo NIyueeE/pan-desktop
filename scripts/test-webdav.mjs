@@ -26,6 +26,7 @@ class MockDav {
         this.files = new Map(); // url -> string body
         this.dirs = new Set(['/dav']); // existing collections
         this.requireAuth = true;
+        this.validAuths = new Set([AUTH_OK]); // accepted Authorization headers
         this.enforceDirs = false; // PUT returns 409 until parent MKCOL'd
         this.putStatus = null; // force status override
         this.getBody = null; // force body override
@@ -53,7 +54,7 @@ class MockDav {
             else send();
         };
 
-        if (this.requireAuth && req.headers.authorization !== AUTH_OK) return respond(401);
+        if (this.requireAuth && !this.validAuths.has(req.headers.authorization ?? '')) return respond(401);
 
         if (req.method === 'PROPFIND') return respond(207, '<multistatus/>');
 
@@ -103,8 +104,16 @@ async function loadModule() {
     const src = fs
         .readFileSync(path.resolve('src/utils/webdav.js'), 'utf8')
         .replace("import { fetch } from '@tauri-apps/plugin-http';", 'const fetch = globalThis.__fetch;')
-        .replace("import { appVersion } from './env';", "const appVersion = 'test-0.0.0';");
+        .replace("import { appVersion } from './env';", "const appVersion = 'test-0.0.0';")
+        .replace(
+            /import \{[^}]*\} from '\.\/service_instance';/s,
+            `const BUILTIN_TRANSLATE_SERVICES = ['openai'];
+const BUILTIN_RECOGNIZE_SERVICES = ['system', 'tesseract'];
+const DEFAULT_TRANSLATE_SERVICE_LIST = ['openai'];
+const DEFAULT_RECOGNIZE_SERVICE_LIST = ['system', 'tesseract'];`
+        );
     assert.ok(!/from '@tauri-apps/.test(src), 'plugin-http import stripped');
+    assert.ok(!/from '\.\/service_instance'/.test(src), 'service_instance import stripped');
     globalThis.__fetch = globalThis.fetch;
     return import(`data:text/javascript;base64,${Buffer.from(src).toString('base64')}`);
 }
@@ -322,6 +331,53 @@ async function main() {
         );
         passed++;
         console.log('apply failure rolls back in-memory state and rethrows OK');
+
+        // =================================================================
+        section('Restore sanitising: unknown services cannot crash the UI');
+        // =================================================================
+        const stalePayload = {
+            type: 'config-backup',
+            data: {
+                translate_service_list: ['openai@keep', 'deepl@old', 'bing@older'],
+                recognize_service_list: ['system', 'baidu_ocr@removed'],
+            },
+        };
+        const sanitized = webdav.sanitizeRestoredData(stalePayload.data);
+        assert.deepEqual(sanitized.translate_service_list, ['openai@keep'], 'unknown translate services dropped');
+        assert.deepEqual(sanitized.recognize_service_list, ['system'], 'unknown recognize services dropped');
+
+        const corrupted = webdav.sanitizeRestoredData({
+            translate_service_list: 'not-an-array',
+            recognize_service_list: { oops: true },
+        });
+        assert.deepEqual(corrupted.translate_service_list, ['openai'], 'non-array list → default');
+        assert.deepEqual(corrupted.recognize_service_list, ['system', 'tesseract'], 'non-array list → default');
+
+        const untouched = webdav.sanitizeRestoredData({ unrelated: 1 });
+        assert.deepEqual(untouched, { unrelated: 1 }, 'keys without service lists untouched');
+
+        // applyBackup runs the sanitiser too
+        dav.files.set('/dav/stale.json', JSON.stringify({ type: 'config-backup', data: stalePayload.data }));
+        const staleTarget = fakeStore({});
+        await webdav.applyBackup(staleTarget, await webdav.downloadBackup(base, '', '', 'stale.json'));
+        assert.deepEqual(staleTarget.kv.get('translate_service_list'), ['openai@keep']);
+        assert.deepEqual(staleTarget.kv.get('recognize_service_list'), ['system']);
+        passed++;
+        console.log('stale / corrupted service lists sanitised on restore OK');
+
+        // =================================================================
+        section('Basic auth with non-Latin1 credentials');
+        // =================================================================
+        dav.requireAuth = true;
+        // user:pässword (non-ASCII) must produce a UTF-8 Basic header
+        const expectedToken = `Basic ${Buffer.from('user:pässword', 'utf8').toString('base64')}`;
+        dav.validAuths.add(expectedToken);
+        dav.requests.length = 0;
+        await webdav.testConnection(base, 'user', 'pässword');
+        assert.equal(dav.requests[0].auth, expectedToken, 'Authorization uses UTF-8 encoding');
+        dav.validAuths.delete(expectedToken);
+        passed++;
+        console.log('non-ASCII password → UTF-8 Basic auth OK');
 
         // =================================================================
         section('Timeout');

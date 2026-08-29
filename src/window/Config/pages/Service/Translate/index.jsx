@@ -2,11 +2,16 @@ import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { Card, Spacer, Button, useDisclosure } from '@nextui-org/react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useToastStyle } from '../../../../../hooks';
 import { osType } from '../../../../../utils/env';
 import { useConfig, deleteKey } from '../../../../../hooks';
+import {
+    sanitizeServiceInstanceList,
+    BUILTIN_TRANSLATE_SERVICES,
+    DEFAULT_TRANSLATE_SERVICE_LIST,
+} from '../../../../../utils/service_instance';
 import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
 import ConfigModal from './ConfigModal';
@@ -16,9 +21,24 @@ export default function Translate() {
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
     const [currentConfigKey, setCurrentConfigKey] = useState('openai');
     // now it's service instance list
-    const [translateServiceInstanceList, setTranslateServiceInstanceList] = useConfig('translate_service_list', [
-        'openai',
-    ]);
+    const [storedServiceList, setStoredServiceList] = useConfig('translate_service_list', ['openai']);
+    // Configs restored from other pot builds may reference services that no
+    // longer exist; never let them reach the render tree.
+    const translateServiceInstanceList = sanitizeServiceInstanceList(
+        storedServiceList,
+        BUILTIN_TRANSLATE_SERVICES,
+        DEFAULT_TRANSLATE_SERVICE_LIST
+    );
+
+    // Persist the cleaned list when it differs from what is stored.
+    useEffect(() => {
+        if (
+            Array.isArray(storedServiceList) &&
+            storedServiceList.join('\u0000') !== translateServiceInstanceList.join('\u0000')
+        ) {
+            setStoredServiceList(translateServiceInstanceList);
+        }
+    }, [storedServiceList, translateServiceInstanceList, setStoredServiceList]);
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
@@ -34,7 +54,7 @@ export default function Translate() {
             return;
         }
         const items = reorder(translateServiceInstanceList, result.source.index, result.destination.index);
-        setTranslateServiceInstanceList(items);
+        setStoredServiceList(items);
     };
 
     const deleteServiceInstance = (instanceKey) => {
@@ -42,7 +62,7 @@ export default function Translate() {
             toast.error(t('config.service.least'), { style: toastStyle });
             return;
         } else {
-            setTranslateServiceInstanceList(translateServiceInstanceList.filter((x) => x !== instanceKey));
+            setStoredServiceList(translateServiceInstanceList.filter((x) => x !== instanceKey));
             deleteKey(instanceKey);
         }
     };
@@ -51,7 +71,7 @@ export default function Translate() {
             return;
         } else {
             const newList = [...translateServiceInstanceList, instanceKey];
-            setTranslateServiceInstanceList(newList);
+            setStoredServiceList(newList);
         }
     };
 

@@ -81,6 +81,15 @@ pnpm check
 
 # WebDAV 客户端测试
 pnpm test:webdav
+
+# 前端组件测试（vitest + jsdom，Tauri API 全 mock）
+pnpm test:ui
+
+# Rust 单元测试
+pnpm test:rs
+
+# 一次性运行全部测试
+pnpm test
 ```
 
 ## OpenAI 兼容服务配置
@@ -121,6 +130,10 @@ Prompt 中可使用 `$text`、`$from`、`$to`、`$detect` 变量。
 ```bash
 pnpm test:webdav
 ```
+
+### 前端组件测试（反馈测试流程）
+
+`pnpm test:ui` 使用 Vitest + jsdom 运行真实 React 组件：`src/test/tauri-state.js` + `src/test/setup.js` 把所有 `@tauri-apps/*` 模块 mock 成内存版 store / 事件总线 / invoke 命令表，配置窗口（服务设置、热键设置等页面）可以在无 Tauri 环境下渲染和交互，用于回归验证 Windows 上反馈过的崩溃场景（例如：恢复旧版本备份后服务列表包含已移除的服务）。新增页面或修复 bug 时请同步补充用例。
 
 ## CI/CD
 

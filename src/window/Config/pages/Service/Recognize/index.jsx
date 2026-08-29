@@ -2,11 +2,16 @@ import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { Card, Spacer, Button, useDisclosure } from '@nextui-org/react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { useToastStyle } from '../../../../../hooks';
 import { osType } from '../../../../../utils/env';
 import { useConfig, deleteKey } from '../../../../../hooks';
+import {
+    sanitizeServiceInstanceList,
+    BUILTIN_RECOGNIZE_SERVICES,
+    DEFAULT_RECOGNIZE_SERVICE_LIST,
+} from '../../../../../utils/service_instance';
 import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
 import ConfigModal from './ConfigModal';
@@ -16,10 +21,24 @@ export default function Recognize() {
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
     const [currentConfigKey, setCurrentConfigKey] = useState('system');
     // now it's service instance list
-    const [recognizeServiceInstanceList, setRecognizeServiceInstanceList] = useConfig('recognize_service_list', [
-        'system',
-        'tesseract',
-    ]);
+    const [storedServiceList, setStoredServiceList] = useConfig('recognize_service_list', ['system', 'tesseract']);
+    // Configs restored from other pot builds may reference services that no
+    // longer exist; never let them reach the render tree.
+    const recognizeServiceInstanceList = sanitizeServiceInstanceList(
+        storedServiceList,
+        BUILTIN_RECOGNIZE_SERVICES,
+        DEFAULT_RECOGNIZE_SERVICE_LIST
+    );
+
+    // Persist the cleaned list when it differs from what is stored.
+    useEffect(() => {
+        if (
+            Array.isArray(storedServiceList) &&
+            storedServiceList.join('\u0000') !== recognizeServiceInstanceList.join('\u0000')
+        ) {
+            setStoredServiceList(recognizeServiceInstanceList);
+        }
+    }, [storedServiceList, recognizeServiceInstanceList, setStoredServiceList]);
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
@@ -35,7 +54,7 @@ export default function Recognize() {
             return;
         }
         const items = reorder(recognizeServiceInstanceList, result.source.index, result.destination.index);
-        setRecognizeServiceInstanceList(items);
+        setStoredServiceList(items);
     };
 
     const deleteServiceInstance = (instanceKey) => {
@@ -43,7 +62,7 @@ export default function Recognize() {
             toast.error(t('config.service.least'), { style: toastStyle });
             return;
         } else {
-            setRecognizeServiceInstanceList(recognizeServiceInstanceList.filter((x) => x !== instanceKey));
+            setStoredServiceList(recognizeServiceInstanceList.filter((x) => x !== instanceKey));
             deleteKey(instanceKey);
         }
     };
@@ -52,7 +71,7 @@ export default function Recognize() {
             return;
         } else {
             const newList = [...recognizeServiceInstanceList, instanceKey];
-            setRecognizeServiceInstanceList(newList);
+            setStoredServiceList(newList);
         }
     };
 

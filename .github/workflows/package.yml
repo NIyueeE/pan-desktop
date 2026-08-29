@@ -60,10 +60,14 @@ jobs:
             - name: WebDAV client tests
               run: pnpm test:webdav
 
+            - name: Frontend unit tests
+              run: pnpm test:ui
+
             - name: Build frontend and check Rust
               run: |
                   pnpm build
                   cargo check --manifest-path src-tauri/Cargo.toml
+                  cargo test --manifest-path src-tauri/Cargo.toml
 
     change-version:
         if: github.event_name == 'push'
