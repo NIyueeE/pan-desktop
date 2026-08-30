@@ -53,6 +53,8 @@ vi.mock('@tauri-apps/api/webviewWindow', async () => {
     const makeWindow = (label) => ({
         label,
         show: () => Promise.resolve(),
+        isVisible: () => Promise.resolve(true),
+        isFocused: () => Promise.resolve(true),
         hide: () => Promise.resolve(),
         close: () => Promise.resolve(),
         setFocus: () => Promise.resolve(),

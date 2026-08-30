@@ -118,6 +118,18 @@ fn main() {
             lang_detect,
             font_list
         ])
+        .on_window_event(|window, event| {
+            // Native-level focus tracing for the translate window: tao emits
+            // Focused on WM_NCACTIVATE/WM_SETFOCUS/WM_KILLFOCUS, so these lines
+            // show real Win32 activation changes and — compared with the
+            // webview-side `Focus`/`Blur ignored` logs — whether a focus churn
+            // originates natively or inside the webview.
+            if window.label() == "translate"
+                && let tauri::WindowEvent::Focused(focused) = event
+            {
+                info!("[native] translate window focused: {focused}");
+            }
+        })
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 

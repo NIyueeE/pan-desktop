@@ -146,6 +146,8 @@ export const tauriMocks = {
         const makeWindow = (label) => ({
             label,
             show: vi.fn(() => Promise.resolve()),
+            isVisible: vi.fn(() => Promise.resolve(true)),
+            isFocused: vi.fn(() => Promise.resolve(true)),
             hide: vi.fn(() => Promise.resolve()),
             close: vi.fn(() => Promise.resolve()),
             setFocus: vi.fn(() => Promise.resolve()),

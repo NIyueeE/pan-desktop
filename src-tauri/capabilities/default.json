@@ -21,6 +21,8 @@
         "core:window:allow-set-focus",
         "core:window:allow-set-skip-taskbar",
         "core:window:allow-start-dragging",
+        "core:window:allow-is-focused",
+        "core:window:allow-is-visible",
         "autostart:default",
         "clipboard-manager:allow-write-text",
         "fs:allow-watch",

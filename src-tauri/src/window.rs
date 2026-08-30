@@ -110,8 +110,12 @@ fn build_window(label: &str, title: &str) -> (WebviewWindow, bool) {
                     .position(position.x.into(), position.y.into())
                     .additional_browser_args(BROWSER_ARGS)
                     .use_https_scheme(true)
-                    .focused(true)
                     .title(title)
+                    // NO `.focused(true)`: the window is created hidden and the
+                    // frontend focuses it exactly once after showing it. tao's
+                    // set_focus injects a synthetic ALT keypress whenever
+                    // SetForegroundWindow is denied, so every extra focus call
+                    // risks breaking the IME and fighting for the foreground.
                     .visible(false);
 
             #[cfg(target_os = "macos")]

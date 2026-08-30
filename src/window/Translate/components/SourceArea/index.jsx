@@ -67,20 +67,26 @@ export default function SourceArea(props) {
         if (hideWindow) {
             appWindow.hide();
         } else {
-            // Mark before focusing: the blur-close handler must ignore the
-            // spurious blur/focus burst that follows a programmatic focus on
-            // Windows (see window/Translate/focus.js).
-            markProgrammaticFocus();
-            appWindow.show();
-            appWindow.setFocus();
+            // Exactly ONE programmatic focus per interaction — and only when
+            // actually needed: tao's set_focus injects a synthetic ALT keypress
+            // whenever SetForegroundWindow is denied, so redundant calls break
+            // the IME and fight for the foreground. (window/Translate/focus.js
+            // holds the grace period that suppresses the spurious blur burst
+            // this can still cause right after focusing.)
+            const [visible, focused] = await Promise.all([appWindow.isVisible(), appWindow.isFocused()]);
+            if (!visible) {
+                markProgrammaticFocus();
+                appWindow.show();
+            }
+            if (!focused) {
+                markProgrammaticFocus();
+                appWindow.setFocus();
+            }
         }
         // 清空检测语言
         setDetectLanguage('');
         if (text === '[INPUT_TRANSLATE]') {
             setWindowType('[INPUT_TRANSLATE]');
-            markProgrammaticFocus();
-            appWindow.show();
-            appWindow.setFocus();
             setSourceText('', true);
             // DOM-level caret: keeps the caret in the textarea even when the
             // native window focus settles late (WebView2 on Windows).
@@ -146,8 +152,7 @@ export default function SourceArea(props) {
                 });
             }
             unlisten = listen('new_text', (event) => {
-                markProgrammaticFocus();
-                appWindow.setFocus();
+                // Focusing happens exactly once inside handleNewText.
                 handleNewText(event.payload);
             });
         }
