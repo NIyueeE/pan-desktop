@@ -21,25 +21,35 @@ import {
     DEFAULT_RECOGNIZE_SERVICE_LIST,
 } from '../../utils/service_instance';
 import { info } from '@tauri-apps/plugin-log';
+import { shouldIgnoreBlur } from './focus';
 const appWindow = getCurrentWebviewWindow();
 
 let blurTimeout = null;
 let resizeTimeout = null;
 let moveTimeout = null;
 
+// Close-on-blur must not react to the spurious focus/blur oscillations that
+// WebView2 emits right after a programmatic focus (see focus.js) — otherwise
+// the window closes itself while the user is trying to type.
+const BLUR_CLOSE_DELAY_MS = 300;
+
 const listenBlur = () => {
     return listen('tauri://blur', () => {
         if (appWindow.label === 'translate') {
+            if (shouldIgnoreBlur()) {
+                info('Blur ignored (grace)');
+                return;
+            }
             if (blurTimeout) {
                 clearTimeout(blurTimeout);
             }
             info('Blur');
-            // 100ms后关闭窗口，因为在 windows 下拖动窗口时会先切换成 blur 再立即切换成 focus
+            // 关闭窗口前留出缓冲：windows 下拖动窗口时会先切换成 blur 再立即切换成 focus，
             // 如果直接关闭将导致窗口无法拖动
             blurTimeout = setTimeout(async () => {
                 info('Confirm Blur');
                 await appWindow.close();
-            }, 100);
+            }, BLUR_CLOSE_DELAY_MS);
         }
     });
 };

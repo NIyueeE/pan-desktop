@@ -16,6 +16,7 @@ import { languageLabel } from '../../../../utils/language';
 import { useConfig, useSyncAtom } from '../../../../hooks';
 import * as recognizeServices from '../../../../services/recognize';
 import detect from '../../../../utils/lang_detect';
+import { markProgrammaticFocus } from '../../focus';
 const appWindow = getCurrentWebviewWindow();
 
 export const sourceTextAtom = atom('');
@@ -66,6 +67,10 @@ export default function SourceArea(props) {
         if (hideWindow) {
             appWindow.hide();
         } else {
+            // Mark before focusing: the blur-close handler must ignore the
+            // spurious blur/focus burst that follows a programmatic focus on
+            // Windows (see window/Translate/focus.js).
+            markProgrammaticFocus();
             appWindow.show();
             appWindow.setFocus();
         }
@@ -73,9 +78,15 @@ export default function SourceArea(props) {
         setDetectLanguage('');
         if (text === '[INPUT_TRANSLATE]') {
             setWindowType('[INPUT_TRANSLATE]');
+            markProgrammaticFocus();
             appWindow.show();
             appWindow.setFocus();
             setSourceText('', true);
+            // DOM-level caret: keeps the caret in the textarea even when the
+            // native window focus settles late (WebView2 on Windows).
+            requestAnimationFrame(() => {
+                textAreaRef.current?.focus();
+            });
         } else if (text === '[IMAGE_TRANSLATE]') {
             setWindowType('[IMAGE_TRANSLATE]');
             const base64 = await invoke('get_base64');
@@ -135,6 +146,7 @@ export default function SourceArea(props) {
                 });
             }
             unlisten = listen('new_text', (event) => {
+                markProgrammaticFocus();
                 appWindow.setFocus();
                 handleNewText(event.payload);
             });
