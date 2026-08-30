@@ -15,7 +15,9 @@ tauri-build = { version = "2.6.3", features = [] }
 tauri = { version = "2.11.5", features = ["protocol-asset", "devtools", "tray-icon"] }
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-clipboard-manager = "2.3.2"
-tauri-plugin-fs = "2.5.1"
+# `watch` feature exposes the fs watch command used by the config-file watcher
+# in src/utils/store.js (off by default upstream).
+tauri-plugin-fs = { version = "2.5.1", features = ["watch"] }
 tauri-plugin-global-shortcut = "2.3.2"
 tauri-plugin-http = "2.5.9"
 tauri-plugin-log = "2.9.0"
