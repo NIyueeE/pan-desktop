@@ -88,11 +88,10 @@ export default function SourceArea(props) {
         if (text === '[INPUT_TRANSLATE]') {
             setWindowType('[INPUT_TRANSLATE]');
             setSourceText('', true);
-            // DOM-level caret: keeps the caret in the textarea even when the
-            // native window focus settles late (WebView2 on Windows).
-            requestAnimationFrame(() => {
-                textAreaRef.current?.focus();
-            });
+            // The textarea's `autoFocus` places the caret while the window is
+            // still hidden; deliberately refocusing it once visible makes the
+            // WebView2 child window take Win32 focus and churns the top-level
+            // window through WM_KILLFOCUS/WM_SETFOCUS — leave it alone.
         } else if (text === '[IMAGE_TRANSLATE]') {
             setWindowType('[IMAGE_TRANSLATE]');
             const base64 = await invoke('get_base64');

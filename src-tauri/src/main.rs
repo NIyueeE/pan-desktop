@@ -45,7 +45,13 @@ fn main() {
                 .body(cwd)
                 .show();
         }))
-        .plugin(tauri_plugin_log::Builder::default().build())
+        // Local timestamps: UTC logs confused timestamp comparisons against
+        // the user's local clock.
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+                .build(),
+        )
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec![]),

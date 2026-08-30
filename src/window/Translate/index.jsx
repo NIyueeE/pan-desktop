@@ -47,6 +47,17 @@ const listenBlur = () => {
             // 关闭窗口前留出缓冲：windows 下拖动窗口时会先切换成 blur 再立即切换成 focus，
             // 如果直接关闭将导致窗口无法拖动
             blurTimeout = setTimeout(async () => {
+                // Re-check before closing: WebView2 focus churn can re-focus
+                // the window within the delay; a self-close during that churn
+                // used to make the window impossible to type into.
+                try {
+                    if (await appWindow.isFocused()) {
+                        info('Blur stale, window refocused');
+                        return;
+                    }
+                } catch {
+                    // isFocused unavailable: fall through and close like before.
+                }
                 info('Confirm Blur');
                 await appWindow.close();
             }, BLUR_CLOSE_DELAY_MS);
