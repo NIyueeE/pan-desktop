@@ -104,7 +104,7 @@ jobs:
 
             - name: Extract release notes
               run: |
-                  awk 'NR>1 && /^# /{exit} {print}' CHANGELOG > RELEASE_NOTES.md
+                  awk '/^# /{if (seen) exit; seen=1; next} seen{print}' CHANGELOG | sed -e '/./,$!d' > RELEASE_NOTES.md
                   printf '%s\n' "$(cat RELEASE_NOTES.md)" > RELEASE_NOTES.md
 
             - name: Upload source artifact
