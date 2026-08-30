@@ -30,7 +30,7 @@ pub fn screenshot(x: i32, y: i32) {
                 error!("Create Cache Dir Failed: {e}");
                 return;
             }
-            app_cache_dir_path.push("pot_screenshot.png");
+            app_cache_dir_path.push("pan_screenshot.png");
 
             match screen.capture() {
                 Ok(image) => {

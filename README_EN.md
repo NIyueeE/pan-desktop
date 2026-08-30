@@ -1,4 +1,4 @@
-# Pot (Lite)
+# Pan (Lite)
 
 > A trimmed fork of [pot-app/pot-desktop](https://github.com/pot-app/pot-desktop).
 
@@ -10,7 +10,7 @@ This fork keeps only three translation entry points:
 
 The only translation backend is the **OpenAI Chat Completions compatible protocol**, the most widely supported model API format. Any provider with a compatible endpoint can be used by configuring a custom request URL, model, API key and prompt.
 
-The `pot` brand name is intentionally unchanged for now.
+The brand was renamed from `pot` to `pan` (app identifier `com.pan.desktop`, binary `pan`; WebDAV backups created by upstream pot still restore).
 
 ## Scope
 
@@ -107,7 +107,7 @@ Config → **Backup** lets you back up the entire application configuration (tra
 
 1. Enter the WebDAV URL (e.g. `https://dav.jianguoyun.com/dav/`), username and app password
 2. Click **Test Connection** to verify
-3. **Backup** uploads your `config.json` as a single JSON document (default name `pot-config.json`, customizable)
+3. **Backup** uploads your `config.json` as a single JSON document (default name `pan-config.json`, customizable)
 4. **Restore** downloads the remote backup and overwrites local settings (**full replace**: keys missing from the backup are removed; a confirmation is shown); restart the app for everything to take effect
 
 With **Auto Backup** enabled, the resident background process uploads at most once per hour while the app is running; on other machines use **Restore** to sync the same configuration.

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-    <id>com.pot_app.pot</id>
-    <name>Pot</name>
+    <id>com.pan.desktop</id>
+    <name>Pan</name>
     <summary>A translation and OCR app powered by OpenAI-compatible APIs</summary>
     <summary xml:lang="zh-Hans">一款基于 OpenAI 兼容接口的划词翻译和 OCR 翻译软件</summary>
-    <developer id="com.pot_app">
-        <name>Pylogmon</name>
+    <developer id="com.pan">
+        <name>pan-desktop</name>
     </developer>
-    <url type="homepage">https://pot-app.com/</url>
-    <url type="bugtracker">https://github.com/pot-app/pot-desktop/issues</url>
+    <url type="homepage">https://github.com/NIyueeE/pan-desktop</url>
+    <url type="bugtracker">https://github.com/NIyueeE/pan-desktop/issues</url>
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>GPL-3.0-only</project_license>
     <description>
@@ -31,10 +31,10 @@
             <li xml:lang="zh-Hans">多语言支持</li>
         </ul>
     </description>
-    <launchable type="desktop-id">com.pot_app.pot.desktop</launchable>
+    <launchable type="desktop-id">com.pan.desktop.desktop</launchable>
     <releases>
-        <release version="3.0.7" date="2025-05-10">
-            <url type="details">https://github.com/pot-app/pot-desktop/releases/tag/3.0.7</url>
+        <release version="4.1.3" date="2025-08-30">
+            <url type="details">https://github.com/NIyueeE/pan-desktop/releases</url>
         </release>
     </releases>
 </component>

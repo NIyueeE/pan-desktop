@@ -334,7 +334,7 @@ pub fn ocr_translate() {
             // 创建目录
             fs::create_dir_all(&app_cache_dir_path).expect("Create Cache Dir Failed");
         }
-        app_cache_dir_path.push("pot_screenshot_cut.png");
+        app_cache_dir_path.push("pan_screenshot_cut.png");
 
         let path = app_cache_dir_path.to_string_lossy().replace("\\\\?\\", "");
         println!("Screenshot path: {}", path);

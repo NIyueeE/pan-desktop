@@ -14,11 +14,12 @@ import {
  * restricted by the webview sandbox.
  */
 
-export const DEFAULT_BACKUP_FILENAME = 'pot-config.json';
+export const DEFAULT_BACKUP_FILENAME = 'pan-config.json';
 export const DEFAULT_TIMEOUT_MS = 30_000;
 
-// Service lists from a different pot build may reference removed services;
-// they must never reach the render tree (it would crash the config window).
+// Service lists from an older build (e.g. upstream pot) may reference removed
+// services; they must never reach the render tree (it would crash the config
+// window).
 const SERVICE_LIST_KEYS = {
     translate_service_list: {
         builtin: BUILTIN_TRANSLATE_SERVICES,
@@ -100,7 +101,7 @@ const requestInit = (username, password, extra = {}, options = {}) => {
 
 /**
  * Encode a user-provided filename into server path segments.
- * Subfolders are allowed ("backup/pot.json"); "." / ".." segments and any
+ * Subfolders are allowed ("backup/pan.json"); "." / ".." segments and any
  * backslash are rejected to prevent path traversal.
  */
 export const encodeBackupPath = (filename) => {
@@ -186,7 +187,7 @@ export async function uploadBackup(store, url, username, password, filename, opt
     // entries() resolves to Array<[key, value]>
     const data = Object.fromEntries(await store.entries());
     const payload = JSON.stringify({
-        app: 'pot',
+        app: 'pan',
         type: 'config-backup',
         version: appVersion,
         timestamp: Date.now(),
@@ -234,7 +235,9 @@ export async function downloadBackup(url, username, password, filename, options 
         payload.data === null ||
         Array.isArray(payload.data)
     ) {
-        throw new Error('The remote file is not a valid pot backup');
+        // Validation is type-based only: backups created by the upstream pot
+        // build (app: 'pot') still restore fine, they just carry extra keys.
+        throw new Error('The remote file is not a valid pan backup');
     }
     return payload;
 }

@@ -3959,6 +3959,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "pan"
+version = "4.1.3"
+dependencies = [
+ "arboard",
+ "base64 0.23.1",
+ "dirs 6.0.0",
+ "font-kit",
+ "image 0.25.10",
+ "lingua",
+ "log",
+ "macos-accessibility-client",
+ "mouse_position",
+ "once_cell",
+ "screenshots",
+ "selection",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-fs",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-http",
+ "tauri-plugin-log",
+ "tauri-plugin-notification",
+ "tauri-plugin-os",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-store",
+ "thiserror 2.0.20",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "pango"
 version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4208,41 +4243,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a106d1259c23fac8e543272398ae0e3c0b8d33c88ed73d0cc71b0f1d902618"
 dependencies = [
  "portable-atomic",
-]
-
-[[package]]
-name = "pot"
-version = "4.1.3"
-dependencies = [
- "arboard",
- "base64 0.23.1",
- "dirs 6.0.0",
- "font-kit",
- "image 0.25.10",
- "lingua",
- "log",
- "macos-accessibility-client",
- "mouse_position",
- "once_cell",
- "screenshots",
- "selection",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-fs",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-http",
- "tauri-plugin-log",
- "tauri-plugin-notification",
- "tauri-plugin-os",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tauri-plugin-store",
- "thiserror 2.0.20",
- "windows 0.62.2",
 ]
 
 [[package]]

@@ -162,9 +162,9 @@ async function main() {
         // =================================================================
         const local = fakeStore({ app_language: 'zh_cn', 'openai@1_config': { model: 'gpt-4o', temperature: 0.3 } });
         await webdav.testConnection(base, USER, PASS);
-        await webdav.uploadBackup(local, base, USER, PASS, 'pot-config.json');
-        assert.ok(dav.files.has('/dav/pot-config.json'), 'file stored on server');
-        const restored = await webdav.downloadBackup(base, USER, PASS, 'pot-config.json');
+        await webdav.uploadBackup(local, base, USER, PASS, 'pan-config.json');
+        assert.ok(dav.files.has('/dav/pan-config.json'), 'file stored on server');
+        const restored = await webdav.downloadBackup(base, USER, PASS, 'pan-config.json');
         const target = fakeStore({});
         await webdav.applyBackup(target, restored);
         assert.equal(target.kv.get('app_language'), 'zh_cn');
@@ -187,11 +187,34 @@ async function main() {
         console.log('invalid URLs rejected (empty / scheme-less / ftp://) OK');
 
         assert.equal(webdav.backupFileUrl(`${base}///`, ''), `${base}/${webdav.DEFAULT_BACKUP_FILENAME}`);
-        assert.equal(webdav.backupFileUrl(`  ${base}/  `, undefined), `${base}/pot-config.json`);
-        assert.equal(webdav.backupFileUrl(base, null), `${base}/pot-config.json`);
-        assert.equal(webdav.backupFileUrl(base, 'sub/dir/pot.json'), `${base}/sub/dir/pot.json`);
+        assert.equal(webdav.backupFileUrl(`  ${base}/  `, undefined), `${base}/pan-config.json`);
+        assert.equal(webdav.backupFileUrl(base, null), `${base}/pan-config.json`);
+        assert.equal(webdav.backupFileUrl(base, 'sub/dir/pan.json'), `${base}/sub/dir/pan.json`);
         passed++;
         console.log('trailing slashes trimmed, default filename fallback OK');
+
+        // =================================================================
+        section('Legacy pot backups still restore');
+        // =================================================================
+        // The pan rebrand must not orphan backups created by upstream pot:
+        // validation is type-based, never on the `app` marker.
+        dav.files.set(
+            '/dav/legacy-pot.json',
+            JSON.stringify({
+                app: 'pot',
+                type: 'config-backup',
+                version: '4.1.3',
+                timestamp: Date.now(),
+                data: { app_language: 'zh_cn', 'openai@legacy_config': { model: 'gpt-4o' } },
+            })
+        );
+        const legacyRestored = await webdav.downloadBackup(base, USER, PASS, 'legacy-pot.json');
+        const legacyTarget = fakeStore({});
+        await webdav.applyBackup(legacyTarget, legacyRestored);
+        assert.equal(legacyTarget.kv.get('app_language'), 'zh_cn');
+        assert.deepEqual(legacyTarget.kv.get('openai@legacy_config'), { model: 'gpt-4o' });
+        passed++;
+        console.log('backup with app: "pot" (upstream marker) downloads and applies OK');
 
         // =================================================================
         section('Filename safety & encoding');
@@ -247,16 +270,16 @@ async function main() {
         await assert.rejects(() => webdav.downloadBackup(base, '', '', 'broken.json'), /not valid JSON/);
 
         dav.files.set('/dav/wrongtype.json', JSON.stringify({ type: 'something-else', data: {} }));
-        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'wrongtype.json'), /not a valid pot backup/);
+        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'wrongtype.json'), /not a valid pan backup/);
 
         dav.files.set('/dav/nodata.json', JSON.stringify({ app: 'pot', type: 'config-backup' }));
-        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'nodata.json'), /not a valid pot backup/);
+        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'nodata.json'), /not a valid pan backup/);
 
         dav.files.set('/dav/arraydata.json', JSON.stringify({ type: 'config-backup', data: [1, 2] }));
-        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'arraydata.json'), /not a valid pot backup/);
+        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'arraydata.json'), /not a valid pan backup/);
 
         dav.files.set('/dav/nullbody.json', 'null');
-        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'nullbody.json'), /not a valid pot backup/);
+        await assert.rejects(() => webdav.downloadBackup(base, '', '', 'nullbody.json'), /not a valid pan backup/);
         passed++;
         console.log('non-JSON / wrong type / missing data / array data / null rejected OK');
 
@@ -265,8 +288,8 @@ async function main() {
         // =================================================================
         dav.enforceDirs = true;
         const nested = fakeStore({ nested: true });
-        await webdav.uploadBackup(nested, base, '', '', 'auto/a/b/pot.json');
-        assert.ok(dav.files.has('/dav/auto/a/b/pot.json'), 'file written after MKCOL chain');
+        await webdav.uploadBackup(nested, base, '', '', 'auto/a/b/pan.json');
+        assert.ok(dav.files.has('/dav/auto/a/b/pan.json'), 'file written after MKCOL chain');
         assert.ok(dav.dirs.has('/dav/auto/a/b'), 'parent dirs created');
         dav.enforceDirs = false;
         passed++;

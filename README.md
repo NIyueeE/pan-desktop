@@ -1,4 +1,4 @@
-# Pot (Lite)
+# Pan (Lite)
 
 > 基于 [pot-app/pot-desktop](https://github.com/pot-app/pot-desktop) 的精简分支。
 
@@ -10,7 +10,7 @@
 
 翻译服务仅保留 **OpenAI Chat Completions 兼容协议**，这是目前第三方模型服务支持最广的接口格式。只要服务商提供兼容端点，即可通过自定义请求地址、模型名、API Key 和 Prompt 接入。
 
-品牌名 `pot` 暂不修改。
+品牌名已由 `pot` 更名为 `pan`（应用标识 `com.pan.desktop`，可执行文件 `pan`；上游 pot 生成的 WebDAV 备份仍可直接恢复）。
 
 ## 功能范围
 
@@ -116,7 +116,7 @@ Prompt 中可使用 `$text`、`$from`、`$to`、`$detect` 变量。
 
 1. 填写 WebDAV 地址（如 `https://dav.jianguoyun.com/dav/`）、用户名和应用密码
 2. 点击 **测试连接** 验证配置
-3. **备份**：把当前 `config.json` 上传为远端的一个 JSON 文件（默认名 `pot-config.json`，可自定义）
+3. **备份**：把当前 `config.json` 上传为远端的一个 JSON 文件（默认名 `pan-config.json`，可自定义）
 4. **恢复备份**：从远端下载并覆盖本地配置（**全量覆盖**：备份中不存在的键会被删除，操作前有确认提示），重启应用后完全生效
 
 开启 **自动备份** 后，常驻后台进程会在应用运行期间每小时最多自动上传一次，同一配置在多台设备间可手动「恢复备份」完成同步。

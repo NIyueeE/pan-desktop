@@ -6,7 +6,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-pub const TRAY_ID: &str = "pot-tray";
+pub const TRAY_ID: &str = "pan-tray";
 
 type TrayLabels = (
     &'static str,
@@ -218,7 +218,7 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
         let menu = build_tray_menu(&app_handle, &language, &copy_mode).unwrap();
         tray.set_menu(Some(menu)).unwrap();
         #[cfg(not(target_os = "linux"))]
-        tray.set_tooltip(Some(format!("pot {}", app_handle.package_info().version)))
+        tray.set_tooltip(Some(format!("pan {}", app_handle.package_info().version)))
             .unwrap();
     }
 }

@@ -24,7 +24,7 @@ export default function Screenshot() {
             const position = monitor.position;
             invoke('screenshot', { x: position.x, y: position.y }).then(() => {
                 appCacheDir().then((appCacheDirPath) => {
-                    join(appCacheDirPath, 'pot_screenshot.png').then((filePath) => {
+                    join(appCacheDirPath, 'pan_screenshot.png').then((filePath) => {
                         setImgurl(convertFileSrc(filePath));
                     });
                 });
