@@ -182,7 +182,7 @@ export const tauriMocks = {
     }),
     '@tauri-apps/api/app': () => ({
         getVersion: vi.fn(() => Promise.resolve('4.1.2')),
-        getName: vi.fn(() => Promise.resolve('pot')),
+        getName: vi.fn(() => Promise.resolve('pan')),
         getTauriVersion: vi.fn(() => Promise.resolve('2.11.0')),
     }),
     '@tauri-apps/plugin-store': () => ({

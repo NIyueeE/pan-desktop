@@ -97,7 +97,7 @@ vi.mock('@tauri-apps/api/path', async () => {
 
 vi.mock('@tauri-apps/api/app', () => ({
     getVersion: () => Promise.resolve('4.1.2'),
-    getName: () => Promise.resolve('pot'),
+    getName: () => Promise.resolve('pan'),
     getTauriVersion: () => Promise.resolve('2.11.0'),
 }));
 
@@ -130,11 +130,13 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }));
 
 vi.mock('@tauri-apps/plugin-os', () => ({
-    type: () => Promise.resolve('Windows_NT'),
+    // Real plugin-os v2 values (lowercase); src/utils/env.js normalises them
+    // to the canonical 'Windows_NT' | 'Darwin' | 'Linux' used across the app.
+    type: () => Promise.resolve('windows'),
     arch: () => Promise.resolve('x86_64'),
     version: () => Promise.resolve('10'),
     platform: () => Promise.resolve('windows'),
-    family: () => Promise.resolve('windows'),
+    family: () => Promise.resolve('unix'),
 }));
 
 vi.mock('@tauri-apps/plugin-global-shortcut', async () => {

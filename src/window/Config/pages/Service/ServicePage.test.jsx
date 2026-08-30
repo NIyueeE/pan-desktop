@@ -125,4 +125,20 @@ describe('Service page', () => {
             expect(screen.getByLabelText('Model')).toHaveValue('gpt-3.5-turbo');
         });
     });
+
+    it('system OCR row references an existing per-OS logo asset (no broken image)', async () => {
+        const { container } = await bootConfig('/service');
+        await waitFor(() => {
+            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+        });
+        await userEvent.setup().click(screen.getByRole('tab', { name: /Recognize/i }));
+        await waitFor(() => {
+            expect(screen.getByText('System OCR')).toBeInTheDocument();
+        });
+        // plugin-os v2 reports 'windows'; env.js must normalise it so the row
+        // points at the shipped asset — `logo/windows.svg` does not exist and
+        // used to render a broken image icon.
+        expect(container.querySelector('img[src="logo/Windows_NT.svg"]')).not.toBeNull();
+        expect(container.querySelector('img[src="logo/windows.svg"]')).toBeNull();
+    });
 });
