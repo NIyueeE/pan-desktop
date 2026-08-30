@@ -133,7 +133,7 @@ change-version (only if push) ──┐                     │
 ### 6.3 Release 何时真正生成
 
 -   每个 build job 末尾都有 `Upload release` 步骤，**只在** `if: startsWith(github.ref, 'refs/tags/')` 才执行，用 `softprops/action-gh-release@v3`：
-    -   `body_path: CHANGELOG` —— Release 描述用整个 `CHANGELOG` 文件（不是单节），这是历史行为，不要改。
+    -   `body_path: RELEASE_NOTES.md` —— `change-version` job 打包前用 awk 从 `CHANGELOG` 提取**首个 section**（最新版本说明，到下一个 `# X.Y.Z` 为止，并去掉尾随空行）生成根级 `RELEASE_NOTES.md`，随 `source` artifact 下发；Release 描述只含最新一节，不再使用整个 `CHANGELOG` 文件（2026-08 起，旧版曾整文件上传）。
     -   `files: ...` —— 把本 job 产出的安装包 `append` 到该 tag 对应的 Release。**多 job 追加到同一个 Release**，所以最终 8 个产物齐全。
 -   所以：
     -   `push main` → 跑全部构建 → 7 个 artifact 但**不创建 Release**（验证性构建）。
