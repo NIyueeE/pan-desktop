@@ -5,7 +5,7 @@
 -   **下拉选择框显示 `undefined`**：翻译窗口的两个语言选择框使用无初始值的 jotai atom，配置加载完成前（以及「记忆语言」开启时把 `undefined` 写入配置后）会一直显示 `languages.undefined`。现在：atom 与配置使用相同的默认值（`auto`/`zh_cn`）；「记忆语言」不再写入未加载的选择；`useConfig` 把 `undefined` 一律按「未设置」处理（读回默认值、拒绝写入），语言标签统一走 `languageLabel()`（未知语言码回退显示原始码，不再输出 i18n key）；General/Translate/Recognize 页由配置值驱动的下拉框标题增加 `defaultValue` 兜底。
 -   **OpenAI 服务配置弹窗字段空白**：实例配置只存了部分字段（如恢复的旧备份）时，输入框变成非受控并丢失内容。现在存储的实例配置会与默认配置合并，所有字段始终有值。
 -   **「服务设置」页面打不开（白屏）**：配置中存在本分支已移除的服务实例键（典型来源：用旧版本/完整版 pot 创建的 WebDAV 备份恢复配置）时，服务页面直接抛 `Cannot read properties of undefined` 并整窗崩溃。现在三层防护：前端渲染前过滤未知服务并回写清洗后的列表；`ServiceItem` / `ConfigModal` 对未知服务降级显示；配置窗口新增错误边界，任何页面异常都会显示错误信息与「重试」按钮，不再白屏。
--   **服务列表损坏时崩溃**：`translate_service_list` / `recognize_service_list` 不是数组（配置损坏/坏备份）时前端 `.map` 崩溃，现在前后端都会用默认列表替换（Rust 侧 `sanitize_service_list` 重写为纯函数并补充 5 组单元测试）。
+-   **服务列表损坏时崩溃**：`translate_service_list` / `recognize_service_list` 不是数组（配置损坏/坏备份）时前端 `.map` 崩溃，现在前后端都会用默认列表替换（Rust 侧清洗逻辑重写为纯函数 `sanitized_service_value` 并补充 5 组单元测试）。
 -   **全局热键设置页会弄丢热键**：点击输入框即清空并注销当前快捷键，误触后未重新设置会导致热键永久失效。改为：编辑中保留原值，失焦自动还原；按新键后需点击「确定」才应用；注册失败自动还原原热键；退格清空立即生效；纯按修饰键不再误存为快捷键。
 -   **热键变更未注销旧键**：修改热键后旧组合仍然占用（下次注册会报 Already registered）。Rust 端 `register_shortcut_by_frontend` 现在原子完成「注册新键 → 注销旧键 → 持久化」，并支持清空（`shortcut` 为空）语义；`hotkey.rs` 对配置读取做了防 panic 处理。
 -   **热键触发路径防崩溃**：划词/输入/截图翻译窗口创建、显示器获取、窗口属性设置、事件发射等处的大量 `unwrap()` 在 Windows 某些环境（DPI/显示器枚举失败）会直接 panic 掉整个进程（表现为按热键后应用消失），全部改为记录日志并优雅降级。
