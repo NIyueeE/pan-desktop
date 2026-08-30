@@ -43,7 +43,7 @@ image = "0.25.10"
 macos-accessibility-client = "0.0.2"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.62.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation", "Graphics_Imaging", "Media_Ocr", "Foundation", "Globalization", "Storage", "Storage_Streams"] }
+windows = { version = "0.62.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation", "Win32_System_Com", "Graphics_Imaging", "Media_Ocr", "Foundation", "Globalization", "Storage", "Storage_Streams"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

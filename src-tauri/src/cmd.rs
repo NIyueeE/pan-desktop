@@ -59,7 +59,7 @@ pub fn reload_store() {
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri::AppHandle) {
     use dirs::cache_dir;
     use image::GenericImage;
@@ -99,7 +99,7 @@ pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_base64(app_handle: tauri::AppHandle) -> String {
     use base64::{Engine as _, engine::general_purpose};
     use dirs::cache_dir;

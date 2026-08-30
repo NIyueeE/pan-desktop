@@ -1,4 +1,4 @@
-#[tauri::command]
+#[tauri::command(async)]
 pub fn lang_detect(text: &str) -> String {
     use lingua::{Language, LanguageDetectorBuilder};
     let languages = vec![

@@ -2,9 +2,36 @@ use dirs::cache_dir;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
 
-#[tauri::command]
+// MUST stay async: sync commands run on the main thread, and a WinRT
+// `block_on` there freezes the whole event loop for the whole OCR duration
+// (focus/activation goes stale, tray & global-shortcut events starve —
+// WM_HOTKEY is dispatched by the main loop). The macOS/Linux variants are
+// already `async`; Windows now matches and additionally moves the work onto a
+// background thread with its own COM apartment (WinRT activation requires one,
+// and freshly spawned threads start with none).
+#[tauri::command(async)]
 #[cfg(target_os = "windows")]
 pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, String> {
+    let lang = lang.to_string();
+    let worker = std::thread::spawn(move || {
+        // SAFETY: CoInitializeEx on a thread that has no apartment yet. A
+        // previous RPC_E_CHANGED_MODE would mean MTA is already active, which
+        // is equally fine for the WinRT calls below.
+        unsafe {
+            let _ = windows::Win32::System::Com::CoInitializeEx(
+                None,
+                windows::Win32::System::Com::COINIT_MULTITHREADED,
+            );
+        }
+        system_ocr_windows(&app_handle, &lang)
+    });
+    worker
+        .join()
+        .map_err(|_| "system_ocr worker panicked".to_string())?
+}
+
+#[cfg(target_os = "windows")]
+fn system_ocr_windows(app_handle: &tauri::AppHandle, lang: &str) -> Result<String, String> {
     use windows::Globalization::Language;
     use windows::Graphics::Imaging::BitmapDecoder;
     use windows::Media::Ocr::OcrEngine;
