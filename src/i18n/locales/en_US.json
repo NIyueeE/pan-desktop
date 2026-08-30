@@ -264,7 +264,7 @@
                     "add": "Add Prompt"
                 },
                 "openai": {
-                    "title": "OpenAI",
+                    "title": "OpenAI Compatible",
                     "service": "Service Provider",
                     "openai": "OpenAI",
                     "azure": "Azure",
@@ -367,6 +367,14 @@
                 },
                 "tesseract": {
                     "title": "Tesseract.js"
+                },
+                "openai": {
+                    "title": "OpenAI Compatible (Vision)",
+                    "request_path": "Request Path",
+                    "api_key": "Api Key",
+                    "model": "Vision Model",
+                    "prompt": "OCR Prompt",
+                    "prompt_description": "Instruction for the vision model; $lang is replaced with the target language (empty = auto detect). Leave empty to use the built-in OCR prompt."
                 },
                 "baidu_ocr": {
                     "title": "Baidu OCR",

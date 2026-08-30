@@ -72,10 +72,10 @@ fn sanitize_service_list(key: &str, builtin: &[&str], default: &[&str]) {
 pub fn check_service_available() {
     // 翻译服务仅保留自定义 openai_chat_completions 服务
     sanitize_service_list("translate_service_list", &["openai"], &["openai"]);
-    // OCR 翻译仅保留本地识别服务
+    // OCR：本地系统 OCR / Tesseract，外加可选的 OpenAI 兼容 VLM 视觉识别端点
     sanitize_service_list(
         "recognize_service_list",
-        &["system", "tesseract"],
+        &["system", "tesseract", "openai"],
         &["system", "tesseract"],
     );
 }

@@ -44,7 +44,7 @@ describe('Service page', () => {
     it('renders with a fresh config (openai on the translate tab)', async () => {
         const { container } = await bootConfig('/service');
         await waitFor(() => {
-            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+            expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
         });
         expect(container.textContent).not.toContain('页面出错了');
 
@@ -67,7 +67,7 @@ describe('Service page', () => {
 
         // The page must still render the known services…
         await waitFor(() => {
-            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+            expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
         });
         // …and must not wipe out the whole React tree with an error.
         expect(container.textContent).not.toContain('页面出错了');
@@ -81,7 +81,7 @@ describe('Service page', () => {
 
         const { container } = await bootConfig('/service');
         await waitFor(() => {
-            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+            expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
         });
         expect(container.textContent).not.toContain('页面出错了');
     });
@@ -99,13 +99,13 @@ describe('Service page', () => {
         const user = userEvent.setup();
         await bootConfig('/service');
         await waitFor(() => {
-            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+            expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
         });
         await user.click(screen.getByText('Add Builtin Service'));
         const dialog = await screen.findByRole('dialog');
         await waitFor(() => {
             // exactly one entry inside the modal list
-            expect(within(dialog).getAllByText('OpenAI').length).toBe(1);
+            expect(within(dialog).getAllByText(/OpenAI/).length).toBe(1);
         });
     });
 
@@ -113,11 +113,11 @@ describe('Service page', () => {
         const user = userEvent.setup();
         await bootConfig('/service');
         await waitFor(() => {
-            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+            expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
         });
         await user.click(screen.getByText('Add Builtin Service'));
         const dialog = await screen.findByRole('dialog');
-        await user.click(within(dialog).getAllByText('OpenAI')[0]);
+        await user.click(within(dialog).getAllByText(/OpenAI/)[0]);
 
         // every input must be populated (no uncontrolled/undefined fields)
         await waitFor(() => {
@@ -129,7 +129,7 @@ describe('Service page', () => {
     it('system OCR row references an existing per-OS logo asset (no broken image)', async () => {
         const { container } = await bootConfig('/service');
         await waitFor(() => {
-            expect(screen.getByText('OpenAI')).toBeInTheDocument();
+            expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
         });
         await userEvent.setup().click(screen.getByRole('tab', { name: /Recognize/i }));
         await waitFor(() => {
@@ -140,5 +140,24 @@ describe('Service page', () => {
         // used to render a broken image icon.
         expect(container.querySelector('img[src="logo/Windows_NT.svg"]')).not.toBeNull();
         expect(container.querySelector('img[src="logo/windows.svg"]')).toBeNull();
+    });
+
+    it('recognize add-service modal lists every builtin recognize service (incl. the VLM endpoint)', async () => {
+        const user = userEvent.setup();
+        await bootConfig('/service');
+        await waitFor(() => {
+            expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
+        });
+        await user.click(screen.getByRole('tab', { name: /Recognize/i }));
+        await waitFor(() => {
+            expect(screen.getByText('System OCR')).toBeInTheDocument();
+        });
+        await user.click(screen.getByText('Add Builtin Service'));
+        const dialog = await screen.findByRole('dialog');
+        // The OpenAI-compatible VLM endpoint must be offered alongside the two
+        // local OCR engines.
+        for (const label of ['System OCR', 'Tesseract.js', 'OpenAI Compatible (Vision)']) {
+            expect(within(dialog).getByText(label)).toBeInTheDocument();
+        }
     });
 });

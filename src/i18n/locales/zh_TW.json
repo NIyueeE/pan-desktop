@@ -242,7 +242,7 @@
                     "title": "Bing 翻譯"
                 },
                 "openai": {
-                    "title": "OpenAI",
+                    "title": "OpenAI 相容",
                     "service": "服務提供商",
                     "openai": "OpenAI",
                     "azure": "Azure",
@@ -355,6 +355,14 @@
                 },
                 "tesseract": {
                     "title": "Tesseract.js"
+                },
+                "openai": {
+                    "title": "OpenAI 相容（視覺）",
+                    "request_path": "請求地址",
+                    "api_key": "Api Key",
+                    "model": "視覺模型",
+                    "prompt": "OCR Prompt",
+                    "prompt_description": "視覺模型的辨識指令，$lang 會被替換為目標語言（auto 為自動偵測）。留空使用內建 OCR Prompt。"
                 },
                 "baidu_ocr": {
                     "title": "百度 OCR",

@@ -5,9 +5,12 @@
 // pages, translate window, backup restore sanitising) derives from these so a
 // stale instance key can never resurrect a removed service.
 export const BUILTIN_TRANSLATE_SERVICES = ['openai'];
-export const BUILTIN_RECOGNIZE_SERVICES = ['system', 'tesseract'];
+// `openai` is the VLM (vision language model) OCR endpoint; it must stay in the
+// builtin allowlist or the backup/service-list sanitisers would drop it.
+export const BUILTIN_RECOGNIZE_SERVICES = ['system', 'tesseract', 'openai'];
 
 export const DEFAULT_TRANSLATE_SERVICE_LIST = ['openai'];
+// The VLM endpoint is opt-in: existing installs keep local OCR as the default.
 export const DEFAULT_RECOGNIZE_SERVICE_LIST = ['system', 'tesseract'];
 
 export function createServiceInstanceKey(serviceName: string): string {

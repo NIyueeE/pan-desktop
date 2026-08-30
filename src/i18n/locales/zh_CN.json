@@ -264,7 +264,7 @@
                     "add": "添加 Prompt"
                 },
                 "openai": {
-                    "title": "OpenAI",
+                    "title": "OpenAI 兼容",
                     "service": "服务提供商",
                     "openai": "OpenAI",
                     "azure": "Azure",
@@ -367,6 +367,14 @@
                 },
                 "tesseract": {
                     "title": "Tesseract.js"
+                },
+                "openai": {
+                    "title": "OpenAI 兼容（视觉）",
+                    "request_path": "请求地址",
+                    "api_key": "Api Key",
+                    "model": "视觉模型",
+                    "prompt": "OCR Prompt",
+                    "prompt_description": "视觉模型的识别指令，$lang 会被替换为目标语言（auto 为自动检测）。留空使用内置 OCR Prompt。"
                 },
                 "baidu_ocr": {
                     "title": "百度 OCR",
