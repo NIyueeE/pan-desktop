@@ -1,9 +1,9 @@
 set -euo pipefail
 
-pnpm install --frozen-lockfile
+bun install --frozen-lockfile
 
 if [ "${INPUT_TARGET}" = "x86_64-unknown-linux-gnu" ]; then
-    pnpm tauri build --target "${INPUT_TARGET}"
+    bun run tauri build --target "${INPUT_TARGET}"
 else
-    pnpm tauri build --target "${INPUT_TARGET}" -b deb rpm
+    bun run tauri build --target "${INPUT_TARGET}" -b deb rpm
 fi

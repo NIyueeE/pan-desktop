@@ -23,16 +23,17 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v5
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  version: 9
+                  bun-version: latest
 
+            # `bun run <script>` shells out to node-shebang bins (vite, vitest,
+            # svelte-check, the tauri CLI): Node is their runtime, not Bun.
             - name: Setup Node
               uses: actions/setup-node@v5
               with:
                   node-version: 22
-                  cache: pnpm
 
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
@@ -50,22 +51,25 @@ jobs:
                   sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Check formatting and lint
               run: |
-                  pnpm format
-                  pnpm lint
+                  bun run format
+                  bun run lint
+
+            - name: Typecheck frontend
+              run: bun run typecheck
 
             - name: WebDAV client tests
-              run: pnpm test:webdav
+              run: bun run test:webdav
 
             - name: Frontend unit tests
-              run: pnpm test:ui
+              run: bun run test:ui
 
             - name: Build frontend and check Rust
               run: |
-                  pnpm build
+                  bun run build
                   cargo check --manifest-path src-tauri/Cargo.toml
                   cargo test --manifest-path src-tauri/Cargo.toml
 
@@ -132,16 +136,16 @@ jobs:
               with:
                   name: source
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  version: 9
+                  bun-version: latest
 
+            # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
             - name: Setup Node
               uses: actions/setup-node@v5
               with:
                   node-version: 22
-                  cache: pnpm
 
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
@@ -155,7 +159,7 @@ jobs:
                   key: ${{ matrix.target }}
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Restore exec bit for bundled resources
               run: chmod +x src-tauri/resources/*
@@ -176,7 +180,7 @@ jobs:
                   if [ -z "${APPLE_CERTIFICATE:-}" ]; then
                       unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_TEAM_ID APPLE_API_ISSUER APPLE_API_KEY APPLE_ID APPLE_PASSWORD
                   fi
-                  pnpm tauri build --target ${{ matrix.target }}
+                  bun run tauri build --target ${{ matrix.target }}
 
             - name: Upload artifact
               uses: actions/upload-artifact@v7
@@ -210,16 +214,16 @@ jobs:
               with:
                   name: source
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v5
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  version: 9
+                  bun-version: latest
 
+            # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
             - name: Setup Node
               uses: actions/setup-node@v5
               with:
                   node-version: 22
-                  cache: pnpm
 
             - name: Setup Rust
               uses: dtolnay/rust-toolchain@stable
@@ -233,13 +237,13 @@ jobs:
                   key: ${{ matrix.target }}
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Build and package
               env:
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-              run: pnpm tauri build -b nsis --target ${{ matrix.target }}
+              run: bun run tauri build -b nsis --target ${{ matrix.target }}
 
             - name: Upload artifact
               uses: actions/upload-artifact@v7

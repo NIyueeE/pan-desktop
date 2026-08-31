@@ -4,27 +4,27 @@
         {
             "label": "tauri:dev",
             "type": "shell",
-            "command": "pnpm",
-            "args": ["tauri", "dev"]
+            "command": "bun",
+            "args": ["run", "tauri", "dev"]
         },
         {
             "label": "tauri:build",
             "type": "shell",
-            "command": "pnpm",
-            "args": ["tauri", "build"]
+            "command": "bun",
+            "args": ["run", "tauri", "build"]
         },
         {
             "label": "ui:dev",
             "type": "shell",
             "isBackground": true,
-            "command": "pnpm",
-            "args": ["dev"]
+            "command": "bun",
+            "args": ["run", "dev"]
         },
         {
             "label": "ui:build",
             "type": "shell",
-            "command": "pnpm",
-            "args": ["build"]
+            "command": "bun",
+            "args": ["run", "build"]
         }
     ]
 }

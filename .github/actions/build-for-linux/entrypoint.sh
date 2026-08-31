@@ -4,12 +4,12 @@ set -euo pipefail
 INPUT_TARGET="${1:?target is required}"
 export INPUT_TARGET
 
+# Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite);
+# unlike the GitHub-hosted runners, this image has no Node preinstalled.
 NODE_VERSION="22.14.0"
 NODE_DIST="node-v${NODE_VERSION}-linux-x64"
 curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_DIST}.tar.xz" | tar -Jxf -
 export PATH="$(pwd)/${NODE_DIST}/bin:${PATH}"
-
-npm install -g pnpm@9
 
 rustup target add "${INPUT_TARGET}"
 
