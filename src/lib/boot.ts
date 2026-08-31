@@ -1,3 +1,5 @@
+import '../app.css';
+
 import { error as logError, warn as logWarn } from '@tauri-apps/plugin-log';
 import { mount, type Component } from 'svelte';
 
