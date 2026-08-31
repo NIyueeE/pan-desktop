@@ -367,8 +367,12 @@
                 use:dragHandleZone={{ items: dndItems, flipDurationMs: 0 }}
                 onfinalize={handleDndFinalize}
             >
-                {#each dndItems as item (item.id)}
-                    <ResultCard instanceKey={item.id} />
+                {#each dndItems as item, index (item.id)}
+                    <ResultCard
+                        instanceKey={item.id}
+                        instances={translateInstances}
+                        isFirst={index === 0}
+                    />
                 {/each}
             </section>
         </div>

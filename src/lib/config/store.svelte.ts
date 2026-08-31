@@ -170,6 +170,15 @@ export async function writeThrough(key: string, value: unknown): Promise<void> {
     await emitConfigChanged(key, value);
 }
 
+/** Remove an uncataloged key entirely (e.g. a deleted service instance). */
+export async function deleteConfigKey(key: string): Promise<void> {
+    delete snapshot[key];
+    if (store) {
+        await store.delete(key);
+        await store.save();
+    }
+}
+
 // ── Cross-window live sync ───────────────────────────────────────────────
 
 /**

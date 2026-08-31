@@ -22,7 +22,7 @@ vi.mock('@tauri-apps/plugin-os', () => ({
     version: () => Promise.resolve('10'),
 }));
 
-import { appEnv, initEnv, normalizeOsType } from './env.svelte';
+import { normalizeOsType } from './env.svelte';
 
 describe('normalizeOsType', () => {
     it.each([
@@ -43,10 +43,20 @@ describe('normalizeOsType', () => {
 });
 
 describe('initEnv', () => {
+    // Each case re-imports the module with its own plugin-os stub (the
+    // setup-level mock pins 'windows'; per-case values need fresh modules).
     it.each(['windows', 'macos', 'linux'])('stores the canonical type for %s', async (raw) => {
-        mockOsType.value = raw;
+        vi.resetModules();
+        vi.doMock('@tauri-apps/plugin-os', () => ({
+            type: () => Promise.resolve(raw),
+            arch: () => Promise.resolve('x86_64'),
+            version: () => Promise.resolve('10'),
+        }));
+        const { appEnv, initEnv } = await import('./env.svelte');
         await initEnv();
         expect(appEnv.osType).toBe(normalizeOsType(raw));
+        vi.doUnmock('@tauri-apps/plugin-os');
+        vi.resetModules();
     });
 
     it.each(['Windows_NT', 'Darwin', 'Linux'])(
@@ -55,7 +65,6 @@ describe('initEnv', () => {
             // The direct user-visible regression: `logo/${osType}.svg` must
             // point at a file that actually ships in public/, otherwise the
             // recognize service list renders a broken image icon.
-            await initEnv();
             const publicLogoDir = path.resolve(
                 path.dirname(fileURLToPath(import.meta.url)),
                 '../../../public/logo'

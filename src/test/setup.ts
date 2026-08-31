@@ -1,23 +1,20 @@
 import { afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/svelte';
 import '@testing-library/jest-dom/vitest';
-import i18next from 'i18next';
 
 import { resetTauriState } from './tauri-state';
 import { __resetConfigStoreForTests } from '../lib/config/store.svelte';
+import { initI18n } from '../lib/i18n/i18n.svelte';
+import { initEnv } from '../lib/utils/env.svelte';
 
 export { resetTauriState } from './tauri-state';
 
 // The legacy frontend initialised i18n transitively via App; the rewrite
-// initialises it in bootWindow, which tests do not run. Initialise it here so
-// t() resolves (to the key itself — bundles are not loaded in unit tests).
-await i18next.init({
-    lng: 'en',
-    fallbackLng: false,
-    resources: {},
-    interpolation: { escapeValue: false },
-    returnEmptyString: false,
-});
+// initialises it in bootWindow, which tests do not run. Initialise the real
+// en bundle here so t() resolves like production.
+await initI18n('en');
+// Same for the environment (plugin-os mocked above → osType 'Windows_NT').
+await initEnv();
 
 // All @tauri-apps modules the app imports are mocked with static paths (the
 // calls are hoisted); shared state lives in ./tauri-state and is pulled in

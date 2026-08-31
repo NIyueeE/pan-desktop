@@ -3,7 +3,7 @@
     import { dragHandle, dragHandleZone } from 'svelte-dnd-action';
     import { toast } from 'svelte-sonner';
 
-    import { cfg, cfgRaw, setConfig, trackConfigKeys, writeThrough } from '../../../lib/config/store.svelte';
+    import { cfg, cfgRaw, deleteConfigKey, setConfig, trackConfigKeys, writeThrough } from '../../../lib/config/store.svelte';
     import { t } from '../../../lib/i18n/i18n.svelte';
     import type { RecognizeServiceName, TranslateServiceName } from './registry';
     import { recognizeRegistry, translateRegistry } from './registry';
@@ -65,6 +65,8 @@
             configKey,
             instances.filter((key) => key !== instanceKey)
         );
+        // Drop the instance's stored config along with the list entry.
+        void deleteConfigKey(instanceKey);
     }
 
     function addInstance(instanceKey: string): void {

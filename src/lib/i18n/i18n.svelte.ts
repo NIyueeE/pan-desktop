@@ -83,7 +83,11 @@ export async function loadLanguage(language: string): Promise<void> {
         return;
     }
     const mod = await import(`./locales/${file}.json`);
-    i18next.addResourceBundle(language, 'translation', mod.default, true, true);
+    // The locale files keep the legacy i18next shape `{ translation: {...} }`
+    // — unwrap the namespace before registering it.
+    const payload = (mod.default as Record<string, unknown>) ?? {};
+    const bundle = 'translation' in payload ? (payload['translation'] as object) : payload;
+    i18next.addResourceBundle(language, 'translation', bundle, true, true);
     loaded.add(language);
 }
 
