@@ -3,7 +3,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { currentMonitor } from '@tauri-apps/api/window';
 import { Spacer, Button } from '@nextui-org/react';
 import { AiFillCloseCircle } from 'react-icons/ai';
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { BsPinFill } from 'react-icons/bs';
 
@@ -196,7 +196,14 @@ export default function Translate() {
         }
     }, [rememberWindowSize]);
 
-    const loadServiceInstanceConfigMap = async () => {
+    // sanitizeServiceInstanceList returns a fresh array on every render, so the
+    // lists themselves can never identify a change — the loader is keyed on
+    // their joined content instead and only recreated when that content really
+    // changes. Keying on array identity re-ran this loader (and its IPC fan-out)
+    // in an infinite render loop.
+    const translateListKey = safeTranslateList.join('\u0000');
+    const recognizeListKey = safeRecognizeList.join('\u0000');
+    const loadServiceInstanceConfigMap = useCallback(async () => {
         const config = {};
         for (const serviceInstanceKey of safeTranslateList) {
             config[serviceInstanceKey] = (await store.get(serviceInstanceKey)) ?? {};
@@ -205,12 +212,13 @@ export default function Translate() {
             config[serviceInstanceKey] = (await store.get(serviceInstanceKey)) ?? {};
         }
         setServiceInstanceConfigMap({ ...config });
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- the lists are captured; the joined keys gate recreation
+    }, [translateListKey, recognizeListKey]);
     useEffect(() => {
         if (translateServiceInstanceList !== null && recognizeServiceInstanceList !== null) {
             loadServiceInstanceConfigMap();
         }
-    }, [safeTranslateList, safeRecognizeList]); // eslint-disable-line react-hooks/exhaustive-deps -- config reload runs only when service lists change
+    }, [translateServiceInstanceList, recognizeServiceInstanceList, loadServiceInstanceConfigMap]);
 
     return (
         <div

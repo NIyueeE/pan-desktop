@@ -157,7 +157,16 @@ export default function SourceArea(props) {
         }
     }, [hideWindow]); // eslint-disable-line react-hooks/exhaustive-deps -- listener re-registers only when hideWindow changes
 
+    // The initial text must load exactly once per window lifetime, after the
+    // OCR config values have settled. `recognizeServiceList` is a fresh array
+    // on every `_changed` event, so running on its identity would re-invoke
+    // handleNewText over and over — each run re-focusing (stealing) the
+    // window's focus and breaking typing.
+    const initialTextLoadedRef = useRef(false);
     useEffect(() => {
+        if (initialTextLoadedRef.current) {
+            return;
+        }
         if (
             deleteNewline !== null &&
             incrementalTranslate !== null &&
@@ -165,6 +174,7 @@ export default function SourceArea(props) {
             recognizeServiceList !== null &&
             hideWindow !== null
         ) {
+            initialTextLoadedRef.current = true;
             invoke('get_text').then((v) => {
                 handleNewText(v);
             });
