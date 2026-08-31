@@ -17,15 +17,16 @@ something the next session needs to know.
 
 ## Current state (2026-08-31)
 
+- **Template finalized** at user request: release history and tags were reset,
+  and a clean baseline release `v0.1.0` was re-created to validate the whole
+  CI/CD flow after finalization.
 - Toolchain: floating stable (1.98.0 at the time of writing).
 - Gates: pre-commit fast gates (incl. secret scan) / pre-push heavy gates /
   CI identical; `githooks/check-docs` carries the docs↔code invariants
   (AGENTS.md §3).
-- Releases: tag-driven, notes extracted from CHANGELOG.md; v0.1.0 and v0.2.0
-  published and verified end to end.
-- CD: `test-build.yml` verified on linux; macos/windows legs use the same
-  steps but have not been exercised yet — dispatch once before relying on
-  them.
+- Releases: tag-driven, notes extracted from CHANGELOG.md; the baseline
+  release is `v0.1.0` (placeholder notes, three platform assets).
+- CD: `test-build.yml` verified on all three platforms.
 - Everything currently green: CI on main, pre-commit, pre-push.
 
 ## Decision log (why things are the way they are)
