@@ -29,6 +29,7 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
       - name: Build matrix from requested platforms
+        id: plan
         env:
           REQUESTED: ${{ inputs.targets }}
         run: |
