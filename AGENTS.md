@@ -175,6 +175,12 @@ code-level.**
   forbids force-pushes, and auto-deletes merged branches.
 - Formatting: `just fmt` auto-fixes; `just check` rehearses the whole chain
   before committing.
+- Dependencies: add or remove them only through cargo — `cargo add` (add
+  `--dev` for dev-dependencies, `--package` in workspaces) and
+  `cargo remove`. Never hand-edit the `[dependencies]` / `[dev-dependencies]`
+  tables in `Cargo.toml`: `cargo add` resolves a compatible version
+  requirement and updates `Cargo.lock` in the same step, avoiding
+  hand-written specs that drift from the lock or trip the dependency gates.
 - Maintenance: Dependabot opens weekly updates for GitHub Actions and cargo
   dependencies; they merge only with CI green.
 - Security reports go through GitHub's private vulnerability reporting
