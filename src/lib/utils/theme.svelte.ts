@@ -6,9 +6,10 @@ import type { AppTheme } from '../config/defaults';
  * tokens react to.
  */
 
-const systemDark = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(prefers-color-scheme: dark)')
-    : null;
+const systemDark =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-color-scheme: dark)')
+        : null;
 
 export const themeState = $state({
     resolved: 'light' as 'light' | 'dark',

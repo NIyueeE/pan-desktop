@@ -1,5 +1,6 @@
 <script lang="ts">
     import { appCacheDir, join } from '@tauri-apps/api/path';
+    import { currentMonitor } from '@tauri-apps/api/window';
     import { convertFileSrc } from '@tauri-apps/api/core';
     import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
     import { warn } from '@tauri-apps/plugin-log';
@@ -21,7 +22,7 @@
 
     onMount(() => {
         void (async () => {
-            const monitor = await appWindow.currentMonitor();
+            const monitor = await currentMonitor();
             if (!monitor) {
                 return;
             }
@@ -82,10 +83,12 @@
     }
 </script>
 
+<!-- Decorative: pixel-identical to the screen behind this transient overlay. -->
 <img
     bind:this={imgEl}
     class="fixed top-0 left-0 w-full select-none"
     src={imgurl}
+    alt=""
     draggable="false"
     onload={onImageLoad}
 />
@@ -96,6 +99,9 @@
     style:bottom="{window.screen.height - Math.max(mouseDownY, mouseMoveY)}px"
     style:right="{window.screen.width - Math.max(mouseDownX, mouseMoveX)}px"
 ></div>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- Raw pointer capture surface for the area selection (canvas-like);
+     pointer coordinates are the only input, so no interactive role applies. -->
 <div
     class="fixed inset-0 cursor-crosshair select-none"
     onmousedown={onMouseDown}

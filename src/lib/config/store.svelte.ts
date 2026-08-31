@@ -29,6 +29,8 @@ const PERSIST_DEBOUNCE_MS = 500;
 let store: Store | null = null;
 let readyPromise: Promise<void> | null = null;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
+// Deliberately non-reactive bookkeeping — no UI reads it.
+// eslint-disable-next-line svelte/prefer-svelte-reactivity
 const pendingWrites = new Map<string, unknown>();
 
 const snapshot = $state<Record<string, unknown>>({});
@@ -210,7 +212,8 @@ export function migrateLegacyKeys(): void {
     if (cfgRaw(LEGACY_LAYOUT_SOURCE_KEY) === undefined && cfgRaw(LEGACY_LAYOUT_LANGUAGE_KEY) === undefined) {
         return;
     }
-    const layout = hideSource && hideLanguage ? 'compact' : hideSource ? 'hide_source' : hideLanguage ? 'hide_language' : 'full';
+    const layout =
+        hideSource && hideLanguage ? 'compact' : hideSource ? 'hide_source' : hideLanguage ? 'hide_language' : 'full';
     setConfig('translate_layout', layout);
 }
 

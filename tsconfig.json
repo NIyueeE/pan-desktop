@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "target": "ES2022",
+        "types": ["vite/client"],
         "module": "ESNext",
         "moduleResolution": "bundler",
         "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -18,11 +19,5 @@
         "forceConsistentCasingInFileNames": true,
         "noEmit": true
     },
-    "include": [
-        "src/**/*.ts",
-        "src/**/*.svelte",
-        "vite.config.ts",
-        "vitest.config.ts",
-        "scripts/**/*.ts"
-    ]
+    "include": ["src/**/*.ts", "src/**/*.svelte", "vite.config.ts", "vitest.config.ts", "scripts/**/*.ts"]
 }

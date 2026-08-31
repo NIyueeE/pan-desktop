@@ -85,8 +85,7 @@
                 class="h-full w-full resize-none bg-content1 outline-none select-text"
                 style="font-size: 1rem"
                 onkeydown={onKeyDown}
-                oninput={onInput}
-            ></textarea>
+                oninput={onInput}></textarea>
         </div>
         <div class="flex items-center justify-between px-[12px] py-[5px]">
             <div class="flex justify-start">

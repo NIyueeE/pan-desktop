@@ -5,7 +5,13 @@
     import { cfg, getStoreInstance, setConfig, trackConfigKeys, writeThrough } from '../../../lib/config/store.svelte';
     import { reloadStore } from '../../../lib/ipc/commands';
     import { t } from '../../../lib/i18n/i18n.svelte';
-    import { applyBackup, downloadBackup, testConnection, uploadBackup } from '../../../lib/utils/webdav';
+    import {
+        applyBackup,
+        downloadBackup,
+        testConnection,
+        uploadBackup,
+        type BackupStore,
+    } from '../../../lib/utils/webdav';
     import { themeState } from '../../../lib/utils/theme.svelte';
     import PSwitch from '../../../lib/ui/PSwitch.svelte';
     import Section from '../../../lib/ui/Section.svelte';
@@ -78,7 +84,7 @@
         }
         run(
             (async () => {
-                await uploadBackup(store, url, username, password, filename);
+                await uploadBackup(store as unknown as BackupStore, url, username, password, filename);
                 await markSynced();
                 await reloadStore();
             })(),
@@ -102,7 +108,7 @@
         run(
             (async () => {
                 const payload = await downloadBackup(url, username, password, filename);
-                await applyBackup(store, payload);
+                await applyBackup(store as unknown as BackupStore, payload);
                 await reloadStore();
                 await markSynced();
             })(),

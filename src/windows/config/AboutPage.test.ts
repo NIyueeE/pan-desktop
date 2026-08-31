@@ -16,9 +16,9 @@ describe('AboutPage', () => {
         expect(screen.getByText('Pan')).toBeInTheDocument();
         expect(screen.getByText('4.1.3')).toBeInTheDocument();
 
-        const githubButtons = screen.getAllByRole('button').filter((button) =>
-            button.textContent?.toLowerCase().includes('github')
-        );
+        const githubButtons = screen
+            .getAllByRole('button')
+            .filter((button) => button.textContent?.toLowerCase().includes('github'));
         expect(githubButtons.length).toBe(1);
     });
 

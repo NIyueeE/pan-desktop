@@ -18,11 +18,7 @@
     const selected = $derived(items.find((item) => item.value === value));
 </script>
 
-<Select.Root
-    type="single"
-    bind:value
-    onValueChange={(v) => onValueChange?.(v)}
->
+<Select.Root type="single" bind:value onValueChange={(v) => onValueChange?.(v)}>
     <Select.Trigger
         class={`flex h-[32px] min-w-[130px] items-center justify-between gap-2 rounded-md bg-content2 px-3 text-sm outline-none select-none hover:bg-content3 ${triggerClass}`}
     >
@@ -30,8 +26,6 @@
     </Select.Trigger>
     <Select.Portal>
         <Select.Content
-            position="popper"
-            sideOffset={4}
             class={`z-50 max-h-[50vh] overflow-y-auto rounded-md border border-default-200 bg-content1 py-1 shadow-lg ${contentClass}`}
         >
             {#each items as item (item.value)}

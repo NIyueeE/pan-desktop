@@ -3,7 +3,8 @@
     import { onMount } from 'svelte';
     import { toast, Toaster } from 'svelte-sonner';
 
-    import { cfg, setConfig, trackConfigKeys, type ConfigSchema } from '../../../lib/config/store.svelte';
+    import { cfg, setConfig, trackConfigKeys } from '../../../lib/config/store.svelte';
+    import type { ConfigSchema } from '../../../lib/config/defaults';
     import { fontList, updateTray } from '../../../lib/ipc/commands';
     import { changeAppLanguage, t, APP_LANGUAGES } from '../../../lib/i18n/i18n.svelte';
     import PSelect from '../../../lib/ui/PSelect.svelte';
@@ -166,25 +167,13 @@
     </SettingRow>
     {#if cfg('proxy_enable')}
         <SettingRow label={t('config.general.proxy.host')}>
-            <TextField
-                value={cfg('proxy_host')}
-                class="w-[220px]"
-                onValueChange={(v) => setConfig('proxy_host', v)}
-            />
+            <TextField value={cfg('proxy_host')} class="w-[220px]" onValueChange={(v) => setConfig('proxy_host', v)} />
         </SettingRow>
         <SettingRow label={t('config.general.proxy.port')}>
-            <TextField
-                value={String(cfg('proxy_port'))}
-                class="w-[220px]"
-                onValueChange={onPortInput}
-            />
+            <TextField value={String(cfg('proxy_port'))} class="w-[220px]" onValueChange={onPortInput} />
         </SettingRow>
         <SettingRow label={t('config.general.proxy.no_proxy')}>
-            <TextField
-                value={cfg('no_proxy')}
-                class="w-[220px]"
-                onValueChange={(v) => setConfig('no_proxy', v)}
-            />
+            <TextField value={cfg('no_proxy')} class="w-[220px]" onValueChange={(v) => setConfig('no_proxy', v)} />
         </SettingRow>
     {/if}
 </Section>

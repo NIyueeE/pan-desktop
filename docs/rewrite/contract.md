@@ -8,32 +8,32 @@ Target design: see `design.md`.
 
 ### Commands (invoke) — `generate_handler!` in `src-tauri/src/main.rs`
 
-| Command | Args | Returns | Caller |
-|---|---|---|---|
-| `get_text` | – | string | translate window (initial text, once-guard) |
-| `reload_store` | – | void | config watcher path (fs watch), after restore/backup |
-| `cut_image` | left, top, width, height (u32) | void | screenshot window (async) |
-| `get_base64` | – | string | translate window OCR flow (async) |
-| `copy_img` | width, height (usize) | void | (available; not called by current UI) |
-| `system_ocr` | lang (string) | string | recognize/system service |
-| `set_proxy` / `unset_proxy` | – | bool | backend-internal (startup) + available to UI |
-| `open_devtools` | – | void | F12 in dev_mode |
-| `register_shortcut_by_frontend` | name, shortcut | void (throws string) | hotkey page |
-| `update_tray` | language ('' = keep), copyMode ('' = keep) | void | General (language), Translate page (auto_copy) |
-| `screenshot` | x, y (monitor origin, i32) | void | screenshot window |
-| `lang_detect` | text | string | `utils/lang_detect` |
-| `font_list` | – | string[] | General page font selects |
+| Command                         | Args                                       | Returns              | Caller                                               |
+| ------------------------------- | ------------------------------------------ | -------------------- | ---------------------------------------------------- |
+| `get_text`                      | –                                          | string               | translate window (initial text, once-guard)          |
+| `reload_store`                  | –                                          | void                 | config watcher path (fs watch), after restore/backup |
+| `cut_image`                     | left, top, width, height (u32)             | void                 | screenshot window (async)                            |
+| `get_base64`                    | –                                          | string               | translate window OCR flow (async)                    |
+| `copy_img`                      | width, height (usize)                      | void                 | (available; not called by current UI)                |
+| `system_ocr`                    | lang (string)                              | string               | recognize/system service                             |
+| `set_proxy` / `unset_proxy`     | –                                          | bool                 | backend-internal (startup) + available to UI         |
+| `open_devtools`                 | –                                          | void                 | F12 in dev_mode                                      |
+| `register_shortcut_by_frontend` | name, shortcut                             | void (throws string) | hotkey page                                          |
+| `update_tray`                   | language ('' = keep), copyMode ('' = keep) | void                 | General (language), Translate page (auto_copy)       |
+| `screenshot`                    | x, y (monitor origin, i32)                 | void                 | screenshot window                                    |
+| `lang_detect`                   | text                                       | string               | `utils/lang_detect`                                  |
+| `font_list`                     | –                                          | string[]             | General page font selects                            |
 
 Argument casing: JS camelCase (`copyMode`) ↔ Rust snake_case — unchanged.
 
 ### Events
 
-| Event | Direction | Payload | Notes |
-|---|---|---|---|
-| `new_text` | backend → translate window | string | text or `[INPUT_TRANSLATE]` / `[IMAGE_TRANSLATE]` markers |
-| `success` | screenshot window → backend listener | – | region cut finished → `image_translate` |
-| `<key>_changed` | any window → all | value | name: key with `.`→`_`, `@`→`:` + `_changed`; emitted by the window that writes |
-| `tauri://blur` / `focus` / `move` / `resize` | backend → window | – | close-on-blur + position/size persistence |
+| Event                                        | Direction                            | Payload | Notes                                                                           |
+| -------------------------------------------- | ------------------------------------ | ------- | ------------------------------------------------------------------------------- |
+| `new_text`                                   | backend → translate window           | string  | text or `[INPUT_TRANSLATE]` / `[IMAGE_TRANSLATE]` markers                       |
+| `success`                                    | screenshot window → backend listener | –       | region cut finished → `image_translate`                                         |
+| `<key>_changed`                              | any window → all                     | value   | name: key with `.`→`_`, `@`→`:` + `_changed`; emitted by the window that writes |
+| `tauri://blur` / `focus` / `move` / `resize` | backend → window                     | –       | close-on-blur + position/size persistence                                       |
 
 ### Store plugin
 

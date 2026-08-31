@@ -11,32 +11,32 @@ Status: draft v1 (simplification table finalized after `contract.md` lands).
 
 ## Stack (verified compatible on npm, 2026-08)
 
-| Layer | Choice | Notes |
-|---|---|---|
-| Runtime | Svelte 5.57 (runes) | fine-grained signals, no VDOM |
-| Build | Vite 8 + @sveltejs/vite-plugin-svelte 7.3 | MPA, one HTML entry per window |
-| Language | TypeScript ~5.9 (svelte-check 4.7 supports ^5\|\|^6; TS 7 NOT yet) | strict |
-| Styling | Tailwind CSS 4.3 via @tailwindcss/vite | no tailwind.config, no postcss.config |
-| Primitives | bits-ui 2.19 | Select / Dialog / Tooltip / Popover only |
-| DnD | svelte-dnd-action 0.9.79 | replaces archived react-beautiful-dnd |
-| Icons | @lucide/svelte | tree-shaken per-icon |
-| i18n | i18next 26 | lazy per-locale dynamic import |
-| Toasts | svelte-sonner 1.2 | tiny |
-| OCR | tesseract.js 7 | dynamic import at recognize time |
-| Tests | vitest 4 + @testing-library/svelte 5 + jest-dom 7 + jsdom 30 | ported mock infra |
-| Lint/format | eslint 10 + eslint-plugin-svelte 3 + typescript-eslint; prettier 3.9 + prettier-plugin-svelte 4; svelte-check | |
-| Pkg mgr | bun 1.4 | `bun install`, lockfile `bun.lock` |
+| Layer       | Choice                                                                                                        | Notes                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Runtime     | Svelte 5.57 (runes)                                                                                           | fine-grained signals, no VDOM            |
+| Build       | Vite 8 + @sveltejs/vite-plugin-svelte 7.3                                                                     | MPA, one HTML entry per window           |
+| Language    | TypeScript ~5.9 (svelte-check 4.7 supports ^5\|\|^6; TS 7 NOT yet)                                            | strict                                   |
+| Styling     | Tailwind CSS 4.3 via @tailwindcss/vite                                                                        | no tailwind.config, no postcss.config    |
+| Primitives  | bits-ui 2.19                                                                                                  | Select / Dialog / Tooltip / Popover only |
+| DnD         | svelte-dnd-action 0.9.79                                                                                      | replaces archived react-beautiful-dnd    |
+| Icons       | @lucide/svelte                                                                                                | tree-shaken per-icon                     |
+| i18n        | i18next 26                                                                                                    | lazy per-locale dynamic import           |
+| Toasts      | svelte-sonner 1.2                                                                                             | tiny                                     |
+| OCR         | tesseract.js 7                                                                                                | dynamic import at recognize time         |
+| Tests       | vitest 4 + @testing-library/svelte 5 + jest-dom 7 + jsdom 30                                                  | ported mock infra                        |
+| Lint/format | eslint 10 + eslint-plugin-svelte 3 + typescript-eslint; prettier 3.9 + prettier-plugin-svelte 4; svelte-check |                                          |
+| Pkg mgr     | bun 1.4                                                                                                       | `bun install`, lockfile `bun.lock`       |
 
 Kept as-is (they are the backend binding, not legacy frontend code): all `@tauri-apps/*` packages (versions unchanged, matching Tauri 2.11 backend).
 
 ## Entries — one HTML per window (perf)
 
-| Entry | Loads | Old behavior |
-|---|---|---|
-| `translate.html` | translate window only | all windows parsed one shared bundle |
-| `config.html` | config window only | |
-| `screenshot.html` | overlay only | |
-| `daemon.html` | plain TS scheduler, no Svelte runtime | already separate |
+| Entry             | Loads                                 | Old behavior                         |
+| ----------------- | ------------------------------------- | ------------------------------------ |
+| `translate.html`  | translate window only                 | all windows parsed one shared bundle |
+| `config.html`     | config window only                    |                                      |
+| `screenshot.html` | overlay only                          |                                      |
+| `daemon.html`     | plain TS scheduler, no Svelte runtime | already separate                     |
 
 `index.html` is deleted. Backend `window.rs::build_window` switches from hardcoded `index.html` to `format!("{label}.html")`. `tauri.conf.json` `frontendDist` stays `../dist`.
 
@@ -72,7 +72,7 @@ src/
 
 `src/lib/config/store.svelte.ts`:
 
-- Boot: `Store.load(configDir/config.json)` (plugin returns the shared instance), then **one** `store.entries()` call → `$state` snapshot `values: Record<string, unknown>`. Legacy did one `store.get` IPC *per key per hook* (30+ serialized round-trips per window).
+- Boot: `Store.load(configDir/config.json)` (plugin returns the shared instance), then **one** `store.entries()` call → `$state` snapshot `values: Record<string, unknown>`. Legacy did one `store.get` IPC _per key per hook_ (30+ serialized round-trips per window).
 - `cfg<T>(key, default)` — synchronous reactive read from the snapshot; defaults live in `defaults.ts` (single source of truth).
 - `setCfg(key, value)` — updates snapshot immediately (UI never waits), then debounced 500 ms `store.set` + `store.save` + `emit('<key>_changed', v)` (same event naming as legacy: `.`→`_`, `@`→`:`).
 - `trackConfigKeys([...keys])` — registers `<key>_changed` listeners once per window (parallel `Promise.all` at boot) so live edits from other windows merge in. Static per-window key lists; no per-hook listeners.
@@ -112,17 +112,17 @@ Per-option decisions live in `contract.md` §5 once finalized; principles applie
 
 ## Test plan
 
-| Suite | Ported from | Focus |
-|---|---|---|
-| `config-store.test.ts` | new | snapshot boot, debounced save, `_changed` merge, undefined-guard |
-| `TranslateWindow.test.ts` | TranslateWindow.test.jsx | `languages.undefined` sweep, new_text flow |
-| `focus.test.ts` | focus.test.js | blur grace bookkeeping (verbatim port) |
-| `ServicePage.test.ts` | ServicePage.test.jsx | sanitize degradation, modals list all builtins, VLM endpoint present |
-| `HotkeyPage.test.ts` | HotkeyPage.test.jsx | focus retention, OK apply, clear, conflict reject/restore |
-| `AboutPage.test.ts` | AboutPage.test.jsx | brand pins (fork GitHub link only) |
-| `env.test.ts` | env.test.js | osType map + `public/logo/*.svg` existence (negative assertions) |
-| `openai.test.ts` | openai.test.js + new | URL completion, Bearer, `$lang` substitution, default prompt fallback, SSE line-buffer parser |
-| `scripts/test-webdav.ts` | test-webdav.mjs | 17 sections incl. "Legacy pot backups still restore", run by `bun` |
+| Suite                     | Ported from              | Focus                                                                                         |
+| ------------------------- | ------------------------ | --------------------------------------------------------------------------------------------- |
+| `config-store.test.ts`    | new                      | snapshot boot, debounced save, `_changed` merge, undefined-guard                              |
+| `TranslateWindow.test.ts` | TranslateWindow.test.jsx | `languages.undefined` sweep, new_text flow                                                    |
+| `focus.test.ts`           | focus.test.js            | blur grace bookkeeping (verbatim port)                                                        |
+| `ServicePage.test.ts`     | ServicePage.test.jsx     | sanitize degradation, modals list all builtins, VLM endpoint present                          |
+| `HotkeyPage.test.ts`      | HotkeyPage.test.jsx      | focus retention, OK apply, clear, conflict reject/restore                                     |
+| `AboutPage.test.ts`       | AboutPage.test.jsx       | brand pins (fork GitHub link only)                                                            |
+| `env.test.ts`             | env.test.js              | osType map + `public/logo/*.svg` existence (negative assertions)                              |
+| `openai.test.ts`          | openai.test.js + new     | URL completion, Bearer, `$lang` substitution, default prompt fallback, SSE line-buffer parser |
+| `scripts/test-webdav.ts`  | test-webdav.mjs          | 17 sections incl. "Legacy pot backups still restore", run by `bun`                            |
 
 ## Backend changes (minimal, perf-motivated)
 

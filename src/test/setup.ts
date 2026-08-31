@@ -157,9 +157,7 @@ vi.mock('@tauri-apps/plugin-global-shortcut', async () => {
     return {
         isRegistered: (shortcut: string) => {
             state.globalShortcutCalls.push(['isRegistered', shortcut]);
-            return Promise.resolve(
-                state.globalShortcutCalls.some(([op, s]) => op === 'register' && s === shortcut)
-            );
+            return Promise.resolve(state.globalShortcutCalls.some(([op, s]) => op === 'register' && s === shortcut));
         },
         register: (shortcut: string) => {
             state.globalShortcutCalls.push(['register', shortcut]);
@@ -195,8 +193,7 @@ vi.mock('@tauri-apps/plugin-notification', () => ({
 }));
 
 vi.mock('@tauri-apps/plugin-http', () => ({
-    fetch: () =>
-        Promise.reject(new Error('network disabled in tests (override with setInvokeHandler/http mock)')),
+    fetch: () => Promise.reject(new Error('network disabled in tests (override with setInvokeHandler/http mock)')),
 }));
 
 beforeEach(() => {
@@ -210,7 +207,7 @@ afterEach(() => {
 
 // jsdom lacks several browser APIs that headless UI primitives rely on.
 if (!window.matchMedia) {
-    window.matchMedia = (query: string) => ({
+    window.matchMedia = ((query: string) => ({
         matches: false,
         media: query,
         onchange: null,
@@ -219,7 +216,7 @@ if (!window.matchMedia) {
         addEventListener: () => {},
         removeEventListener: () => {},
         dispatchEvent: () => {},
-    });
+    })) as unknown as typeof window.matchMedia;
 }
 if (!window.ResizeObserver) {
     window.ResizeObserver = class {

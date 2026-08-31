@@ -67,6 +67,8 @@ const FALLBACK_CHAINS = {
     default: ['en'],
 } as const;
 
+// Deliberately non-reactive bookkeeping.
+// eslint-disable-next-line svelte/prefer-svelte-reactivity
 const loaded = new Set<string>();
 
 export const i18nState = $state({

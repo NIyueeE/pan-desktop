@@ -20,10 +20,7 @@ function keyEvent(overrides: Partial<KeyboardEvent> & { key: string }): Keyboard
 describe('formatHotkeyEvent', () => {
     it('formats modifier combos', () => {
         expect(
-            formatHotkeyEvent(
-                { ...keyEvent({ key: 't', code: 'KeyT' }), ctrlKey: true, shiftKey: true },
-                'Windows_NT'
-            )
+            formatHotkeyEvent({ ...keyEvent({ key: 't', code: 'KeyT' }), ctrlKey: true, shiftKey: true }, 'Windows_NT')
         ).toBe('Ctrl+Shift+T');
     });
 

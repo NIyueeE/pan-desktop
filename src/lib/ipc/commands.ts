@@ -18,7 +18,8 @@ export interface CropRect {
     height: number;
 }
 
-export const cutImage = (rect: CropRect) => invoke<void>('cut_image', rect);
+export const cutImage = (rect: CropRect): Promise<void> =>
+    invoke<void>('cut_image', { left: rect.left, top: rect.top, width: rect.width, height: rect.height });
 
 export const getBase64 = () => invoke<string>('get_base64');
 

@@ -4,7 +4,12 @@
 
     import { cfgRaw, writeThrough } from '../../../lib/config/store.svelte';
     import { t } from '../../../lib/i18n/i18n.svelte';
-    import { DEFAULT_PROMPT_LIST, DEFAULT_REQUEST_ARGUMENTS, Language, translate as translateText } from '../../../lib/services/translate/openai';
+    import {
+        DEFAULT_PROMPT_LIST,
+        DEFAULT_REQUEST_ARGUMENTS,
+        Language,
+        translate as translateText,
+    } from '../../../lib/services/translate/openai';
     import type { OpenAiTranslateConfig, PromptMessage } from '../../../lib/services/translate/openai';
     import { INSTANCE_NAME_CONFIG_KEY } from '../../../lib/utils/service_instance';
     import { themeState } from '../../../lib/utils/theme.svelte';
@@ -12,7 +17,7 @@
     import SettingRow from '../../../lib/ui/SettingRow.svelte';
     import TextField from '../../../lib/ui/TextField.svelte';
 
-    let {
+    const {
         instanceKey,
         onSaved,
         onClose,
@@ -23,17 +28,23 @@
     } = $props();
 
     // Merge the stored instance over the defaults so partially stored configs
-    // (e.g. restored backups) still populate every field.
-    let config = $state<OpenAiTranslateConfig>({
-        [INSTANCE_NAME_CONFIG_KEY]: t('services.translate.openai.title'),
-        requestPath: 'https://api.openai.com/v1/chat/completions',
-        model: 'gpt-3.5-turbo',
-        apiKey: '',
-        stream: false,
-        promptList: DEFAULT_PROMPT_LIST,
-        requestArguments: DEFAULT_REQUEST_ARGUMENTS,
-        ...((cfgRaw(instanceKey) as OpenAiTranslateConfig | undefined) ?? {}),
-    });
+    // (e.g. restored backups) still populate every field. The modal remounts
+    // per edited instance ({#if configModalOpen} in ServiceManager), so the
+    // editable form is seeded from props exactly once, at mount.
+    function seededConfig(): OpenAiTranslateConfig {
+        return {
+            [INSTANCE_NAME_CONFIG_KEY]: t('services.translate.openai.title'),
+            requestPath: 'https://api.openai.com/v1/chat/completions',
+            model: 'gpt-3.5-turbo',
+            apiKey: '',
+            stream: false,
+            promptList: DEFAULT_PROMPT_LIST,
+            requestArguments: DEFAULT_REQUEST_ARGUMENTS,
+            ...((cfgRaw(instanceKey) as OpenAiTranslateConfig | undefined) ?? {}),
+        };
+    }
+
+    const config = $state<OpenAiTranslateConfig>(seededConfig());
 
     let isLoading = $state(false);
 
@@ -44,7 +55,10 @@
     function addPrompt(): void {
         config.promptList = [
             ...(config.promptList ?? []),
-            { role: (config.promptList?.length ?? 0) === 0 ? 'system' : promptRole(config.promptList?.length ?? 0), content: '' },
+            {
+                role: (config.promptList?.length ?? 0) === 0 ? 'system' : promptRole(config.promptList?.length ?? 0),
+                content: '',
+            },
         ];
     }
 
@@ -104,11 +118,7 @@
         />
     </SettingRow>
     <SettingRow label={t('services.translate.openai.model')}>
-        <TextField
-            value={config.model ?? ''}
-            class="w-[240px]"
-            onValueChange={(v) => (config.model = v)}
-        />
+        <TextField value={config.model ?? ''} class="w-[240px]" onValueChange={(v) => (config.model = v)} />
     </SettingRow>
     <SettingRow label={t('services.translate.openai.stream')}>
         <PSwitch checked={config.stream ?? false} onCheckedChange={(v) => (config.stream = v)} />
@@ -119,18 +129,19 @@
     <div class="rounded-lg bg-content2/60 p-3">
         {#each config.promptList ?? [] as prompt, index (index)}
             <div class="mb-2">
-                <label class="mb-1 block text-xs text-default-400">{prompt.role}</label>
-                <textarea
-                    value={prompt.content}
-                    placeholder={`Input some ${prompt.role} prompt`}
-                    class="w-full resize-y rounded-md bg-content2 p-2 text-sm outline-none select-text focus:bg-content3"
-                    rows="2"
-                    oninput={(e) => {
-                        const list = config.promptList ?? [];
-                        list[index] = { role: promptRole(index), content: e.currentTarget.value };
-                        config.promptList = list;
-                    }}
-                ></textarea>
+                <label class="block">
+                    <span class="mb-1 block text-xs text-default-400">{prompt.role}</span>
+                    <textarea
+                        value={prompt.content}
+                        placeholder={`Input some ${prompt.role} prompt`}
+                        class="w-full resize-y rounded-md bg-content2 p-2 text-sm outline-none select-text focus:bg-content3"
+                        rows="2"
+                        oninput={(e) => {
+                            const list = config.promptList ?? [];
+                            list[index] = { role: promptRole(index), content: e.currentTarget.value };
+                            config.promptList = list;
+                        }}></textarea>
+                </label>
                 <button
                     type="button"
                     class="mt-1 flex h-[26px] w-[26px] items-center justify-center rounded-md text-danger hover:bg-danger/10"
@@ -157,8 +168,7 @@
         placeholder="Input API request arguments (JSON)"
         class="w-full resize-y rounded-md bg-content2 p-2 font-mono text-xs outline-none select-text focus:bg-content3"
         rows="3"
-        oninput={(e) => (config.requestArguments = e.currentTarget.value)}
-    ></textarea>
+        oninput={(e) => (config.requestArguments = e.currentTarget.value)}></textarea>
 
     <button
         type="submit"

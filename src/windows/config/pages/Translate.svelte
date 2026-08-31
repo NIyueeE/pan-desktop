@@ -1,13 +1,19 @@
 <script lang="ts">
     import { t } from '../../../lib/i18n/i18n.svelte';
-    import { cfg, setConfig, trackConfigKeys, type ConfigSchema } from '../../../lib/config/store.svelte';
+    import { cfg, setConfig, trackConfigKeys } from '../../../lib/config/store.svelte';
+    import type { ConfigSchema } from '../../../lib/config/defaults';
     import { updateTray } from '../../../lib/ipc/commands';
     import PSelect from '../../../lib/ui/PSelect.svelte';
     import PSwitch from '../../../lib/ui/PSwitch.svelte';
     import Section from '../../../lib/ui/Section.svelte';
     import SettingRow from '../../../lib/ui/SettingRow.svelte';
-    import { languageLabel, languageList } from '../../../lib/utils/language';
-    import { AUTO_COPY_MODES, TRANSLATE_LAYOUTS, type AutoCopyMode, type TranslateLayout } from '../../../lib/config/defaults';
+    import { languageList } from '../../../lib/utils/language';
+    import {
+        AUTO_COPY_MODES,
+        TRANSLATE_LAYOUTS,
+        type AutoCopyMode,
+        type TranslateLayout,
+    } from '../../../lib/config/defaults';
 
     void trackConfigKeys([
         'translate_source_language',
@@ -66,10 +72,7 @@
             onValueChange={(v) => setConfig('translate_target_language', v)}
         />
     </SettingRow>
-    <SettingRow
-        label={t('config.translate.second_language')}
-        description={t('config.translate.second_language_tip')}
-    >
+    <SettingRow label={t('config.translate.second_language')} description={t('config.translate.second_language_tip')}>
         <PSelect
             value={cfg('translate_second_language')}
             items={targetLanguageItems}
@@ -89,7 +92,10 @@
         />
     </SettingRow>
     <SettingRow label={t('config.translate.incremental_translate')}>
-        <PSwitch checked={cfg('incremental_translate')} onCheckedChange={(v) => setConfig('incremental_translate', v)} />
+        <PSwitch
+            checked={cfg('incremental_translate')}
+            onCheckedChange={(v) => setConfig('incremental_translate', v)}
+        />
     </SettingRow>
     <SettingRow label={t('config.translate.dynamic_translate')}>
         <PSwitch checked={cfg('dynamic_translate')} onCheckedChange={(v) => setConfig('dynamic_translate', v)} />
@@ -122,7 +128,8 @@
             value={cfg('translate_window_position')}
             items={positionItems}
             triggerClass="min-w-[140px]"
-            onValueChange={(v) => setConfig('translate_window_position', v as ConfigSchema['translate_window_position'])}
+            onValueChange={(v) =>
+                setConfig('translate_window_position', v as ConfigSchema['translate_window_position'])}
         />
     </SettingRow>
     <SettingRow label={t('config.translate.remember_window_size')}>
@@ -132,12 +139,21 @@
         />
     </SettingRow>
     <SettingRow label={t('config.translate.close_on_blur')}>
-        <PSwitch checked={cfg('translate_close_on_blur')} onCheckedChange={(v) => setConfig('translate_close_on_blur', v)} />
+        <PSwitch
+            checked={cfg('translate_close_on_blur')}
+            onCheckedChange={(v) => setConfig('translate_close_on_blur', v)}
+        />
     </SettingRow>
     <SettingRow label={t('config.translate.always_on_top')}>
-        <PSwitch checked={cfg('translate_always_on_top')} onCheckedChange={(v) => setConfig('translate_always_on_top', v)} />
+        <PSwitch
+            checked={cfg('translate_always_on_top')}
+            onCheckedChange={(v) => setConfig('translate_always_on_top', v)}
+        />
     </SettingRow>
     <SettingRow label={t('config.translate.hide_window')}>
-        <PSwitch checked={cfg('translate_hide_window')} onCheckedChange={(v) => setConfig('translate_hide_window', v)} />
+        <PSwitch
+            checked={cfg('translate_hide_window')}
+            onCheckedChange={(v) => setConfig('translate_hide_window', v)}
+        />
     </SettingRow>
 </Section>

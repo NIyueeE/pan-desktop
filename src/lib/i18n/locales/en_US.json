@@ -58,14 +58,14 @@
                 "app_font": "Font",
                 "app_fallback_font": "Fallback Font",
                 "font_size": {
-                    "title": "Font Size",
                     "10": "Extra Small (10px)",
                     "12": "Very Small (12px)",
                     "14": "Small (14px)",
                     "16": "Standard (16px)",
                     "18": "Large (18px)",
                     "20": "Very Large (20px)",
-                    "24": "Extra Large (24px)"
+                    "24": "Extra Large (24px)",
+                    "title": "Font Size"
                 },
                 "default_font": "Default",
                 "theme": {
@@ -111,14 +111,14 @@
                 "delete_newline": "Delete Newline",
                 "remember_language": "Remember Target Language",
                 "font_size": {
-                    "title": "Font Size",
                     "10": "Very Very Small (10px)",
                     "12": "Very Small (12px)",
                     "14": "Small (14px)",
                     "16": "Standard (16px)",
                     "18": "Large (18px)",
                     "20": "Very Large (20px)",
-                    "24": "Very Very Large (24px)"
+                    "24": "Very Very Large (24px)",
+                    "title": "Font Size"
                 },
                 "window_position": "Window Position",
                 "mouse": "Follow the Mouse",
@@ -136,7 +136,13 @@
                 "google": "Google",
                 "bing": "Bing",
                 "yandex": "Yandex",
-                "local": "Local"
+                "local": "Local",
+                "layout": "Popup Layout",
+                "layout_full": "Show source and languages",
+                "layout_hide_language": "Hide language bar",
+                "layout_hide_source": "Hide source text",
+                "layout_compact": "Results only",
+                "second_language_tip": "Used when the detected language equals the target language"
             },
             "recognize": {
                 "label": "Recognize",

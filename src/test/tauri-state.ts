@@ -23,8 +23,7 @@ export function createFakeStore(): {
     reload: () => Promise<void>;
     reset: () => Promise<void>;
 } {
-    const clone = (value: unknown): unknown =>
-        value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+    const clone = (value: unknown): unknown => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
     return {
         async get(key: string) {
             return fakeConfigFile.has(key) ? clone(fakeConfigFile.get(key)) : null;
@@ -107,7 +106,7 @@ export function setCurrentWindowLabel(label: string): void {
 }
 
 // Track global-shortcut plugin interactions (hotkey page tests)
-export const globalShortcutCalls: Array<{ op: string; args: unknown }> = [];
+export const globalShortcutCalls: Array<[string, unknown]> = [];
 
 export function resetTauriState(): void {
     fakeConfigFile.clear();

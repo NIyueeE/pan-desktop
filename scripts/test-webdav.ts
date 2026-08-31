@@ -1,12 +1,13 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * WebDAV backup client — smoke tests & edge cases.
  *
- * Runs the REAL src/utils/webdav.js against a local mock WebDAV server.
- * The only stubbed parts are the two Tauri-side imports (plugin-http fetch
- * is mapped to Node's global fetch; appVersion is a constant).
+ * Runs the REAL src/lib/utils/webdav.ts against a local mock WebDAV server.
+ * The only stubbed parts are the three Tauri-side imports (plugin-http fetch
+ * is mapped to the global fetch; appEnv and the service_instance constants
+ * become inline literals).
  *
- * Zero dependencies:  node scripts/test-webdav.mjs
+ * Zero dependencies:  bun scripts/test-webdav.ts
  */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -15,25 +16,33 @@ import assert from 'node:assert/strict';
 
 const AUTH_OK = 'Basic dXNlcjpwYXNz'; // user:pass
 let passed = 0;
-const section = (name) => console.log(`\n== ${name}`);
+const section = (name: string) => console.log(`\n== ${name}`);
 
 // ---------------------------------------------------------------------------
 // Mock WebDAV server
 // ---------------------------------------------------------------------------
 
-class MockDav {
-    constructor() {
-        this.files = new Map(); // url -> string body
-        this.dirs = new Set(['/dav']); // existing collections
-        this.requireAuth = true;
-        this.validAuths = new Set([AUTH_OK]); // accepted Authorization headers
-        this.enforceDirs = false; // PUT returns 409 until parent MKCOL'd
-        this.putStatus = null; // force status override
-        this.getBody = null; // force body override
-        this.hangMs = 0; // delay every response
-        this.requests = [];
-        const self = this;
+interface MockRequest {
+    method: string | undefined;
+    url: string | undefined;
+    auth: string;
+}
 
+class MockDav {
+    files = new Map<string, string>(); // url -> string body
+    dirs = new Set<string>(['/dav']); // existing collections
+    requireAuth = true;
+    validAuths = new Set<string>([AUTH_OK]); // accepted Authorization headers
+    enforceDirs = false; // PUT returns 409 until parent MKCOL'd
+    putStatus: number | null = null; // force status override
+    getBody: string | null = null; // force body override
+    hangMs = 0; // delay every response
+    requests: MockRequest[] = [];
+    server: http.Server;
+
+    constructor() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias -- ported from the legacy script
+        const self = this;
         this.server = http.createServer((req, res) => {
             let body = '';
             req.on('data', (c) => (body += c));
@@ -44,55 +53,73 @@ class MockDav {
         });
     }
 
-    handle(req, res, body) {
-        const respond = (status, payload = '') => {
+    handle(req: http.IncomingMessage, res: http.ServerResponse, body: string) {
+        const respond = (status: number, payload = '') => {
             const send = () => {
                 res.writeHead(status);
                 res.end(payload);
             };
-            if (this.hangMs > 0) setTimeout(send, this.hangMs);
-            else send();
+            if (this.hangMs > 0) {
+                setTimeout(send, this.hangMs);
+            } else {
+                send();
+            }
         };
 
-        if (this.requireAuth && !this.validAuths.has(req.headers.authorization ?? '')) return respond(401);
+        if (this.requireAuth && !this.validAuths.has(req.headers.authorization ?? '')) {
+            return respond(401);
+        }
 
-        if (req.method === 'PROPFIND') return respond(207, '<multistatus/>');
+        if (req.method === 'PROPFIND') {
+            return respond(207, '<multistatus/>');
+        }
 
         if (req.method === 'MKCOL') {
-            if (this.files.has(req.url)) return respond(405);
-            if (!this.dirs.has(req.url)) {
+            if (this.files.has(req.url ?? '')) {
+                return respond(405);
+            }
+            if (!this.dirs.has(req.url ?? '')) {
                 // parents must exist
-                const parent = req.url.replace(/\/[^/]*$/, '');
-                if (parent && !this.dirs.has(parent)) return respond(409);
-                this.dirs.add(req.url);
+                const parent = req.url!.replace(/\/[^/]*$/, '');
+                if (parent && !this.dirs.has(parent)) {
+                    return respond(409);
+                }
+                this.dirs.add(req.url!);
             }
             return respond(201);
         }
 
         if (req.method === 'PUT') {
-            if (this.putStatus !== null) return respond(this.putStatus);
-            const parent = req.url.replace(/\/[^/]*$/, '');
-            if (this.enforceDirs && !this.dirs.has(parent)) return respond(409);
-            this.files.set(req.url, body);
+            if (this.putStatus !== null) {
+                return respond(this.putStatus);
+            }
+            const parent = req.url!.replace(/\/[^/]*$/, '');
+            if (this.enforceDirs && !this.dirs.has(parent)) {
+                return respond(409);
+            }
+            this.files.set(req.url!, body);
             return respond(201);
         }
 
         if (req.method === 'GET') {
-            if (this.files.has(req.url)) return respond(200, this.getBody ?? this.files.get(req.url));
+            if (this.files.has(req.url ?? '')) {
+                return respond(200, this.getBody ?? this.files.get(req.url ?? '') ?? '');
+            }
             return respond(404);
         }
 
         return respond(405);
     }
 
-    listen() {
+    listen(): Promise<void> {
         return new Promise((resolve) => this.server.listen(0, '127.0.0.1', resolve));
     }
-    get origin() {
-        return `http://127.0.0.1:${this.server.address().port}`;
+    get origin(): string {
+        const addr = this.server.address() as { port: number };
+        return `http://127.0.0.1:${addr.port}`;
     }
-    close() {
-        return new Promise((resolve) => this.server.close(resolve));
+    close(): Promise<void> {
+        return new Promise((resolve) => this.server.close(() => resolve()));
     }
 }
 
@@ -102,47 +129,64 @@ class MockDav {
 
 async function loadModule() {
     const src = fs
-        .readFileSync(path.resolve('src/utils/webdav.js'), 'utf8')
+        .readFileSync(path.resolve('src/lib/utils/webdav.ts'), 'utf8')
         .replace("import { fetch } from '@tauri-apps/plugin-http';", 'const fetch = globalThis.__fetch;')
-        .replace("import { appVersion } from './env';", "const appVersion = 'test-0.0.0';")
+        .replace("import { appEnv } from './env.svelte';", "const appEnv = { appVersion: 'test-0.0.0' };")
         .replace(
             /import \{[^}]*\} from '\.\/service_instance';/s,
             `const BUILTIN_TRANSLATE_SERVICES = ['openai'];
-const BUILTIN_RECOGNIZE_SERVICES = ['system', 'tesseract'];
+const BUILTIN_RECOGNIZE_SERVICES = ['system', 'tesseract', 'openai'];
 const DEFAULT_TRANSLATE_SERVICE_LIST = ['openai'];
 const DEFAULT_RECOGNIZE_SERVICE_LIST = ['system', 'tesseract'];`
         );
     assert.ok(!/from '@tauri-apps/.test(src), 'plugin-http import stripped');
     assert.ok(!/from '\.\/service_instance'/.test(src), 'service_instance import stripped');
-    globalThis.__fetch = globalThis.fetch;
-    return import(`data:text/javascript;base64,${Buffer.from(src).toString('base64')}`);
+    assert.ok(!/from '\.\/env\.svelte'/.test(src), 'env.svelte import stripped');
+    assert.ok(src.includes('const fetch = globalThis.__fetch;'), 'fetch stub injected');
+    assert.ok(src.includes("const appEnv = { appVersion: 'test-0.0.0' };"), 'appEnv stub injected');
+    assert.ok(src.includes("const BUILTIN_TRANSLATE_SERVICES = ['openai'];"), 'service_instance stub injected');
+    const g = globalThis as typeof globalThis & { __fetch?: typeof fetch };
+    g.__fetch = g.fetch;
+    // Bun transpiles TypeScript natively, so the rewritten TS source can be
+    // imported straight from a data: URL (no temp file needed).
+    return import(`data:text/javascript;base64,${Buffer.from(src, 'utf8').toString('base64')}`);
 }
 
 /** Fake store mirroring tauri-plugin-store semantics:
  *  mutations hit an in-memory map; save() persists to "disk";
  *  reload() discards memory and re-reads from "disk". */
-function fakeStore(initial = {}) {
-    const disk = new Map(Object.entries(initial));
-    const kv = new Map(disk);
-    let failSetOnKey = null;
+function fakeStore(initial: Record<string, unknown> = {}) {
+    const disk = new Map<string, unknown>(Object.entries(initial));
+    const kv = new Map<string, unknown>(disk);
+    let failSetOnKey: string | null = null;
     return {
         kv,
-        set: async (k, v) => {
-            if (k === failSetOnKey) throw new Error('simulated store failure');
+        set: async (k: string, v: unknown) => {
+            if (k === failSetOnKey) {
+                throw new Error('simulated store failure');
+            }
             kv.set(k, v);
         },
-        delete: async (k) => kv.delete(k),
+        delete: async (k: string) => {
+            kv.delete(k);
+        },
         keys: async () => [...kv.keys()],
         entries: async () => [...kv.entries()],
         save: async () => {
             disk.clear();
-            for (const [k, v] of kv) disk.set(k, v);
+            for (const [k, v] of kv) {
+                disk.set(k, v);
+            }
         },
         reload: async () => {
             kv.clear();
-            for (const [k, v] of disk) kv.set(k, v);
+            for (const [k, v] of disk) {
+                kv.set(k, v);
+            }
         },
-        failNextSetOn: (key) => (failSetOnKey = key),
+        failNextSetOn: (key: string) => {
+            failSetOnKey = key;
+        },
     };
 }
 
@@ -245,7 +289,7 @@ async function main() {
         // server has auth ON, so use a no-auth instance to check header absence:
         dav.requireAuth = false;
         await webdav.uploadBackup(anonStore, base, '', '', 'anon.json');
-        const putReq = dav.requests.filter((r) => r.method === 'PUT').at(-1);
+        const putReq = dav.requests.filter((r) => r.method === 'PUT').at(-1)!;
         assert.equal(putReq.auth, '', 'no Authorization header when credentials empty');
         passed++;
         console.log('empty credentials omit Authorization header OK');
@@ -316,7 +360,7 @@ async function main() {
         const weirdPayload = await webdav.downloadBackup(base, '', '', 'weird.json');
         const weirdTarget = fakeStore({});
         await webdav.applyBackup(weirdTarget, weirdPayload);
-        assert.equal(weirdTarget.kv.get('huge').length, 2 * 1024 * 1024, '2MB value intact');
+        assert.equal((weirdTarget.kv.get('huge') as string).length, 2 * 1024 * 1024, '2MB value intact');
         assert.deepEqual(weirdTarget.kv.get('nested'), weird.nested);
         assert.equal(weirdTarget.kv.get('number_zero'), 0);
         assert.equal(weirdTarget.kv.get('boolean_false'), false);
@@ -397,7 +441,7 @@ async function main() {
         dav.validAuths.add(expectedToken);
         dav.requests.length = 0;
         await webdav.testConnection(base, 'user', 'pässword');
-        assert.equal(dav.requests[0].auth, expectedToken, 'Authorization uses UTF-8 encoding');
+        assert.equal(dav.requests[0]?.auth, expectedToken, 'Authorization uses UTF-8 encoding');
         dav.validAuths.delete(expectedToken);
         passed++;
         console.log('non-ASCII password → UTF-8 Basic auth OK');
@@ -409,7 +453,7 @@ async function main() {
         const t0 = Date.now();
         await assert.rejects(
             () => webdav.testConnection(base, '', '', { timeoutMs: 200 }),
-            (e) => Date.now() - t0 < 1200
+            (_e) => Date.now() - t0 < 1200
         );
         dav.hangMs = 0;
         passed++;
@@ -418,8 +462,8 @@ async function main() {
         console.log(`\nALL WEBDAV TESTS PASSED (${passed} sections)`);
         await dav.close();
         process.exit(0);
-    } catch (e) {
-        console.error('\nTEST FAILED:', e);
+    } catch (err) {
+        console.error('\nTEST FAILED:', err);
         await dav.close().catch(() => {});
         process.exit(1);
     }

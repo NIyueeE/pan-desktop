@@ -17,10 +17,10 @@ describe('buildOcrRequest', () => {
         expect(request.body.model).toBe('gpt-4o-mini');
         expect(request.body.stream).toBe(false);
 
-        const content = request.body.messages[0]?.content;
+        const content = request.body.messages[0]!.content;
         expect(content[0]?.type).toBe('text');
         expect(content[1]?.type).toBe('image_url');
-        expect(content[1]?.image_url.url).toBe('data:image/png;base64,QUJD');
+        expect(content[1]?.image_url?.url).toBe('data:image/png;base64,QUJD');
     });
 
     it('replaces the $lang placeholder with the language name', () => {

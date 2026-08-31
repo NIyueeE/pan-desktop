@@ -1,5 +1,16 @@
 <script lang="ts">
-    import { Blocks, CloudUpload, Info, Keyboard, Languages, LayoutGrid, ScanText, X, Minus, Square } from '@lucide/svelte';
+    import {
+        Blocks,
+        CloudUpload,
+        Info,
+        Keyboard,
+        Languages,
+        LayoutGrid,
+        ScanText,
+        X,
+        Minus,
+        Square,
+    } from '@lucide/svelte';
     import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
     import { listen } from '@tauri-apps/api/event';
 
@@ -79,20 +90,12 @@
             ? 'rounded-l-[10px]'
             : ''} {cfg('transparent') ? 'bg-background/90' : 'bg-content1'}"
     >
-        <div
-            class="h-[35px] p-[5px]"
-            data-tauri-drag-region="true"
-        >
+        <div class="h-[35px] p-[5px]" data-tauri-drag-region="true">
             <div class="h-full w-full"></div>
         </div>
         <div class="p-[5px]">
             <div data-tauri-drag-region="true">
-                <img
-                    alt="pan logo"
-                    src="/icon.svg"
-                    class="mb-[30px] mx-auto h-[60px] w-[60px]"
-                    draggable="false"
-                />
+                <img alt="pan logo" src="/icon.svg" class="mb-[30px] mx-auto h-[60px] w-[60px]" draggable="false" />
             </div>
         </div>
         <div class="mx-[12px] overflow-y-auto">
@@ -112,11 +115,7 @@
         </div>
     </nav>
     <main class="h-screen w-full select-none {isLinux ? 'rounded-r-[10px]' : ''}">
-        <div
-            class="fixed top-[5px] right-[5px] h-[30px]"
-            style="left: 235px"
-            data-tauri-drag-region="true"
-        ></div>
+        <div class="fixed top-[5px] right-[5px] h-[30px]" style="left: 235px" data-tauri-drag-region="true"></div>
         <div class="flex h-[35px] items-center justify-between">
             <h2 class="ml-[10px] font-medium">{t(`config.${page}.title`)}</h2>
             {#if !isMac}

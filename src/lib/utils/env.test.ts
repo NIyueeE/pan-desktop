@@ -59,18 +59,12 @@ describe('initEnv', () => {
         vi.resetModules();
     });
 
-    it.each(['Windows_NT', 'Darwin', 'Linux'])(
-        'os type %s resolves to an existing logo asset',
-        async (canonical) => {
-            // The direct user-visible regression: `logo/${osType}.svg` must
-            // point at a file that actually ships in public/, otherwise the
-            // recognize service list renders a broken image icon.
-            const publicLogoDir = path.resolve(
-                path.dirname(fileURLToPath(import.meta.url)),
-                '../../../public/logo'
-            );
-            const asset = path.join(publicLogoDir, `${canonical}.svg`);
-            expect({ asset, exists: fs.existsSync(asset) }).toEqual({ asset, exists: true });
-        }
-    );
+    it.each(['Windows_NT', 'Darwin', 'Linux'])('os type %s resolves to an existing logo asset', async (canonical) => {
+        // The direct user-visible regression: `logo/${osType}.svg` must
+        // point at a file that actually ships in public/, otherwise the
+        // recognize service list renders a broken image icon.
+        const publicLogoDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../public/logo');
+        const asset = path.join(publicLogoDir, `${canonical}.svg`);
+        expect({ asset, exists: fs.existsSync(asset) }).toEqual({ asset, exists: true });
+    });
 });

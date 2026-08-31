@@ -3,9 +3,14 @@
 
     import { t } from '../../../lib/i18n/i18n.svelte';
     import { appEnv } from '../../../lib/utils/env.svelte';
-    import { recognizeRegistry, translateRegistry, type RecognizeServiceName, type TranslateServiceName } from './registry';
+    import {
+        recognizeRegistry,
+        translateRegistry,
+        type RecognizeServiceName,
+        type TranslateServiceName,
+    } from './registry';
 
-    let {
+    const {
         kind,
         serviceNames,
         onClose,
@@ -55,12 +60,7 @@
                     class="mb-2 flex h-[40px] w-full items-center gap-3 rounded-lg bg-content2 px-3 text-sm hover:bg-content3"
                     onclick={() => onPick(serviceName)}
                 >
-                    <img
-                        src={serviceIcon(serviceName)}
-                        alt=""
-                        class="h-[24px] w-[24px]"
-                        draggable="false"
-                    />
+                    <img src={serviceIcon(serviceName)} alt="" class="h-[24px] w-[24px]" draggable="false" />
                     {serviceLabel(serviceName)}
                 </button>
             {/each}

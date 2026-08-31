@@ -7,7 +7,7 @@ import { resolveChatCompletionsUrl } from '../openai_url';
 export const info = { name: 'openai', icon: 'logo/openai.svg' };
 
 /** Human-readable language names injected into prompts via `$from`/`$to`. */
-export const Language: Record<string, string> = {
+export const Language = {
     auto: 'Auto',
     zh_cn: 'Simplified Chinese',
     zh_tw: 'Traditional Chinese',
@@ -40,7 +40,7 @@ export const Language: Record<string, string> = {
     nl: 'Dutch',
     uk: 'Ukrainian',
     he: 'Hebrew',
-};
+} as const satisfies Record<string, string>;
 
 export interface PromptMessage {
     role: 'system' | 'user' | 'assistant';
@@ -80,7 +80,7 @@ export function buildTranslateMessages(
     to: string,
     detect: string | undefined
 ): PromptMessage[] {
-    const detectName = (detect && Language[detect]) || 'unknown language';
+    const detectName = (detect && (Language as Record<string, string>)[detect]) || 'unknown language';
     return promptList.map((item) => ({
         role: item.role,
         content: item.content
@@ -124,7 +124,12 @@ export function createSseDeltaParser(onDelta: (delta: string) => void): (chunk: 
     };
 }
 
-export async function translate(text: string, from: string, to: string, options: TranslateRequestOptions): Promise<string> {
+export async function translate(
+    text: string,
+    from: string,
+    to: string,
+    options: TranslateRequestOptions
+): Promise<string> {
     const { detect, setResult } = options;
     const config = options.config as OpenAiTranslateConfig;
 

@@ -10,7 +10,7 @@
      * so the OK click (which blurs the input first) can cancel it.
      */
 
-    let {
+    const {
         value = '',
         osType = '' as OsType | '',
         placeholder = '',

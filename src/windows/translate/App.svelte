@@ -1,9 +1,10 @@
 <script lang="ts">
     import { Pin, PinOff, X } from '@lucide/svelte';
     import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+    import { currentMonitor } from '@tauri-apps/api/window';
     import { listen } from '@tauri-apps/api/event';
     import { info } from '@tauri-apps/plugin-log';
-    import { dragHandleZone } from 'svelte-dnd-action';
+    import { dragHandleZone, type DndEvent } from 'svelte-dnd-action';
     import { Toaster } from 'svelte-sonner';
 
     import { cfg, cfgRaw, setConfig, trackConfigKeys, writeThrough } from '../../lib/config/store.svelte';
@@ -48,7 +49,11 @@
     // Sanitized instance list: configs restored from other pot builds may
     // reference removed services; never let them reach the render tree.
     const translateInstances = $derived(
-        sanitizeServiceInstanceList(cfg('translate_service_list'), BUILTIN_TRANSLATE_SERVICES, DEFAULT_TRANSLATE_SERVICE_LIST)
+        sanitizeServiceInstanceList(
+            cfg('translate_service_list'),
+            BUILTIN_TRANSLATE_SERVICES,
+            DEFAULT_TRANSLATE_SERVICE_LIST
+        )
     );
     const enabledInstances = $derived(
         translateInstances.filter((key) => (cfgRaw(key) as ServiceInstanceConfig | undefined)?.enable !== false)
@@ -57,12 +62,13 @@
     const hideLanguage = $derived(cfg('translate_layout') === 'hide_language' || cfg('translate_layout') === 'compact');
 
     // Drag-and-drop reorder of the enabled result cards.
-    let dndItems = $state<{ id: string }[]>([]);
+    // eslint-disable-next-line svelte/prefer-writable-derived -- kept writable for the dnd action
+    let dndItems = $state<{ id: string }[]>([{ id: '' }]);
     $effect(() => {
         dndItems = enabledInstances.map((id) => ({ id }));
     });
 
-    function handleDndFinalize(event: CustomEvent<{ id: string }[]>) {
+    function handleDndFinalize(event: CustomEvent<DndEvent<{ id: string }>>) {
         const newOrder = event.detail.items.map((item) => item.id);
         // Rebuild the full stored list: enabled entries follow the new order,
         // disabled entries keep their positions.
@@ -243,7 +249,7 @@
                 moveTimeout = setTimeout(() => {
                     void (async () => {
                         const position = await appWindow.outerPosition();
-                        const monitor = await appWindow.currentMonitor();
+                        const monitor = await currentMonitor();
                         if (!monitor) {
                             return;
                         }
@@ -266,7 +272,7 @@
                 resizeTimeout = setTimeout(() => {
                     void (async () => {
                         const size = await appWindow.outerSize();
-                        const monitor = await appWindow.currentMonitor();
+                        const monitor = await currentMonitor();
                         if (!monitor) {
                             return;
                         }
@@ -328,10 +334,7 @@
 <svelte:window onkeydown={onKeyDown} />
 
 <div class="bg-background h-screen w-screen {isLinux ? 'rounded-[10px] border border-default-100' : ''}">
-    <div
-        class="fixed top-[5px] left-[5px] right-[5px] h-[30px]"
-        data-tauri-drag-region="true"
-    ></div>
+    <div class="fixed top-[5px] left-[5px] right-[5px] h-[30px]" data-tauri-drag-region="true"></div>
     <div class="h-[35px] w-full flex justify-between">
         <button
             type="button"
@@ -368,11 +371,7 @@
                 onfinalize={handleDndFinalize}
             >
                 {#each dndItems as item, index (item.id)}
-                    <ResultCard
-                        instanceKey={item.id}
-                        instances={translateInstances}
-                        isFirst={index === 0}
-                    />
+                    <ResultCard instanceKey={item.id} instances={translateInstances} isFirst={index === 0} />
                 {/each}
             </section>
         </div>

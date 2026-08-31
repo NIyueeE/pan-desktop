@@ -7,20 +7,22 @@
     import { untrack } from 'svelte';
     import { dragHandle } from 'svelte-dnd-action';
 
-    import { cfg, cfgRaw, trackConfigKeys } from '../../lib/config/store.svelte';
+    import { cfg, cfgRaw } from '../../lib/config/store.svelte';
     import { t } from '../../lib/i18n/i18n.svelte';
-    import { themeState } from '../../lib/utils/theme.svelte';
     import { translateServices } from '../../lib/services';
     import { getServiceName, type ServiceInstanceConfig } from '../../lib/utils/service_instance';
 
     import { translateState } from './state.svelte';
 
-    let {
+    const {
         instanceKey,
         instances,
         isFirst = false,
     }: { instanceKey: string; instances: string[]; isFirst?: boolean } = $props();
 
+    // ResultCard is keyed by instanceKey in the {#each} block, so it remounts
+    // when the card's instance changes — seeding the selection once is fine.
+    // svelte-ignore state_referenced_locally
     let selectedKey = $state(instanceKey);
     let result = $state('');
     let errorText = $state('');
@@ -244,12 +246,12 @@
                     >
                         {#each instanceItems as item (item.value)}
                             <DropdownMenu.Item
-                                value={item.value}
                                 class="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm outline-none select-none data-[highlighted]:bg-content2"
                                 onSelect={() => onServiceSelect(item.value)}
                             >
                                 <img
-                                    src={translateServices[getServiceName(item.value) as keyof typeof translateServices]?.info?.icon ?? ''}
+                                    src={translateServices[getServiceName(item.value) as keyof typeof translateServices]
+                                        ?.info?.icon ?? ''}
                                     alt=""
                                     class="h-[18px] w-[18px]"
                                     draggable="false"
@@ -281,20 +283,15 @@
             {/if}
         </button>
     </div>
-    <div
-        class="grid transition-[grid-template-rows] duration-150"
-        style="grid-template-rows: {hidden ? '0fr' : '1fr'}"
-    >
+    <div class="grid transition-[grid-template-rows] duration-150" style="grid-template-rows: {hidden ? '0fr' : '1fr'}">
         <div class="overflow-hidden">
             <div class="p-[12px] pb-0">
-                <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
                 <textarea
                     bind:this={resultEl}
                     readonly
                     value={result}
                     class="h-0 w-full resize-none bg-transparent outline-none select-text"
-                    style="font-size: 1rem"
-                ></textarea>
+                    style="font-size: 1rem"></textarea>
                 {#if errorText !== ''}
                     {#each errorText.split('\n') as line, i (i)}
                         <p class="select-text text-[14px] text-danger">{line}</p>

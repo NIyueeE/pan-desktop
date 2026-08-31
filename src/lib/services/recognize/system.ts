@@ -113,7 +113,11 @@ function isCjkLanguage(language: string): boolean {
     return language === 'zh_cn' || language === 'zh_tw' || language === 'ja';
 }
 
-export async function recognize(_base64: string, language: string, _options?: RecognizeRequestOptions): Promise<string> {
+export async function recognize(
+    _base64: string,
+    language: string,
+    _options?: RecognizeRequestOptions
+): Promise<string> {
     switch (appEnv.osType) {
         case 'Linux': {
             let result = await invoke<string>('system_ocr', { lang: linuxLangMap[language] ?? 'auto' });

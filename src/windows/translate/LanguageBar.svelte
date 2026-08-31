@@ -3,12 +3,17 @@
 
     import { cfg, setConfig, trackConfigKeys } from '../../lib/config/store.svelte';
     import { t } from '../../lib/i18n/i18n.svelte';
-    import { languageLabel, languageList } from '../../lib/utils/language';
+    import { languageList } from '../../lib/utils/language';
     import PSelect from '../../lib/ui/PSelect.svelte';
 
     import { translateState } from './state.svelte';
 
-    void trackConfigKeys(['translate_remember_language']);
+    void trackConfigKeys([
+        'translate_remember_language',
+        'translate_source_language',
+        'translate_target_language',
+        'translate_second_language',
+    ]);
 
     const languageItems = $derived([
         { value: 'auto', label: t('languages.auto') },
@@ -16,7 +21,8 @@
     ]);
     const targetItems = $derived(languageList.map((code) => ({ value: code, label: t(`languages.${code}`) })));
 
-    // Seed the selectors from the configured defaults exactly once.
+    // Seed the selectors from the configured defaults exactly once; live
+    // edits from other windows keep flowing through the tracked events.
     let seeded = false;
     $effect(() => {
         if (seeded) {

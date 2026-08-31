@@ -110,4 +110,3 @@ describe('ServiceManager (recognize)', () => {
         deleteSpy.mockRestore();
     });
 });
-

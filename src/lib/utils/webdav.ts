@@ -105,7 +105,10 @@ const requestInit = (
         signal: timeoutSignal(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     };
     if ((username ?? '') !== '' || (password ?? '') !== '') {
-        init.headers = { ...(init.headers as Record<string, string>), Authorization: `Basic ${basicAuthToken(username, password)}` };
+        init.headers = {
+            ...(init.headers as Record<string, string>),
+            Authorization: `Basic ${basicAuthToken(username, password)}`,
+        };
     }
     return init;
 };
@@ -241,6 +244,7 @@ export async function uploadBackup(
 }
 
 export interface BackupPayload {
+    type: string;
     timestamp: number;
     version: string;
     data: BackupData;
@@ -255,7 +259,10 @@ export async function downloadBackup(
     options: RequestOptions = {}
 ): Promise<BackupPayload> {
     assertHttpUrl(url);
-    const response = await fetch(backupFileUrl(url, filename), requestInit(username, password, { method: 'GET' }, options));
+    const response = await fetch(
+        backupFileUrl(url, filename),
+        requestInit(username, password, { method: 'GET' }, options)
+    );
     if (response.status === 404) {
         throw new Error('No backup found on the server');
     }

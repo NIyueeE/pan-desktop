@@ -4,13 +4,18 @@
     import { t } from '../../../lib/i18n/i18n.svelte';
     import { appEnv } from '../../../lib/utils/env.svelte';
     import { getServiceName } from '../../../lib/utils/service_instance';
-    import { recognizeRegistry, translateRegistry, type RecognizeServiceName, type TranslateServiceName } from './registry';
+    import {
+        recognizeRegistry,
+        translateRegistry,
+        type RecognizeServiceName,
+        type TranslateServiceName,
+    } from './registry';
 
     import NoConfigNeeded from './NoConfigNeeded.svelte';
     import OpenAiOcrConfig from './OpenAiOcrConfig.svelte';
     import OpenAiTranslateConfig from './OpenAiTranslateConfig.svelte';
 
-    let {
+    const {
         kind,
         instanceKey,
         onClose,
@@ -52,32 +57,15 @@
             class="fixed top-1/2 left-1/2 z-50 max-h-[75vh] w-[520px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-content1 p-4 shadow-xl"
         >
             <Dialog.Title class="mb-3 flex items-center gap-2 font-medium">
-                <img
-                    src={serviceIcon()}
-                    alt=""
-                    class="h-[24px] w-[24px]"
-                    draggable="false"
-                />
+                <img src={serviceIcon()} alt="" class="h-[24px] w-[24px]" draggable="false" />
                 {t(`services.${kind}.${serviceName}.title`)}
             </Dialog.Title>
             {#if serviceName === 'openai' && kind === 'translate'}
-                <OpenAiTranslateConfig
-                    {instanceKey}
-                    onSaved={onSaved}
-                    onClose={onClose}
-                />
+                <OpenAiTranslateConfig {instanceKey} {onSaved} {onClose} />
             {:else if serviceName === 'openai' && kind === 'recognize'}
-                <OpenAiOcrConfig
-                    {instanceKey}
-                    onSaved={onSaved}
-                    onClose={onClose}
-                />
+                <OpenAiOcrConfig {instanceKey} {onSaved} {onClose} />
             {:else}
-                <NoConfigNeeded
-                    {instanceKey}
-                    onSaved={onSaved}
-                    onClose={onClose}
-                />
+                <NoConfigNeeded {instanceKey} {onSaved} {onClose} />
             {/if}
             <div class="mt-3 flex justify-end">
                 <button

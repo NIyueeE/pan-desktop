@@ -32,7 +32,11 @@ export function getDisplayInstanceName(instanceName: string, serviceNameSupplier
  * This protects the UI against configs restored from backups created with a
  * different pot build that had more services (e.g. deepl/bing).
  */
-export function sanitizeServiceInstanceList(list: unknown, builtinNames: readonly string[], fallback: string[]): string[] {
+export function sanitizeServiceInstanceList(
+    list: unknown,
+    builtinNames: readonly string[],
+    fallback: string[]
+): string[] {
     if (!Array.isArray(list)) {
         return [...fallback];
     }

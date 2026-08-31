@@ -62,7 +62,9 @@ describe.each([
         }
         await initConfigStore();
 
-        const { container, unmount } = render(page);
+        // Heterogeneous page components share no prop type; the sweep only
+        // renders them bare.
+        const { container, unmount } = render(page as Parameters<typeof render>[0]);
 
         const scan = (): string[] =>
             Array.from(container.querySelectorAll('*'))

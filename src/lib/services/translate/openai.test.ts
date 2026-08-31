@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-    DEFAULT_PROMPT_LIST,
-    buildTranslateMessages,
-    createSseDeltaParser,
-    Language,
-} from './openai';
+import { DEFAULT_PROMPT_LIST, buildTranslateMessages, createSseDeltaParser, Language } from './openai';
 
 describe('buildTranslateMessages', () => {
     it('substitutes $text/$from/$to/$detect placeholders', () => {
@@ -27,7 +22,7 @@ describe('buildTranslateMessages', () => {
 
     it('falls back to a readable hint for unknown detected languages', () => {
         const messages = buildTranslateMessages(DEFAULT_PROMPT_LIST, 'Hi', Language.auto, Language.en, 'xx');
-        expect(messages[1]?.content).toContain('Translate into English');
+        expect(messages[1]?.content ?? '').toContain('Translate into English');
     });
 });
 

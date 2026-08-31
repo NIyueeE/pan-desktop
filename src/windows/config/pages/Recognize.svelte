@@ -5,7 +5,7 @@
     import PSwitch from '../../../lib/ui/PSwitch.svelte';
     import Section from '../../../lib/ui/Section.svelte';
     import SettingRow from '../../../lib/ui/SettingRow.svelte';
-    import { languageLabel, languageList } from '../../../lib/utils/language';
+    import { languageList } from '../../../lib/utils/language';
 
     void trackConfigKeys(['recognize_language', 'recognize_delete_newline']);
 

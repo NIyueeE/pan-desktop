@@ -2,7 +2,7 @@ import { error as logError, info } from '@tauri-apps/plugin-log';
 
 import { cfgRaw, getStoreInstance, initConfigStore, refreshSnapshot } from '../../lib/config/store.svelte';
 import { initEnv } from '../../lib/utils/env.svelte';
-import { uploadBackup } from '../../lib/utils/webdav';
+import { uploadBackup, type BackupStore } from '../../lib/utils/webdav';
 
 // Auto backup scheduler running in the always-alive daemon window.
 const CHECK_INTERVAL = 10 * 60 * 1000; // evaluate every 10 minutes
@@ -31,7 +31,7 @@ async function maybeAutoBackup(): Promise<void> {
         const password = String(cfgRaw('webdav_password') ?? '');
         const rawFilename = cfgRaw('webdav_filename');
         const filename = typeof rawFilename === 'string' && rawFilename !== '' ? rawFilename : undefined;
-        await uploadBackup(store, url, username, password, filename);
+        await uploadBackup(store as unknown as BackupStore, url, username, password, filename);
         const now = Date.now();
         await store.set('webdav_last_sync', now);
         await store.save();

@@ -1,9 +1,16 @@
 <script lang="ts">
     import { GripVertical, Pencil, Plus, Trash2 } from '@lucide/svelte';
-    import { dragHandle, dragHandleZone } from 'svelte-dnd-action';
+    import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
     import { toast } from 'svelte-sonner';
 
-    import { cfg, cfgRaw, deleteConfigKey, setConfig, trackConfigKeys, writeThrough } from '../../../lib/config/store.svelte';
+    import {
+        cfg,
+        cfgRaw,
+        deleteConfigKey,
+        setConfig,
+        trackConfigKeys,
+        writeThrough,
+    } from '../../../lib/config/store.svelte';
     import { t } from '../../../lib/i18n/i18n.svelte';
     import type { RecognizeServiceName, TranslateServiceName } from './registry';
     import { recognizeRegistry, translateRegistry } from './registry';
@@ -18,13 +25,17 @@
     import AddServiceModal from './AddServiceModal.svelte';
     import ConfigModal from './ConfigModal.svelte';
 
-    let { kind }: { kind: 'translate' | 'recognize' } = $props();
+    const { kind }: { kind: 'translate' | 'recognize' } = $props();
 
-    const configKey = kind === 'translate' ? 'translate_service_list' : 'recognize_service_list';
-    const labelNamespace = kind === 'translate' ? 'services.translate' : 'services.recognize';
-    const defaultList = kind === 'translate' ? ['openai'] : ['system', 'tesseract'];
+    // `kind` is fixed per mounted instance (one manager per service page
+    // section), but the compiler wants prop-derived values to stay reactive.
+    const configKey = $derived(kind === 'translate' ? 'translate_service_list' : 'recognize_service_list');
+    const labelNamespace = $derived(kind === 'translate' ? 'services.translate' : 'services.recognize');
+    const defaultList = $derived(kind === 'translate' ? ['openai'] : ['system', 'tesseract']);
 
-    void trackConfigKeys([configKey]);
+    $effect(() => {
+        void trackConfigKeys([configKey]);
+    });
 
     const serviceNames = $derived(
         kind === 'translate'
@@ -44,12 +55,13 @@
         }
     });
 
-    let dndItems = $state<{ id: string }[]>([]);
+    // eslint-disable-next-line svelte/prefer-writable-derived -- kept writable for the dnd action
+    let dndItems = $state<{ id: string }[]>([{ id: '' }]);
     $effect(() => {
         dndItems = instances.map((id) => ({ id }));
     });
 
-    function handleDndFinalize(event: CustomEvent<{ id: string }[]>) {
+    function handleDndFinalize(event: CustomEvent<DndEvent<{ id: string }>>) {
         setConfig(
             configKey,
             event.detail.items.map((item) => item.id)
@@ -102,10 +114,7 @@
 <div class="flex h-[calc(100vh-70px)] flex-col justify-between">
     <div class="mb-3 h-full overflow-y-auto">
         <h3 class="mb-2 text-sm font-medium">{t(`config.service.${kind}`)}</h3>
-        <div
-            use:dragHandleZone={{ items: dndItems, flipDurationMs: 0 }}
-            onfinalize={handleDndFinalize}
-        >
+        <div use:dragHandleZone={{ items: dndItems, flipDurationMs: 0 }} onfinalize={handleDndFinalize}>
             {#each dndItems as item (item.id)}
                 {@const config = (cfgRaw(item.id) as ServiceInstanceConfig | undefined) ?? {}}
                 <div class="mb-[8px] flex items-center justify-between rounded-md bg-content2 px-[10px] py-[10px]">

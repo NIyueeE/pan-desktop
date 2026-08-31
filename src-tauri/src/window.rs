@@ -114,15 +114,15 @@ fn build_window(label: &str, title: &str) -> (WebviewWindow, bool) {
                 WebviewUrl::App(format!("{label}.html").into()),
             )
             .position(position.x.into(), position.y.into())
-                    .additional_browser_args(BROWSER_ARGS)
-                    .use_https_scheme(true)
-                    .title(title)
-                    // NO `.focused(true)`: the window is created hidden and the
-                    // frontend focuses it exactly once after showing it. tao's
-                    // set_focus injects a synthetic ALT keypress whenever
-                    // SetForegroundWindow is denied, so every extra focus call
-                    // risks breaking the IME and fighting for the foreground.
-                    .visible(false);
+            .additional_browser_args(BROWSER_ARGS)
+            .use_https_scheme(true)
+            .title(title)
+            // NO `.focused(true)`: the window is created hidden and the
+            // frontend focuses it exactly once after showing it. tao's
+            // set_focus injects a synthetic ALT keypress whenever
+            // SetForegroundWindow is denied, so every extra focus call
+            // risks breaking the IME and fighting for the foreground.
+            .visible(false);
 
             #[cfg(target_os = "macos")]
             {
@@ -169,7 +169,7 @@ pub fn config_window() {
     let _ = window.set_size(tauri::LogicalSize::new(800, 600));
     let _ = window.center();
     // Show from the Rust side so the window appears even when the frontend
-    // fails to boot (it also calls `show()` once React mounted).
+    // fails to boot (it also calls `show()` once its mount completed).
     let _ = window.show();
     let _ = window.set_focus();
 }

@@ -72,7 +72,7 @@ export const LanguageFlag: Record<string, string> = {
     tk: 'tm',
 };
 
-type Translate = (key: string, options?: object) => string;
+type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 /**
  * Label for a language code. Falls back to the raw code when no translation

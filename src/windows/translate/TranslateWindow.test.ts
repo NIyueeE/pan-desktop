@@ -5,7 +5,7 @@
  * when the network is unavailable, as in the test environment).
  */
 import { describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { render, waitFor } from '@testing-library/svelte';
 
 import { fakeConfigFile, emitTestEvent } from '../../test/tauri-state';
 import { initConfigStore } from '../../lib/config/store.svelte';
