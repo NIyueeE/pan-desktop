@@ -1,12 +1,13 @@
 # AGENTS.md
 
-本仓库 (`pot`, pot-desktop 精简分支) 的代理/协作者工作指南。包括统一的本地开发与质量门禁、测试驱动的反馈修复流程、以及 GitHub Actions CI/CD 与本地工作的协调模式。
+本仓库 (`pan`, pan-desktop — `pot-app/pot-desktop` 的精简分支，品牌已于 2026-08 由 pot 更名为 pan) 的代理/协作者工作指南。包括统一的本地开发与质量门禁、测试驱动的反馈修复流程、GitHub Actions CI/CD 与本地工作的协调模式、以及 Windows 平台窗口/焦点/热键问题的深度排查手册（见第 8 节）。
 
 > 本指南中凡引用 `pnpm xxx` / `pnpm test:xxx` 的命令，必须使用仓库根目录的 `package.json` 中定义的脚本；CI 跑的就是同一套脚本，本地门禁与 CI 门禁完全对齐（见第 6 节）。
 
 ## 1. 项目概览
 
--   **定位**：`pot-app/pot-desktop` 的精简分支，**仅保留** 划词翻译、输入翻译、OCR 翻译三种入口，翻译服务只保留 **OpenAI Chat Completions 兼容 API**，OCR 只保留系统 OCR + Tesseract。
+-   **定位**：`pot-app/pot-desktop` 的精简分支，品牌名 **pan**（应用标识 `com.pan.desktop`，可执行文件 `pan`）。**仅保留** 划词翻译、输入翻译、OCR 翻译三种入口，翻译服务只保留 **OpenAI Chat Completions 兼容 API**（显示名 "OpenAI Compatible"），OCR 保留系统 OCR + Tesseract + **OpenAI 兼容 VLM 视觉识别端点**（`services/recognize/openai`，默认关闭、手动添加）。
+-   **兼容性红线**：上游 pot 生成的 WebDAV 备份（`app: 'pot'`）必须永远可以恢复 —— 备份校验只看 `type: 'config-backup'`，**不要**加 `app` 字段校验（有专门回归用例：`scripts/test-webdav.mjs` 的 "Legacy pot backups still restore" 一节）。
 -   **技术栈**：Tauri 2.11（Rust 2024 stable + rustfmt + clippy）、React 18 + Vite 5、NextUI、react-beautiful-dnd、jotai、react-i18next、pnpm 9、Node 22。
 -   **目录结构**（`/` 仓库根）：
 
@@ -61,10 +62,15 @@
 -   **vitest 2.x**（不是 3+），配套 Vite 5；用 `pnpm add -D vitest@^2.1.9` 锁定。
 -   已覆盖的回归用例集（持续扩充）：
     -   `src/window/Config/UndefinedSweep.test.jsx` — 7 个配置页 × 3 种配置 × 首帧 + 稳定后扫描 `undefined`。
-    -   `src/window/Config/pages/Service/ServicePage.test.jsx` — 新配置 / 过期服务实例键 / 缺实例配置 / 非法列表 / 错误边界 / 全新实例表单完整性。
+    -   `src/window/Config/pages/Service/ServicePage.test.jsx` — 新配置 / 过期服务实例键 / 缺实例配置 / 非法列表 / 错误边界 / 全新实例表单完整性 / 系统 OCR 图标引用真实存在的资产（含负例断言）/ 文字识别服务模态列出全部内置服务（含 VLM 端点）。
     -   `src/window/Config/pages/Hotkey/HotkeyPage.test.jsx` — 焦点保留 / OK 应用 / 清空 / 冲突拒绝 / 失败还原。
     -   `src/window/Translate/TranslateWindow.test.jsx` — 翻译窗口语言下拉框 `undefined` 泄漏回归。
+    -   `src/window/Translate/focus.test.js` — 失焦宽限簿记：程序性聚焦后 800ms 内的假 blur 被忽略、真 blur 仍关窗、标记刷新延长宽限。
+    -   `src/window/Config/pages/About/AboutPage.test.jsx` — 关于页精简形态钉死（Pan 品牌 / 唯一 GitHub 按钮且指向本 fork / 已移除入口不得回归）。
+    -   `src/utils/env.test.js` — plugin-os v2 小写值归一化映射 + `public/logo/*.svg` 资产存在性（Windows 破图图标回归网）。
+    -   `src/services/recognize/openai/openai.test.js` — VLM OCR 请求构建纯函数：URL 补全规则 / Bearer 头 / image_url data URL / `$lang` 替换 / 默认 prompt 回退。
     -   `src-tauri/src/config.rs` 单测 — `sanitized_service_value` 纯函数。
+    -   `scripts/test-webdav.mjs` — 17 节，含 "Legacy pot backups still restore"（上游备份向后兼容）。
 
 ### 3.2 添加新测试的最小步骤
 
@@ -81,10 +87,10 @@
 -   **JS/TS**：`pnpm lint:js`（`eslint src --max-warnings=0`；0 警告 0 错误是硬门槛）。
 -   **Rust**：`pnpm lint:rs`（`cargo clippy --all-targets -- -D warnings`），**clippy 拒绝所有 warning**（lints.clippy: all/pedantic/nursery 都启用了 deny）。
 -   **i18n**：在 `en_US.json` / `zh_CN.json` / `zh_TW.json` 至少加键；其它 locale 通过 `fallbackLng: default: ['en']` 自动回退到 en。新增键统一加到 `common.*` 或业务命名空间下，**不要**散落到非命名空间路径。
--   **提交信息**（参考 `git log` 已确立的风格）：
-    -   `fix(scope): 中文一句话` — bug 修复，scope 写功能/窗口/文件名（`hotkey`、`webdav`、`ui`、`config`、`hotkey.rs`、`window.rs`）。
+-   **提交信息**（2026-08 起统一英文风格；参考 `git log`）：
+    -   `fix(scope): english one-liner` — bug 修复，scope 写功能/窗口/文件名（`hotkey`、`webdav`、`ui`、`config`、`env`、`translate`、`cmd`）。
     -   `feat(scope): ...` — 新功能。
-    -   `chore(release): vX.Y.Z — 一句话` — 版本号 bump。
+    -   `chore(release): vX.Y.Z — one-liner` — 版本号 bump。
     -   `test(...): ...`、`docs: ...`、`style: ...`。
 -   **版本号 bump 仪式**（发版前必做）：
     1. `package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock` 同步到 `X.Y.Z`。
@@ -101,6 +107,13 @@
 -   `react-beautiful-dnd` 的开发模式 invariant 在 jsdom 里会因异步配置加载而触发 —— 测试里 mock 掉（见 `src/test/setup.js`），生产构建里 rbd 的 dev 检查被剔除，**真实用户不受影响**，只是测试噪声。
 -   vitest 4 要求 Vite 7；本仓库用 Vite 5，所以 vitest 必须 `^2.1.9`，不要 `pnpm add vitest@latest`。
 -   `cargo fmt` 与 `prettier --check` 在 `pnpm check` 里都会跑；改了 Rust/JS 任一边都要跑一遍 `pnpm format:fix`。
+-   **plugin-os v2 返回小写 OS 类型**：`@tauri-apps/plugin-os` 的 `type()` 给 `'windows' | 'macos' | 'linux'`，而全仓库按 Tauri v1 名（`Windows_NT`/`Darwin`/`Linux`）比较（系统 OCR 的 `switch (osType)`、每 OS 窗口布局、`public/logo/*.svg` 图标路径）。唯一归一化点在 `src/utils/env.js` 的 `normalizeOsType()`；新增 OS 分支判断一律用规范名。
+-   **重负载 Tauri command 必须 `#[tauri::command(async)]`**：同步命令在主线程执行，任何 >10ms 的工作（全屏截图、PNG 编码、WinRT OCR 的 `block_on`、文件读取）都会冻结事件循环 → **全局热键饿死**（WM_HOTKEY 由主线程 WndProc 分发，详见第 8 节）→ 表现为"注册成功但按下无反应"。WinRT 调用移到后台线程时必须先 `CoInitializeEx(COINIT_MULTITHREADED)`（主线程由 tao 初始化为 STA，后台线程没有 COM apartment；需要 `windows` crate 的 `Win32_System_Com` feature）。剪贴板类（arboard/selection）依赖 OLE，保持同步。
+-   **tao 的 `set_focus()` 在 `SetForegroundWindow` 被系统拒绝时会注入一对合成 ALT 按键**（`SendInput(VK_LMENU)`）：打断中文输入法组合（"打不了字"）并反复抢前台（"点其他区域焦点弹回"）。翻译窗口聚焦必须**按需单次**：先查 `isVisible()/isFocused()`，仅在需要时调用一次；**禁止**在创建隐藏窗口时链 `.focused(true)`。
+-   **禁止把每次渲染新建的数组/对象用作 effect 依赖**：`sanitizeServiceInstanceList()` 等纯函数每次返回新数组，直接放进 deps = 每次渲染重跑 effect；若 effect 里还有 `setState(新对象)`，就是**无限渲染循环 + IPC 风暴**（实测症状：翻译窗口持续空转、`handleNewText` 反复执行反复抢焦点）。改用 `list.join('\u0000')` 内容键 + `useCallback`，或 once-ref 守卫一次性加载。
+-   **翻译窗口 close-on-blur 三层防护不可拆**：程序性聚焦后 800ms 宽限期（`window/Translate/focus.js`）、`Confirm Blur` 前复查 `isFocused()`、拖动/聚焦取消。Windows/WebView2（透明+无边框+skip-taskbar）会自发 Focus/Blur 振荡，裸定时器关窗会在用户打字时把窗口关掉。
+-   **`tauri-plugin-fs` 的 watch 命令在非默认 cargo feature 里**：`tauri-plugin-fs = { version = "...", features = ["watch"] }`。报 `Command watch not found` = 命令被 feature gate 编译掉了，**不是** ACL/权限问题。插件命令"不存在"类报错的排查顺序：① `generate_handler!` 是否注册；② cargo feature 是否 gate；③ capabilities 是否覆盖该 window label。
+-   **tauri-plugin-log 默认 UTC 时间戳**（用户看到的日志时间会差时区），已设 `TimezoneStrategy::UseLocal`；新日志排查先确认时间基准。
 
 ## 6. GitHub CI/CD 协调模式
 
@@ -189,3 +202,49 @@ Dependabot 自动 PR 走的是同一条 `lint` job（含新加的 vitest 与 car
 -   [ ] 提交信息遵循第 4 节风格；`fix`/`feat`/`chore(release)` 三种最常用。
 -   [ ] 推 `pan` 远端（`origin` 指上游，通常不直接推）。
 -   [ ] 若是发版：版本号三处一致、tag 名 `Vx.y.z`、已用 `gh release view` 确认 8 个产物到位。
+
+## 8. Windows 热键 / 焦点 / 输入排查手册（2026-08 实战沉淀）
+
+本节是 pot→pan 改造期间一连串 Windows 独有问题的完整复盘。症状链：**热键注册成功但按下无反应 → 主线程阻塞 → 焦点抖动 / 窗口自关 / 输入法失效**。以下结论全部有源码级依据（本地 cargo registry 里的 tao / global-hotkey / tauri-plugin-\* 源码），排查同类问题时先来这里对照，再读源码验证。
+
+### 8.1 症状 → 根因速查
+
+| 症状                                                                         | 根因                                                                                                                                         | 修复位置                                                                                                      |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 热键注册成功（成功 toast / 日志 `Registered global shortcut`）但按下无反应   | 主线程被同步 Tauri command 阻塞：WM_HOTKEY 由主线程 WndProc（`global_hotkey_proc`）分发，handler 也在主线程同步执行；事件循环冻结 = 热键饿死 | 重负载命令全部 `#[tauri::command(async)]`；WinRT 移后台线程 + `CoInitializeEx(MTA)`（`system_ocr.rs` 有范本） |
+| 翻译窗口焦点秒级抖动（`[native] translate window focused: true/false` 交替） | (a) 无限渲染循环（fresh-array effect deps，每圈 setState）；(b) 多余的 `setFocus` 调用                                                       | effect 依赖改内容键 + once-guard；聚焦收敛为按需单次                                                          |
+| 打不了字（输入法组合被打断）                                                 | tao `force_window_active` 在 `SetForegroundWindow` 被拒时注入合成 ALT 按键                                                                   | 聚焦按需单次；移除创建时 `.focused(true)`                                                                     |
+| 窗口在打字时自己消失                                                         | close-on-blur 定时器被 WebView2 假 blur 误触发                                                                                               | 聚焦 800ms 宽限（`focus.js`）+ Confirm 前复查 `isFocused()`                                                   |
+| 文字识别里"系统 OCR"显示破图                                                 | plugin-os v2 小写值未归一化（见第 5 节）                                                                                                     | `env.js` 的 `normalizeOsType()`                                                                               |
+| `HotKey already registered`（部分热键）                                      | 新旧两个实例并存                                                                                                                             | 换构建前先托盘退出旧实例                                                                                      |
+| `Command watch not found`                                                    | 插件命令被 cargo feature gate（fs 的 `watch`）                                                                                               | 启用对应 feature（见第 5 节）                                                                                 |
+
+### 8.2 双层日志定位法（先加日志再猜）
+
+-   **原生层**：`main.rs` 的 `.on_window_event` 对 translate 窗口记 `[native] translate window focused: <bool>`。tao 在 WM_NCACTIVATE / WM_SETFOCUS / WM_KILLFOCUS 上发 Focused 事件，所以这是 Win32 激活状态的直接记录。
+-   **webview 层**：`window/Translate/index.jsx` 记 `Focus` / `Blur` / `Blur ignored (grace)` / `Confirm Blur` / `Cancel Close`。
+-   **判读规则**：
+    -   native 抖而 webview 无事件 → Win32 层问题（查窗口样式 / skip-taskbar / 外部进程抢前台）；
+    -   两层同步抖 → 事件真实，找激活的"对手窗口"；
+    -   `Blur ignored (grace)` 周期性出现 → `markProgrammaticFocus` 被反复调用 → **handleNewText 被反复执行 → 查 effect 依赖 churn**（本轮的真凶就是它）。
+-   日志文件：Windows 在 `%LOCALAPPDATA%\com.pan.desktop\logs\pan.log`（**不是** %APPDATA%）；时间戳已切本地时区。
+
+### 8.3 原生源码关键结论（`~/.cargo/registry/src/index.crates.io-*/` 下已核实）
+
+-   `tao-*/platform_impl/windows/window.rs`：`set_focus()` → `force_window_active()` → `SetForegroundWindow` 失败时 **`SendInput` 合成 ALT down/up** 再抢一次（注释自承认是 hack）；`set_skip_taskbar` 走 ITaskbarList 的 DeleteTab/AddTab。
+-   `tao-*/event_loop.rs`：Focused 事件由 **WM_NCACTIVATE 和 WM_SETFOCUS/WM_KILLFOCUS 共同驱动** → WebView2 子窗口的焦点迁移也会让顶层发 Focused(false)，"顶层失焦"不代表窗口真的不活跃。
+-   `global-hotkey-*/platform_impl/windows/mod.rs`：`WM_HOTKEY` → `GlobalHotKeyEvent::send` → 插件的 `set_event_handler` **在 WndProc 里同步执行业务 handler**；Released 靠独立线程每 50ms 轮询 `GetAsyncKeyState`。
+-   `tauri-plugin-global-shortcut-*/lib.rs`：注册/注销经 `run_main_thread!` 宏（`run_on_main_thread` + channel `recv()` 阻塞等待结果）；`on_shortcut` 返回 Ok = 系统级注册成功。
+-   `tauri-plugin-store-*/store.rs`：`StoreBuilder::build()` 会自动从磁盘 load；同路径返回同一实例 → Rust 与 JS 共享内存态，Rust `set()` 显式 `save()`。
+-   `tauri-plugin-fs-*/lib.rs`：watch 命令 `#[cfg(feature = "watch")]`，非默认。
+-   `windows-0.62.x`：`CoInitializeEx(Option<*const c_void>, COINIT)` 位于 `Win32::System::Com`（feature `Win32_System_Com`）；WinRT 异步对象在 MTA 线程上 `block_on` 安全，在 STA 主线程上会冻结事件循环。
+-   `@tauri-apps/plugin-os`：`type()` 返回小写 `'windows' | 'macos' | 'linux'`（v1 API 是 `Windows_NT`/`Darwin`/`Linux`）。
+
+### 8.4 测试与验证纪律
+
+-   **mock 必须诚实**：mock 返回值与真实插件一致（plugin-os 返回 `'windows'` 而非 `'Windows_NT'`；`getName` 返回 `'pan'`），否则测试全绿但真机必挂——本轮 osType bug 被旧 mock 掩盖了整个 Tauri 2 迁移期。
+-   **"撤销修复 → 测试必须失败"**：修复落地后 `git stash push <fix-file>` 回退，确认回归网真的能抓（icon 修复验证过），再 pop 回来。
+-   **Windows-only 代码（`#[cfg(target_os = "windows")]`）在 Linux 上 clippy/cargo check 编译不到**：对照 `~/.cargo/registry/` 里 windows crate 源码核对 API 签名与 feature（如 `CoInitializeEx` 的参数与 `Win32_System_Com`），并盯 CI 的 build-for-windows job。`cargo check --target x86_64-pc-windows-msvc` 会被 `ring` 的构建脚本挡住，不要浪费时间尝试。
+-   **本机 Linux 跑 `cargo test`（链接 Tauri 二进制）需要系统库**：`sudo apt-get install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev patchelf pkg-config`（2026-08 已装）。缺失时报 `rust-lld: unable to find library -lxcb / -lgtk-3 / ...`，属环境问题——用 `git stash` 在未改动 HEAD 上复现同样错误来证明与改动无关。
+-   **Windows 安装包只能 CI 出**（tauri 无法从 Linux 交叉编译 MSVC 目标）：push main → 验证性构建 → `gh run download <run-id> --repo NIyueeE/pan-desktop --name windows_x86_64-pc-windows-msvc -d ./ci-artifacts`。**换构建前先托盘退出旧实例**（否则热键/单实例冲突，日志见 `HotKey already registered`）。
+-   **排查用户报障时先要日志再猜**：`%LOCALAPPDATA%\com.pan.desktop\logs\pan.log`；让用户复现一次后按行号区段截取。本轮两次"想当然"都被日志推翻，两次日志都直接改写了结论。
