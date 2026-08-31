@@ -176,6 +176,7 @@
                 "add_builtin_service": "添加内置服务",
                 "add_external_service": "添加外部插件",
                 "add_service": "添加服务",
+                "enable": "启用",
                 "test_failed": "测试失败",
                 "install_plugin": "安装外部插件",
                 "view_plugin_list": "查看插件列表",
@@ -270,7 +271,7 @@
                     "add": "添加 Prompt"
                 },
                 "openai": {
-                    "title": "OpenAI 兼容",
+                    "title": "OpenAI Chat Completions",
                     "service": "服务提供商",
                     "openai": "OpenAI",
                     "azure": "Azure",
@@ -375,7 +376,7 @@
                     "title": "Tesseract.js"
                 },
                 "openai": {
-                    "title": "OpenAI 兼容（视觉）",
+                    "title": "OpenAI Chat Completions（视觉）",
                     "request_path": "请求地址",
                     "api_key": "Api Key",
                     "model": "视觉模型",

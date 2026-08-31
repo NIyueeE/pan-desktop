@@ -51,6 +51,21 @@ describe('ServiceManager (translate)', () => {
         // Still exactly one item.
         expect(container.querySelectorAll('[aria-label="Drag to reorder"]').length).toBe(1);
     });
+
+    it('opens the instance config form directly when there is only one builtin service', async () => {
+        await initConfigStore();
+        render(ServiceManager, { props: { kind: 'translate' } });
+        await waitFor(() => expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument());
+
+        const user = userEvent.setup();
+        await user.click(screen.getByRole('button', { name: /add/i }));
+
+        // Translate has a single builtin (openai): the type-picker dialog is
+        // skipped and the new instance's config form opens immediately.
+        const dialog = screen.getByRole('dialog');
+        expect(dialog.textContent).toContain('OpenAI Chat Completions');
+        expect(dialog.textContent).toContain('Request Path');
+    });
 });
 
 describe('ServiceManager (recognize)', () => {

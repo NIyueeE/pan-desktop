@@ -109,6 +109,19 @@
     let addModalOpen = $state(false);
     let configModalOpen = $state(false);
     let editingKey = $state('');
+
+    /** Only one builtin service (translate → openai): there is nothing to
+     * pick, so the type-picker dialog is noise — jump straight to the new
+     * instance's config form. Kinds with several builtins keep the picker. */
+    function openAddFlow(): void {
+        const only = serviceNames.length === 1 ? serviceNames[0] : undefined;
+        if (only) {
+            editingKey = createServiceInstanceKey(only);
+            configModalOpen = true;
+            return;
+        }
+        addModalOpen = true;
+    }
 </script>
 
 <div class="flex h-[calc(100vh-70px)] flex-col justify-between">
@@ -176,7 +189,7 @@
     <button
         type="button"
         class="flex h-[36px] w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm text-primary-foreground hover:opacity-90"
-        onclick={() => (addModalOpen = true)}
+        onclick={() => openAddFlow()}
     >
         <Plus class="size-[16px]" />
         {t('config.service.add_builtin_service')}

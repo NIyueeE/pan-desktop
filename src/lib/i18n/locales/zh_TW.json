@@ -176,6 +176,7 @@
                 "add_builtin_service": "新增內建服務",
                 "add_external_service": "新增擴充套件",
                 "add_service": "新增服務",
+                "enable": "啟用",
                 "test_failed": "測試失敗",
                 "install_plugin": "安裝外掛程式",
                 "uninstall_success": "外掛程式移除成功",
@@ -248,7 +249,7 @@
                     "title": "Bing 翻譯"
                 },
                 "openai": {
-                    "title": "OpenAI 相容",
+                    "title": "OpenAI Chat Completions",
                     "service": "服務提供商",
                     "openai": "OpenAI",
                     "azure": "Azure",
@@ -363,7 +364,7 @@
                     "title": "Tesseract.js"
                 },
                 "openai": {
-                    "title": "OpenAI 相容（視覺）",
+                    "title": "OpenAI Chat Completions（視覺）",
                     "request_path": "請求地址",
                     "api_key": "Api Key",
                     "model": "視覺模型",
