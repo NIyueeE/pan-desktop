@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Docs-alignment check: verify README.md / README.zh.md still describe the
+# actual code (hook commands, lints, toolchain, edition, justfile, CI).
+# Covers greppable invariants only; semantic alignment stays with the agent/human.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+errors=0
+
+expect() {
+  # expect <description> <file> <fixed-string-pattern>
+  local desc="$1" file="$2" pattern="$3"
+  if grep -qF -- "$pattern" "$file"; then
+    echo "  ok    $desc"
+  else
+    echo "  FAIL  $desc -> missing '$pattern' in $file" >&2
+    errors=$((errors + 1))
+  fi
+}
+
+# 1) every cargo command in every hook must be documented in both READMEs
+for hook in githooks/pre-commit githooks/pre-push; do
+  while IFS= read -r cmd; do
+    [ -n "$cmd" ] || continue
+    expect "[$hook] command documented: $cmd" README.md "$cmd"
+    expect "[$hook] command documented: $cmd" README.zh.md "$cmd"
+  done < <(grep -E '^cargo ' "$hook")
+done
+
+# 2) every lint declared in Cargo.toml [lints] must be documented in both READMEs
+while IFS= read -r lint; do
+  [ -n "$lint" ] || continue
+  expect "lint documented: $lint" README.md '`'"$lint"'`'
+  expect "lint documented: $lint" README.zh.md '`'"$lint"'`'
+done < <(awk '/^\[lints\./{f=1;next} /^\[/{f=0} f && /=/{split($0,a,"="); k=a[1]; gsub(/[ \t]/,"",k); if (k != "") print k}' Cargo.toml)
+
+# 3) rustc edition
+edition=$(sed -n 's/^edition = "\(.*\)"/\1/p' Cargo.toml)
+if [ -n "$edition" ]; then
+  expect "edition documented: $edition" README.md "${edition} edition"
+  expect "edition documented: $edition" README.zh.md "${edition} edition"
+fi
+
+# 4) toolchain channel
+channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+if [ -n "$channel" ]; then
+  expect "toolchain channel documented: $channel" README.md "channel = \"$channel\""
+  expect "toolchain channel documented: $channel" README.zh.md "channel = \"$channel\""
+fi
+
+# 5) justfile recipes documented
+expect "just setup documented" README.md 'just setup'
+expect "just setup documented" README.zh.md 'just setup'
+expect "just check documented" README.md 'just check'
+expect "just check documented" README.zh.md 'just check'
+
+# 6) hooks activation instruction
+expect "hooksPath instruction documented" README.md 'core.hooksPath githooks'
+expect "hooksPath instruction documented" README.zh.md 'core.hooksPath githooks'
+
+# 7) CI must run the same chain
+if [ -f .github/workflows/ci.yml ]; then
+  expect "CI runs the full chain" .github/workflows/ci.yml 'just check'
+else
+  echo "  FAIL  .github/workflows/ci.yml missing (README badge references it)" >&2
+  errors=$((errors + 1))
+fi
+
+# soft notice: placeholders are expected in the template repo itself
+if grep -qF '{{' README.md README.zh.md; then
+  echo "  note: {{...}} placeholders still present (normal for this template repo)"
+fi
+
+if [ "$errors" -eq 0 ]; then
+  echo "  docs alignment ok"
+else
+  echo "  $errors docs alignment issue(s) found" >&2
+  exit 1
+fi

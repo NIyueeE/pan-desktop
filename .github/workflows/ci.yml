@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: full check chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # rust-toolchain.toml (channel = stable + clippy/rustfmt) resolves automatically
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install check tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-machete,cargo-audit,cargo-outdated,cargo-deny
+
+      - name: Install just
+        uses: extractions/setup-just@v3
+
+      - name: Full check chain (fmt/machete/docs/clippy + audit/outdated/test)
+        run: just check
