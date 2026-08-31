@@ -88,7 +88,7 @@
     <nav
         class="float-left h-screen w-[230px] shrink-0 border-r border-default-100 select-none {isLinux
             ? 'rounded-l-[10px]'
-            : ''} {cfg('transparent') ? 'bg-background/90' : 'bg-content1'}"
+            : ''} {cfg('transparent') ? 'bg-background/95' : 'bg-content1'}"
     >
         <div class="h-[35px] p-[5px]" data-tauri-drag-region="true">
             <div class="h-full w-full"></div>
@@ -114,12 +114,19 @@
             {/each}
         </div>
     </nav>
-    <main class="h-screen w-full select-none {isLinux ? 'rounded-r-[10px]' : ''}">
+    <main
+        class="h-screen w-full select-none {isLinux ? 'rounded-r-[10px]' : ''} {cfg('transparent')
+            ? 'bg-background/95'
+            : 'bg-content1'}"
+    >
         <div class="fixed top-[5px] right-[5px] h-[30px]" style="left: 235px" data-tauri-drag-region="true"></div>
         <div class="flex h-[35px] items-center justify-between">
             <h2 class="ml-[10px] font-medium">{t(`config.${page}.title`)}</h2>
             {#if !isMac}
-                <div class="flex">
+                <!-- relative z-10 lifts the controls above the fixed drag-region
+                     overlay (line below): without it the overlay swallows the
+                     clicks and only a thin sliver of each button is hittable. -->
+                <div class="relative z-10 flex">
                     <button
                         type="button"
                         class="flex h-[35px] w-[40px] items-center justify-center text-default-400 hover:bg-content2 hover:text-foreground"

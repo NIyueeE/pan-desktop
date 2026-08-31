@@ -338,7 +338,7 @@
     <div class="h-[35px] w-full flex justify-between">
         <button
             type="button"
-            class="my-auto ml-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
+            class="relative z-10 my-auto ml-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
             aria-label={translateState.pinned ? 'Unpin window' : 'Pin window'}
             onclick={togglePin}
         >
@@ -350,7 +350,7 @@
         </button>
         <button
             type="button"
-            class="my-auto mr-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
+            class="relative z-10 my-auto mr-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
             aria-label="Close window"
             onclick={() => void appWindow.close()}
         >
