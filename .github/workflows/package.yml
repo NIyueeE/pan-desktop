@@ -74,7 +74,7 @@ jobs:
                   cargo test --manifest-path src-tauri/Cargo.toml
 
     change-version:
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         runs-on: ubuntu-latest
         timeout-minutes: 10
         outputs:
@@ -120,7 +120,7 @@ jobs:
                   if-no-files-found: error
 
     build-for-macos:
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         needs: [change-version, lint]
         permissions:
             contents: write
@@ -198,7 +198,7 @@ jobs:
                   files: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
 
     build-for-windows:
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         needs: [change-version, lint]
         permissions:
             contents: write
@@ -261,7 +261,7 @@ jobs:
                   files: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
 
     build-for-linux:
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         needs: [change-version, lint]
         permissions:
             contents: write
