@@ -284,5 +284,5 @@ Dependabot 自动 PR 走的是同一条 `lint` job（含 vitest 与 cargo 测试
 - **"撤销修复 → 测试必须失败"**：修复落地后 `git stash push <fix-file>` 回退，确认回归网真的能抓（icon 修复验证过），再 pop 回来。
 - **Windows-only 代码（`#[cfg(target_os = "windows")]`）在 Linux 上 clippy/cargo check 编译不到**：对照 `~/.cargo/registry/` 里 windows crate 源码核对 API 签名与 feature（如 `CoInitializeEx` 的参数与 `Win32_System_Com`），并盯 CI 的 build-for-windows job。`cargo check --target x86_64-pc-windows-msvc` 会被 `ring` 的构建脚本挡住，不要浪费时间尝试。
 - **本机 Linux 跑 `cargo test`（链接 Tauri 二进制）需要系统库**：`sudo apt-get install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev patchelf pkg-config`（2026-08 已装）。缺失时报 `rust-lld: unable to find library -lxcb / -lgtk-3 / ...`，属环境问题——用 `git stash` 在未改动 HEAD 上复现同样错误来证明与改动无关。
-- **Windows 安装包只能 CI 出**（tauri 无法从 Linux 交叉编译 MSVC 目标）：push main → 验证性构建 → `gh run download <run-id> --repo NIyueeE/pan-desktop --name windows_x86_64-pc-windows-msvc -d ./ci-artifacts`。**换构建前先托盘退出旧实例**（否则热键/单实例冲突，日志见 `HotKey already registered`）。
+- **Windows 安装包只能 CI 出**（tauri 无法从 Linux 交叉编译 MSVC 目标）：push main → 验证性构建 → `gh run download <run-id> --repo NIyueeE/pan-desktop --name windows_x86_64-pc-windows-msvc -D ./ci-artifacts`（注意是大写 `-D/--dir`）。**换构建前先托盘退出旧实例**（否则热键/单实例冲突，日志见 `HotKey already registered`）。
 - **排查用户报障时先要日志再猜**：`%LOCALAPPDATA%\com.pan.desktop\logs\pan.log`；让用户复现一次后按行号区段截取。本轮两次"想当然"都被日志推翻，两次日志都直接改写了结论。
