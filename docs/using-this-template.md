@@ -8,7 +8,7 @@ project is *yours*. Every file that needs a change is listed below; grep for
 the old name to be safe:
 
 ```bash
-grep -rn "rust-template" . --exclude-dir={.git,target}
+grep -rn "rust-agents-template" . --exclude-dir={.git,target}
 ```
 
 ## Rename checklist
@@ -17,8 +17,8 @@ grep -rn "rust-template" . --exclude-dir={.git,target}
 |---|------|----------------|
 | 1 | `Cargo.toml` | `name`, `description`, `repository`; reset `version` if you like |
 | 2 | `Cargo.lock` | no manual edit — regenerate with `cargo build` (or delete it first) |
-| 3 | `tests/cli.rs` | `env!("CARGO_BIN_EXE_rust-template")` → your new binary name |
-| 4 | `.github/workflows/release.yml` | `bin: rust-template` → your new binary name |
+| 3 | `tests/cli.rs` | `env!("CARGO_BIN_EXE_rust-agents-template")` → your new binary name |
+| 4 | `.github/workflows/release.yml` | `bin: rust-agents-template` → your new binary name |
 | 5 | `justfile` | top comment (cosmetic) |
 | 6 | `README.md` / `README.zh.md` | title, badge URLs, clone URL, intro text |
 | 7 | `LICENSE` / `LICENSE-MIT` / `LICENSE-APACHE` | copyright holder and year |

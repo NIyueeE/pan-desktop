@@ -98,6 +98,16 @@ else
   errors=$((errors + 1))
 fi
 
+# 12) HANDOFF.md: agent-facing state notes exist and are referenced
+if [ -f HANDOFF.md ]; then
+  expect "README links HANDOFF.md" README.md 'HANDOFF.md'
+  expect "README links HANDOFF.md" README.zh.md 'HANDOFF.md'
+  expect "AGENTS.md references HANDOFF.md" AGENTS.md 'HANDOFF.md'
+else
+  echo "  FAIL  HANDOFF.md missing (AGENTS.md points to it for working state)" >&2
+  errors=$((errors + 1))
+fi
+
 # soft notice: placeholders are expected in the template repo itself
 if grep -qF '{{' README.md README.zh.md; then
   echo "  note: {{...}} placeholders still present (normal for this template repo)"

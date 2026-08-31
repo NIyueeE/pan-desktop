@@ -1,8 +1,8 @@
-# rust-template
+# rust-agents-template
 
 > 一个 Rust 项目模板:严格 lint、分层 git hook、cargo-deny、CI/CD。
 
-[![CI](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml)
+[![CI](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
@@ -26,8 +26,8 @@
 ## 快速开始
 
 ```bash
-git clone https://github.com/NIyueeE/rust-template.git
-cd rust-template
+git clone https://github.com/NIyueeE/rust-agents-template.git
+cd rust-agents-template
 
 # 每个 clone 一次:激活 hook + 安装缺失工具
 just setup   # (或手动:git config core.hooksPath githooks)
@@ -47,16 +47,12 @@ just check
 | [docs/lint-policy.zh.md](docs/lint-policy.zh.md) | 每条 lint 与级别、放行规则 |
 | [docs/release.zh.md](docs/release.zh.md) | 打标签 → 多平台二进制发布 |
 | [docs/structure.zh.md](docs/structure.zh.md) | 仓库里每个文件的用途 |
+| [HANDOFF.md](HANDOFF.md) | 交接文档:当前工作状态、决策与开放事项 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 如何参与贡献 |
 | [SECURITY.md](SECURITY.md) | 漏洞报告 |
 | [AGENTS.md](AGENTS.md) | AI 编码代理(以及人类)的守则 |
 
 每篇文档都有对应的 English 版本(同目录下去掉 `.zh` 后缀)。
-
-## 计划
-
-- [ ] 把 GitHub Actions 固定到 commit SHA(供应链加固)
-- [ ] 评估 cargo-nextest 加速测试
 
 ## 参与贡献
 

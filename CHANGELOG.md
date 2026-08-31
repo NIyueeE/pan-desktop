@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- HANDOFF.md: agent-facing working-state and handoff notes
+- `just test` recipe: runs cargo-nextest when installed, falls back to
+  `cargo test` (nextest evaluated; see HANDOFF.md)
+- GitHub Actions pinned to commit SHAs with version comments
+  (supply-chain hardening)
+
+### Changed
+
+- Template renamed to **rust-agents-template**: package name, binary name,
+  workflows, and repository URL all follow
+- README roadmap section removed; open items tracked in HANDOFF.md
+
 ## [0.2.0] - 2026-08-31
 
 ### Added

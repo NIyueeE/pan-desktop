@@ -1,8 +1,8 @@
-# rust-template
+# rust-agents-template
 
 > A Rust project template: strict lints, layered git hooks, cargo-deny, CI/CD.
 
-[![CI](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml)
+[![CI](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
@@ -27,8 +27,8 @@ featuring a strict lint policy and an automated, layered check pipeline
 ## Quick start
 
 ```bash
-git clone https://github.com/NIyueeE/rust-template.git
-cd rust-template
+git clone https://github.com/NIyueeE/rust-agents-template.git
+cd rust-agents-template
 
 # one-time setup per clone: activate hooks + install missing tools
 just setup   # (or manually: git config core.hooksPath githooks)
@@ -48,16 +48,12 @@ just check
 | [docs/lint-policy.md](docs/lint-policy.md) | every lint and its level, waiver rules |
 | [docs/release.md](docs/release.md) | tagging → multi-platform binaries |
 | [docs/structure.md](docs/structure.md) | what every file in this repo is for |
+| [HANDOFF.md](HANDOFF.md) | agent handoff: current state, decisions, open threads |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | how to contribute |
 | [SECURITY.md](SECURITY.md) | reporting vulnerabilities |
 | [AGENTS.md](AGENTS.md) | rules for AI coding agents (and humans) |
 
 Each document has a `*.zh.md` 简体中文 counterpart.
-
-## Roadmap
-
-- [ ] Pin GitHub Actions to commit SHAs (supply-chain hardening)
-- [ ] Evaluate cargo-nextest for faster test runs
 
 ## Contributing
 

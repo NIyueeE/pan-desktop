@@ -3,8 +3,9 @@
 This file governs AI coding agents (and, equally, human contributors) working
 in this repository. Read it fully before making any change; when resuming an
 interrupted session, treat it as a fresh entry and redo the §1 self-check.
-If this file contradicts the actual code, the code wins — and §3 requires
-fixing the docs in the same change.
+HANDOFF.md records the current working state (decisions, open threads) — read
+it right after this file. If this file contradicts the actual code, the code
+wins — and §3 requires fixing the docs in the same change.
 
 ## 1. Entering the repository: routine self-check (every time)
 
@@ -159,8 +160,8 @@ code-level.**
   docs/using-this-template.md. The three traps that break automation if
   missed:
   1. `Cargo.toml` — `name` / `repository`;
-  2. `tests/cli.rs` — `env!("CARGO_BIN_EXE_rust-template")`;
-  3. `.github/workflows/release.yml` — `bin: rust-template`.
+  2. `tests/cli.rs` — `env!("CARGO_BIN_EXE_rust-agents-template")`;
+  3. `.github/workflows/release.yml` — `bin: rust-agents-template`.
 - After renaming: `just setup` → `just check` → first commit (the pre-commit
   gate runs automatically and `just check` is the safety net for anything
   missed).
@@ -188,6 +189,7 @@ code-level.**
 | Lint levels and waiver rules | docs/lint-policy.md |
 | Release mechanics, test builds | docs/release.md |
 | What every file in this repo is for | docs/structure.md |
+| Current working state, decisions, open threads | HANDOFF.md |
 
 Every page has a `*.zh.md` counterpart; §3 governs their sync.
 

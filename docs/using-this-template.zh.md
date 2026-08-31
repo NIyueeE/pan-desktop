@@ -7,7 +7,7 @@ CI 和发布流水线了。接下来把项目改成*你的*名字。下面是需
 改完可以用 grep 兜底确认:
 
 ```bash
-grep -rn "rust-template" . --exclude-dir={.git,target}
+grep -rn "rust-agents-template" . --exclude-dir={.git,target}
 ```
 
 ## 改名清单
@@ -16,8 +16,8 @@ grep -rn "rust-template" . --exclude-dir={.git,target}
 |---|------|----------|
 | 1 | `Cargo.toml` | `name`、`description`、`repository`;`version` 想重置就重置 |
 | 2 | `Cargo.lock` | 无需手动改 —— `cargo build` 会自动再生(也可以先删掉) |
-| 3 | `tests/cli.rs` | `env!("CARGO_BIN_EXE_rust-template")` → 新的二进制名 |
-| 4 | `.github/workflows/release.yml` | `bin: rust-template` → 新的二进制名 |
+| 3 | `tests/cli.rs` | `env!("CARGO_BIN_EXE_rust-agents-template")` → 新的二进制名 |
+| 4 | `.github/workflows/release.yml` | `bin: rust-agents-template` → 新的二进制名 |
 | 5 | `justfile` | 顶部注释(仅文案) |
 | 6 | `README.md` / `README.zh.md` | 标题、徽章 URL、克隆 URL、简介文案 |
 | 7 | `LICENSE` / `LICENSE-MIT` / `LICENSE-APACHE` | 版权持有人与年份 |
