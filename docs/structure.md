@@ -16,6 +16,7 @@
 | `githooks/check-docs` | docs ↔ code alignment gate |
 | `.github/workflows/ci.yml` | CI: `just check` on push / PR |
 | `.github/workflows/release.yml` | tag push (`v*`) → multi-platform binaries |
+| `.github/workflows/test-build.yml` | manual test builds for chosen platforms at any commit |
 | `.github/dependabot.yml` | weekly actions + cargo dependency updates |
 | `AGENTS.md` | rules for AI coding agents (and humans) |
 | `CONTRIBUTING.md` | how to contribute |

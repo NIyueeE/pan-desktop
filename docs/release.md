@@ -21,6 +21,14 @@ binary for three targets, attaching the archives to the release:
 Each archive contains the binary plus `LICENSE`, `LICENSE-MIT`,
 `LICENSE-APACHE`, and `README.md`.
 
+## Test builds (not releases)
+
+`.github/workflows/test-build.yml` builds **test artifacts** for chosen
+platforms from any commit — dispatch it from the Actions tab
+(**Test build → Run workflow**), pick a `ref` (commit SHA, branch, or tag)
+and `targets` (`linux`, `macos`, `windows`). Artifacts are ephemeral
+(7-day retention) and never published as a Release. Releases stay tag-driven.
+
 ## Notes
 
 - **Release notes come from `CHANGELOG.md`** (Keep a Changelog format): record

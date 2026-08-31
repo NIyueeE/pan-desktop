@@ -88,6 +88,16 @@ else
   errors=$((errors + 1))
 fi
 
+# 11) CD test builds: manual dispatch only, never a release, documented
+if [ -f .github/workflows/test-build.yml ]; then
+  expect "test builds are manual (workflow_dispatch)" .github/workflows/test-build.yml 'workflow_dispatch'
+  expect "test builds documented" docs/release.md 'test-build.yml'
+  expect "test builds documented" docs/release.zh.md 'test-build.yml'
+else
+  echo "  FAIL  .github/workflows/test-build.yml missing (see AGENTS.md §6)" >&2
+  errors=$((errors + 1))
+fi
+
 # soft notice: placeholders are expected in the template repo itself
 if grep -qF '{{' README.md README.zh.md; then
   echo "  note: {{...}} placeholders still present (normal for this template repo)"

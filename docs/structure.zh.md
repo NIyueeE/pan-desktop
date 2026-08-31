@@ -16,6 +16,7 @@
 | `githooks/check-docs` | 文档与代码对齐门 |
 | `.github/workflows/ci.yml` | CI:推送 / PR 时运行 `just check` |
 | `.github/workflows/release.yml` | 打 `v*` 标签 → 多平台二进制发布 |
+| `.github/workflows/test-build.yml` | 手动为任意 commit 构建指定平台测试产物 |
 | `.github/dependabot.yml` | 每周自动升级 actions + cargo 依赖 |
 | `AGENTS.md` | AI 编码代理(以及人类)的守则 |
 | `CONTRIBUTING.md` | 贡献指南 |

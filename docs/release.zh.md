@@ -21,6 +21,13 @@ git push origin v0.1.0
 每个压缩包内含二进制,以及 `LICENSE`、`LICENSE-MIT`、`LICENSE-APACHE` 和
 `README.md`。
 
+## 测试构建(不是发布)
+
+`.github/workflows/test-build.yml` 可以为任意 commit 构建指定平台的**测试
+产物**——在 Actions 页手动触发(**Test build → Run workflow**),选择 `ref`
+(commit SHA、分支或标签)和 `targets`(`linux`、`macos`、`windows`)。产物
+仅保留 7 天,绝不会作为 Release 发布。发布永远由标签驱动。
+
 ## 注意事项
 
 - **发布说明来自 `CHANGELOG.md`**(Keep a Changelog 格式):开发中的改动先记在
