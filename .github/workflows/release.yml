@@ -14,12 +14,29 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # creates the GitHub Release for the pushed tag;
-      # upload jobs below attach their archives to it
-      - uses: taiki-e/create-gh-release-action@v1
-        with:
-          ref: ${{ github.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+      # Release notes are extracted from CHANGELOG.md (Keep a Changelog format).
+      # The section for the pushed tag is mandatory; a missing or empty section
+      # fails the release. See AGENTS.md §5.
+      - name: Create release with notes extracted from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          VERSION="${TAG#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" {insec=1; next}
+            insec && /^## / {exit}
+            insec {print}
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md has no '## [$VERSION]' section. Add it (Keep a Changelog format) before tagging."
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TAG" --notes-file release-notes.md
+          else
+            gh release create "$TAG" --title "$TAG" --notes-file release-notes.md
+          fi
 
   upload:
     name: build ${{ matrix.target }}

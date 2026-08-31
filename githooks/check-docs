@@ -78,6 +78,16 @@ else
   errors=$((errors + 1))
 fi
 
+# 10) release notes must be extracted from CHANGELOG.md
+if [ -f .github/workflows/release.yml ]; then
+  expect "release notes extracted from CHANGELOG" .github/workflows/release.yml 'CHANGELOG.md'
+  expect "release docs mention CHANGELOG" docs/release.md 'CHANGELOG'
+  expect "release docs mention CHANGELOG" docs/release.zh.md 'CHANGELOG'
+else
+  echo "  FAIL  .github/workflows/release.yml missing (see docs/release.md)" >&2
+  errors=$((errors + 1))
+fi
+
 # soft notice: placeholders are expected in the template repo itself
 if grep -qF '{{' README.md README.zh.md; then
   echo "  note: {{...}} placeholders still present (normal for this template repo)"

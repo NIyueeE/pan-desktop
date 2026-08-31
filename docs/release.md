@@ -23,6 +23,9 @@ Each archive contains the binary plus `LICENSE`, `LICENSE-MIT`,
 
 ## Notes
 
+- **Release notes come from `CHANGELOG.md`** (Keep a Changelog format): record
+  changes under `## [Unreleased]`, rename it to the version section before
+  tagging. The workflow fails if the tag's section is missing.
 - Keep `version` in `Cargo.toml` in sync with the tag before pushing it
   (manually, or automate with a tool like release-plz).
 - The workflow needs `contents: write` — already declared in the file.

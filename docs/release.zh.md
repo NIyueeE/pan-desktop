@@ -23,6 +23,9 @@ git push origin v0.1.0
 
 ## 注意事项
 
+- **发布说明来自 `CHANGELOG.md`**(Keep a Changelog 格式):开发中的改动先记在
+  `## [Unreleased]` 小节,打标签前把它改名为对应版本小节。缺失该小节时工作流
+  会直接失败。
 - 推标签前,先把 `Cargo.toml` 的 `version` 与标签对齐(手动改,或用 release-plz
   之类的工具自动化)。
 - 该工作流需要 `contents: write` 权限——文件里已声明。
