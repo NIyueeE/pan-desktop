@@ -21,6 +21,10 @@ setup:
     done
     echo "setup complete"
 
+# Auto-fix formatting across the workspace.
+fmt:
+    cargo fmt --all
+
 # Run the full check chain (identical to hooks + CI: fmt/machete/docs/clippy + audit/deny/outdated/test).
 check:
     #!/usr/bin/env bash

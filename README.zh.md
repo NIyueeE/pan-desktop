@@ -1,19 +1,14 @@
-<!--
-  入口 README —— 详细内容在 docs/(模块化,双语)。
-  占位符统一写成 {{像这样}} 的形式,发布前替换。
-  README.md 与 README.zh.md 需保持同步。
--->
-
 # rust-template
 
-> {{一句话简介}}
+> 一个 Rust 项目模板:严格 lint、分层 git hook、cargo-deny、CI/CD。
 
 [![CI](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
 
-{{简介段落}} 一个 Rust 项目模板:严格的 lint 策略 + 分层自动化检查(pre-commit / pre-push / CI)。
+一个开箱即用、带强约束的 Rust 二进制项目起点——严格的 lint 策略 + 分层自动化
+检查(pre-commit / pre-push / CI)。
 
 ## 特性
 
@@ -37,7 +32,7 @@ cd rust-template
 # 每个 clone 一次:激活 hook + 安装缺失工具
 just setup   # (或手动:git config core.hooksPath githooks)
 
-cargo run {{运行参数}}
+cargo run
 
 # 随时手动跑整条检查链 —— 与 hook + CI 完全一致
 just check
@@ -47,6 +42,7 @@ just check
 
 | 文档 | 内容 |
 |------|------|
+| [docs/using-this-template.zh.md](docs/using-this-template.zh.md) | 从本模板派生新项目:改名清单 |
 | [docs/checks.zh.md](docs/checks.zh.md) | 八道检查门、分层 hook、CI |
 | [docs/lint-policy.zh.md](docs/lint-policy.zh.md) | 每条 lint 与级别、放行规则 |
 | [docs/release.zh.md](docs/release.zh.md) | 打标签 → 多平台二进制发布 |
@@ -59,15 +55,15 @@ just check
 
 ## 计划
 
-- [ ] {{计划一}}
-- [ ] {{计划二}}
+- [ ] 把 GitHub Actions 固定到 commit SHA(供应链加固)
+- [ ] 评估 cargo-nextest 加速测试
 
 ## 参与贡献
 
-{{贡献指南}}
+欢迎 PR——参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 许可证
 
 基于 MIT OR Apache-2.0 许可证分发,详情见 [`LICENSE`](LICENSE)。
 
-© 2026 {{作者姓名}}({{作者邮箱}})
+© 2026 NIyueeE(100502009+NIyueeE@users.noreply.github.com)

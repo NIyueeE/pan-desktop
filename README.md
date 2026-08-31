@@ -1,20 +1,15 @@
-<!--
-  Landing-page README — details live in docs/ (modular, bilingual).
-  Placeholders are written as {{like_this}}; replace before publishing.
-  Keep README.md and README.zh.md in sync.
--->
-
 # rust-template
 
-> {{one_line_description}}
+> A Rust project template: strict lints, layered git hooks, cargo-deny, CI/CD.
 
 [![CI](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-template/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
 
-{{intro_paragraph}} A Rust project template featuring a strict lint policy and an
-automated, layered check pipeline (pre-commit / pre-push / CI).
+An opinionated, batteries-included starting point for new Rust binary projects —
+featuring a strict lint policy and an automated, layered check pipeline
+(pre-commit / pre-push / CI).
 
 ## Features
 
@@ -38,7 +33,7 @@ cd rust-template
 # one-time setup per clone: activate hooks + install missing tools
 just setup   # (or manually: git config core.hooksPath githooks)
 
-cargo run {{example_args}}
+cargo run
 
 # run the full check chain any time — identical to hooks + CI
 just check
@@ -48,6 +43,7 @@ just check
 
 | Document | Content |
 |----------|---------|
+| [docs/using-this-template.md](docs/using-this-template.md) | derive a new project: the rename checklist |
 | [docs/checks.md](docs/checks.md) | the eight gates, layered hooks, CI |
 | [docs/lint-policy.md](docs/lint-policy.md) | every lint and its level, waiver rules |
 | [docs/release.md](docs/release.md) | tagging → multi-platform binaries |
@@ -60,15 +56,15 @@ Each document has a `*.zh.md` 简体中文 counterpart.
 
 ## Roadmap
 
-- [ ] {{todo_1}}
-- [ ] {{todo_2}}
+- [ ] Pin GitHub Actions to commit SHAs (supply-chain hardening)
+- [ ] Evaluate cargo-nextest for faster test runs
 
 ## Contributing
 
-{{contributing_guidelines}}
+PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
 Distributed under the MIT OR Apache-2.0 license. See [`LICENSE`](LICENSE) for details.
 
-© 2026 {{author_name}} ({{author_email}})
+© 2026 NIyueeE (100502009+NIyueeE@users.noreply.github.com)
