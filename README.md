@@ -1,7 +1,7 @@
 <!--
-  Template README — placeholders are written as {{like_this}}.
-  Replace every {{placeholder}} below before publishing, then delete this comment.
-  The Chinese version lives in README.zh.md and must stay in sync.
+  Landing-page README — details live in docs/ (modular, bilingual).
+  Placeholders are written as {{like_this}}; replace before publishing.
+  Keep README.md and README.zh.md in sync.
 -->
 
 # rust-template
@@ -21,26 +21,15 @@ automated, layered check pipeline (pre-commit / pre-push / CI).
 - **Latest stable toolchain** — `rust-toolchain.toml` declares `channel = "stable"`,
   so rustup always resolves the newest stable release on every machine, with
   `clippy` and `rustfmt` bundled as required components.
-- **Strict lints** — `unsafe_code = "forbid"`, clippy `all` + `pedantic` at `deny`,
-  plus `unwrap_used` / `expect_used` / `dbg_macro` denials (see
-  [Lint policy](#lint-policy)).
-- **Layered check gates** — fast gates (format, unused deps, docs↔code alignment,
-  strict clippy) run before every commit; heavyweight gates (security audit,
-  dependency policy, freshness, tests) run before every push; CI enforces the
-  same chain.
+- **Strict lints** — `unsafe_code = "forbid"`, clippy `all` + `pedantic` at `deny`
+  (see [Lint policy](docs/lint-policy.md)).
+- **Layered check gates** — fast gates before every commit, heavyweight gates
+  before every push, CI enforcing the same chain (see [Checks](docs/checks.md)).
+- **One-tag releases** — multi-platform binaries built on `v*` tags
+  (see [Release](docs/release.md)).
 - **Rust 2024 edition**.
 
-## Prerequisites
-
-- [rustup](https://rustup.rs) — the stable toolchain is resolved automatically
-- [just](https://github.com/casey/just) — optional, for `just setup` / `just check`
-- External linters used by the check gates:
-
-  ```bash
-  cargo install cargo-machete cargo-audit cargo-outdated cargo-deny
-  ```
-
-## Getting started
+## Quick start
 
 ```bash
 git clone https://github.com/NIyueeE/rust-template.git
@@ -50,76 +39,24 @@ cd rust-template
 just setup   # (or manually: git config core.hooksPath githooks)
 
 cargo run {{example_args}}
+
+# run the full check chain any time — identical to hooks + CI
+just check
 ```
 
-## Checks
+## Documentation
 
-Fast gates run before every commit, heavyweight gates before every push, and CI
-runs the whole chain on every push / pull request via `just check`.
+| Document | Content |
+|----------|---------|
+| [docs/checks.md](docs/checks.md) | the eight gates, layered hooks, CI |
+| [docs/lint-policy.md](docs/lint-policy.md) | every lint and its level, waiver rules |
+| [docs/release.md](docs/release.md) | tagging → multi-platform binaries |
+| [docs/structure.md](docs/structure.md) | what every file in this repo is for |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | how to contribute |
+| [SECURITY.md](SECURITY.md) | reporting vulnerabilities |
+| [AGENTS.md](AGENTS.md) | rules for AI coding agents (and humans) |
 
-### On every commit — `githooks/pre-commit`
-
-| # | Gate | Command | Purpose |
-|---|------|---------|---------|
-| 1 | fmt | `cargo fmt --all -- --check` | code style |
-| 2 | machete | `cargo machete` | unused dependencies |
-| 3 | docs | `githooks/check-docs` | README ↔ code alignment |
-| 4 | clippy | `cargo clippy --all-targets --all-features -- -D warnings` | strict lints |
-
-### On every push — `githooks/pre-push`
-
-| # | Gate | Command | Purpose |
-|---|------|---------|---------|
-| 5 | audit | `cargo audit` | RustSec security advisories |
-| 6 | deny | `cargo deny check` | licenses / bans / advisories policy |
-| 7 | outdated | `cargo outdated --root-deps-only` | outdated direct dependencies |
-| 8 | test | `cargo test --quiet` | test suite |
-
-## Lint policy
-
-Declared in the `[lints]` table of `Cargo.toml`:
-
-| Lint | Level |
-|------|-------|
-| `unsafe_code` | forbid |
-| `missing_docs` | warn |
-| clippy `all` | deny |
-| clippy `pedantic` | deny |
-| clippy `unwrap_used` / `expect_used` / `dbg_macro` | deny |
-| clippy `todo` | warn |
-
-The hook additionally passes `-D warnings`, so every warning above — including
-`missing_docs` and `todo` — becomes a hard error at commit time.
-
-## Project layout
-
-```
-.
-├── .github/
-│   ├── dependabot.yml    # auto-bump actions + cargo deps (weekly)
-│   └── workflows/
-│       ├── ci.yml        # CI: runs `just check` on push / PR
-│       └── release.yml   # tag push (v*) → binaries for 3 targets
-├── Cargo.toml            # manifest + strict [lints] + package metadata
-├── rust-toolchain.toml   # stable channel + clippy/rustfmt components
-├── justfile              # just setup / just check
-├── deny.toml             # cargo-deny policy (licenses / bans / advisories)
-├── githooks/
-│   ├── pre-commit        # fast gates: fmt, machete, docs, clippy
-│   ├── pre-push          # heavy gates: audit, deny, outdated, test
-│   └── check-docs        # README ↔ code alignment check
-├── tests/
-│   └── cli.rs            # smoke test for the template binary
-├── LICENSE               # MIT OR Apache-2.0 (pointer)
-├── LICENSE-MIT
-├── LICENSE-APACHE
-├── SECURITY.md
-├── CONTRIBUTING.md
-├── AGENTS.md
-├── .editorconfig
-└── src/
-    └── main.rs
-```
+Each document has a `*.zh.md` 简体中文 counterpart.
 
 ## Roadmap
 

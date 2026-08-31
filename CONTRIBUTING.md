@@ -12,6 +12,9 @@ just check        # run the full chain (same as CI)
 
 ## Check gates
 
+Details and the full gate tables: [docs/checks.md](docs/checks.md) (简体中文:
+[docs/checks.zh.md](docs/checks.zh.md)).
+
 - **pre-commit (fast)**: `cargo fmt --check`, `cargo machete`, docs↔code
   alignment (`githooks/check-docs`), strict clippy
 - **pre-push (heavy)**: `cargo audit`, `cargo deny check`, `cargo outdated`,
@@ -24,9 +27,10 @@ minimal-scope, and must carry a reason comment.
 
 ## Docs must stay in sync
 
-Changing lint config or the check chain requires updating `README.md` and
-`README.zh.md` **together** in the same change. `githooks/check-docs` enforces
-the greppable parts automatically.
+Documentation is modular and bilingual (`docs/*.md` + `docs/*.zh.md`, plus the
+two README landing pages). Changing lint config or the check chain requires
+updating the affected pages **in both languages** in the same change.
+`githooks/check-docs` enforces the greppable parts automatically.
 
 ## Pull requests
 

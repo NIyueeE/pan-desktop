@@ -48,13 +48,14 @@
 ## 3. 提交前:文档与代码对齐(每次 commit 必查)
 
 - 每次 commit 前检查仓库内文档是否与实际代码一致,重点包括:
-  - README.md / README.zh.md 的 lint 表格 ↔ `Cargo.toml` 的 `[lints]`;
-  - README 的检查链表格 ↔ `githooks/pre-commit` 的实际命令;
-  - 工具链描述 ↔ `rust-toolchain.toml`;目录结构树、命令示例、版本号;
+  - docs/lint-policy.md / docs/lint-policy.zh.md 的 lint 表格 ↔ `Cargo.toml` 的 `[lints]`;
+  - docs/checks.md / docs/checks.zh.md 的检查链表格 ↔ 双 hook(`githooks/pre-commit` 与 `pre-push`)的实际命令;
+  - README.md / README.zh.md 作为入口页:快速开始命令、文档索引链接、特性描述是否仍然属实;
+  - 工具链描述 ↔ `rust-toolchain.toml`;目录结构 ↔ `docs/structure(.zh).md`;命令示例、版本号;
   - 源码 doc comment(`//!` / `///`)与实际行为。
-- 两份 README 必须同步修改,不允许只改一份。
-- 修改 lint 配置或检查链时,**同一个 commit** 内必须同步更新两份 README 与本文件。
-- 其中可机械化验证的部分已实现为 `githooks/check-docs`,并已接入 pre-commit 检查链;它只覆盖可 grep 的不变量(双 hook 的命令、lint 名、edition、channel、just 配方、CI 入口等)。**语义层面的对齐**(描述是否过时、示例能否运行、文档口吻是否一致)机器管不了,仍需代理或人工逐条确认。
+- 文档一律双语成对(`*.md` + `*.zh.md`),必须同步修改,不允许只改一种语言。
+- 修改 lint 配置或检查链时,**同一个 commit** 内必须同步更新对应 docs 页、两份 README 与本文件。
+- 其中可机械化验证的部分已实现为 `githooks/check-docs`,并已接入 pre-commit 检查链;它只覆盖可 grep 的不变量(双 hook 的命令 ↔ docs/checks、lint 名 ↔ docs/lint-policy、edition、channel、just 配方、README 文档索引、CI 入口等)。**语义层面的对齐**(描述是否过时、示例能否运行、文档口吻是否一致)机器管不了,仍需代理或人工逐条确认。
 
 ## 4. 一句话总结
 
