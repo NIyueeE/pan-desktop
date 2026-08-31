@@ -60,6 +60,14 @@
         }
     }
 
+    /** Record a failure. The card must expand for errors: the retry button
+     * lives inside the body, so a collapsed card would strand the user with
+     * a silent header and no way to see or recover from the failure. */
+    function setError(message: string): void {
+        errorText = message;
+        revealOnce();
+    }
+
     /** Run one translation attempt for this card. */
     function translateCard(text: string, from: string, to: string, appendIfSameAs?: string): void {
         generation += 1;
@@ -67,7 +75,7 @@
         hideOnceDone = false;
 
         if (service === undefined) {
-            errorText = `Unknown service: ${getServiceName(selectedKey)}`;
+            setError(`Unknown service: ${getServiceName(selectedKey)}`);
             return;
         }
         let targetLanguage = to;
@@ -77,7 +85,7 @@
             targetLanguage = cfg('translate_second_language');
         }
         if (!(from in service.Language) || !(targetLanguage in service.Language)) {
-            errorText = 'Language not supported';
+            setError('Language not supported');
             return;
         }
 
@@ -123,7 +131,7 @@
                         return;
                     }
                     void info(`[${selectedKey}]reject`);
-                    errorText = e instanceof Error ? e.message : String(e);
+                    setError(e instanceof Error ? e.message : String(e));
                     isLoading = false;
                 }
             );
@@ -192,7 +200,7 @@
     function onTranslateBack(): void {
         errorText = '';
         if (service === undefined) {
-            errorText = `Unknown service: ${getServiceName(selectedKey)}`;
+            setError(`Unknown service: ${getServiceName(selectedKey)}`);
             return;
         }
         let newTarget = translateState.sourceLanguage;
@@ -215,7 +223,7 @@
     }
 </script>
 
-<div class="rounded-[10px] bg-content1">
+<div class="rounded-[10px] bg-content1 shadow-sm">
     <div
         class={`flex h-[30px] items-center justify-between bg-content2 px-1 ${hidden ? 'rounded-[10px]' : 'rounded-t-[10px]'}`}
     >

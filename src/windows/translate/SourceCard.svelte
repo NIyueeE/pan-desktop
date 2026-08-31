@@ -75,7 +75,7 @@
 </script>
 
 <div>
-    <div class="bg-content1 mt-[1px] rounded-[10px] pb-0">
+    <div class="bg-content1 mt-[1px] rounded-[10px] pb-0 shadow-sm">
         <div class="max-h-[40vh] overflow-y-auto p-[12px] pb-0">
             <!-- svelte-ignore a11y_autofocus -->
             <textarea
