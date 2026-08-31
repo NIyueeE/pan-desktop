@@ -18,8 +18,9 @@ something the next session needs to know.
 ## Current state (2026-08-31)
 
 - Toolchain: floating stable (1.98.0 at the time of writing).
-- Gates: pre-commit fast gates / pre-push heavy gates / CI identical;
-  `githooks/check-docs` carries the docs↔code invariants (AGENTS.md §3).
+- Gates: pre-commit fast gates (incl. secret scan) / pre-push heavy gates /
+  CI identical; `githooks/check-docs` carries the docs↔code invariants
+  (AGENTS.md §3).
 - Releases: tag-driven, notes extracted from CHANGELOG.md; v0.1.0 and v0.2.0
   published and verified end to end.
 - CD: `test-build.yml` verified on linux; macos/windows legs use the same
@@ -39,6 +40,9 @@ something the next session needs to know.
   release by design.
 - Commits are free, `v*` tags are deliberate (AGENTS.md §5) — agents never
   tag without an explicit human request.
+- Pre-commit secret scan (`githooks/check-secrets`) added at user request;
+  waiver marker `security-scan:allow` with a reason; placeholder-looking
+  values (example/dummy/{{ }}) are filtered to keep false positives low.
 - The README roadmap section was removed at user request; open items live in
   this file.
 

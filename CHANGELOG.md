@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cargo test` (nextest evaluated; see HANDOFF.md)
 - GitHub Actions pinned to commit SHAs with version comments
   (supply-chain hardening)
+- Pre-commit secret scan gate (`githooks/check-secrets`): staged changes are
+  scanned for credential-shaped strings; waiver marker `security-scan:allow`
+- AGENTS.md §9 working discipline: staging, main-branch, dependency-upgrade,
+  changelog, verification, session-end, timebox, ask-vs-act, and secrets
+  rules
 
 ### Changed
 

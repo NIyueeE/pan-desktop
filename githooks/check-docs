@@ -108,6 +108,16 @@ else
   errors=$((errors + 1))
 fi
 
+# 13) secret scan gate wired into the chain and documented
+if [ -f githooks/check-secrets ]; then
+  expect "secret scan gate wired" githooks/pre-commit 'githooks/check-secrets'
+  expect "secret scan documented" docs/checks.md 'githooks/check-secrets'
+  expect "secret scan documented" docs/checks.zh.md 'githooks/check-secrets'
+else
+  echo "  FAIL  githooks/check-secrets missing (AGENTS.md §9 secrets discipline)" >&2
+  errors=$((errors + 1))
+fi
+
 # soft notice: placeholders are expected in the template repo itself
 if grep -qF '{{' README.md README.zh.md; then
   echo "  note: {{...}} placeholders still present (normal for this template repo)"

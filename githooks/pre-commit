@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-commit hook (fast gates): format + unused deps + docs-sync + strict clippy.
+# Pre-commit hook (fast gates): format + secret scan + unused deps + docs-sync + strict clippy.
 # Heavyweight gates (audit / outdated / test) live in githooks/pre-push.
 # Activate via: git config core.hooksPath githooks   (or: just setup)
 set -euo pipefail
@@ -8,6 +8,9 @@ cd "$(git rev-parse --show-toplevel)"
 
 echo "==> cargo fmt --check"
 cargo fmt --all -- --check
+
+echo "==> secret scan (githooks/check-secrets)"
+githooks/check-secrets
 
 echo "==> cargo machete (unused dependencies)"
 cargo machete

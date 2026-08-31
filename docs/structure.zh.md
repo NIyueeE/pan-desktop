@@ -11,9 +11,10 @@
 | `rust-toolchain.toml` | `channel = "stable"` + clippy/rustfmt 组件 |
 | `justfile` | `just setup`(hook + 工具)/ `just check`(全链) |
 | `deny.toml` | cargo-deny 策略:许可证 / 禁用项 / 通告 / 来源 |
-| `githooks/pre-commit` | 快门:fmt、machete、docs、clippy |
+| `githooks/pre-commit` | 快门:fmt、secrets、machete、docs、clippy |
 | `githooks/pre-push` | 重门:audit、deny、outdated、test |
 | `githooks/check-docs` | 文档与代码对齐门 |
+| `githooks/check-secrets` | 暂存区密钥扫描 |
 | `.github/workflows/ci.yml` | CI:推送 / PR 时运行 `just check` |
 | `.github/workflows/release.yml` | 打 `v*` 标签 → 多平台二进制发布 |
 | `.github/workflows/test-build.yml` | 手动为任意 commit 构建指定平台测试产物 |

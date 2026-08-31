@@ -11,9 +11,10 @@
 | `rust-toolchain.toml` | `channel = "stable"` + clippy/rustfmt components |
 | `justfile` | `just setup` (hooks + tools) / `just check` (full chain) |
 | `deny.toml` | cargo-deny policy: licenses / bans / advisories / sources |
-| `githooks/pre-commit` | fast gates: fmt, machete, docs, clippy |
+| `githooks/pre-commit` | fast gates: fmt, secrets, machete, docs, clippy |
 | `githooks/pre-push` | heavy gates: audit, deny, outdated, test |
 | `githooks/check-docs` | docs ↔ code alignment gate |
+| `githooks/check-secrets` | secret scan on staged changes |
 | `.github/workflows/ci.yml` | CI: `just check` on push / PR |
 | `.github/workflows/release.yml` | tag push (`v*`) → multi-platform binaries |
 | `.github/workflows/test-build.yml` | manual test builds for chosen platforms at any commit |

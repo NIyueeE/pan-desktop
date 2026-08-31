@@ -20,18 +20,22 @@ cargo install cargo-machete cargo-audit cargo-outdated cargo-deny --locked
 | # | 检查 | 命令 | 用途 |
 |---|------|------|------|
 | 1 | fmt | `cargo fmt --all -- --check` | 代码格式 |
-| 2 | machete | `cargo machete` | 未使用的依赖 |
-| 3 | docs | `githooks/check-docs` | 文档与代码对齐 |
-| 4 | clippy | `cargo clippy --all-targets --all-features -- -D warnings` | 严格 lint |
+| 2 | secrets | `githooks/check-secrets` | 暂存区密钥扫描 |
+| 3 | machete | `cargo machete` | 未使用的依赖 |
+| 4 | docs | `githooks/check-docs` | 文档与代码对齐 |
+| 5 | clippy | `cargo clippy --all-targets --all-features -- -D warnings` | 严格 lint |
+
+某一行必须出现密钥形态的字符串时(如密钥格式说明文档),在该行加
+`security-scan:allow` 标记并注明原因;`check-secrets` 会跳过它。
 
 ## 每次推送 —— `githooks/pre-push`
 
 | # | 检查 | 命令 | 用途 |
 |---|------|------|------|
-| 5 | audit | `cargo audit` | RustSec 安全通告 |
-| 6 | deny | `cargo deny check` | 许可证 / 禁用项 / 通告策略 |
-| 7 | outdated | `cargo outdated --root-deps-only` | 直接依赖是否过期 |
-| 8 | test | `cargo test --quiet` | 测试套件 |
+| 6 | audit | `cargo audit` | RustSec 安全通告 |
+| 7 | deny | `cargo deny check` | 许可证 / 禁用项 / 通告策略 |
+| 8 | outdated | `cargo outdated --root-deps-only` | 直接依赖是否过期 |
+| 9 | test | `cargo test --quiet` | 测试套件 |
 
 ## 一键运行
 

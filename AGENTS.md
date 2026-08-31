@@ -68,7 +68,7 @@ code-level.**
   fixable; waive only as above when truly unfixable. Never delete, comment
   out, or bypass a check.
 - The chain has two layers: **fast gates** (`githooks/pre-commit`: fmt /
-  machete / docs / clippy) run on commit, **heavy gates**
+  secrets / machete / docs / clippy) run on commit, **heavy gates**
   (`githooks/pre-push`: audit / deny / outdated / test) run on push; CI runs
   the whole chain via `just check`. All three are "the checks" and bound by
   this discipline.
@@ -92,7 +92,8 @@ code-level.**
 - The mechanical part is automated in `githooks/check-docs`, wired into the
   pre-commit chain. It only covers greppable invariants (hook commands ↔
   docs/checks, lint names ↔ docs/lint-policy, edition, channel, just recipes,
-  README docs index, CI entry, CHANGELOG extraction, test-build entry).
+  README docs index, CI entry, CHANGELOG extraction, test-build entry,
+  secret-scan gate).
   **Semantic alignment** (outdated prose, runnable examples, consistent tone)
   cannot be mechanized — it stays with the agent or a human reviewer.
 
@@ -186,7 +187,37 @@ code-level.**
 - Security reports go through GitHub's private vulnerability reporting
   (SECURITY.md), never public issues.
 
-## 9. Documentation map
+## 9. Working discipline (daily rules)
+
+- **Stage with eyes open.** Review `git status` and stage selectively
+  (`git add -p`); never blanket `git add -A` while the worktree holds
+  unrelated changes. One commit = one logical change: features, refactors,
+  and fixes do not share a commit.
+- **main stays releasable.** Direct pushes to main are allowed, so CI red on
+  main is the top priority — fix it before starting new work; experiments go
+  to a branch.
+- **No drive-by dependency upgrades.** Upgrades are Dependabot's job (or a
+  dedicated commit); never bundle them into feature work — keep bisect clean.
+- **CHANGELOG as you go.** A user-visible change and its `## [Unreleased]`
+  entry land in the same commit; never backfill at release time (§5).
+- **Prove it, don't assume it.** Every "it works" claim must be backed by
+  real command output from this session; no output, no claim.
+- **No corpses.** Commented-out code and `todo!()` stubs get removed, not
+  accumulated (the `todo` lint already watches).
+- **End-of-session ritual.** A session ends with `just fmt` + `just check`,
+  everything committed and pushed — never a dirty tree, never unpushed
+  commits.
+- **Timebox rabbit holes.** Three failed attempts on the same problem: stop,
+  write the findings into HANDOFF.md, and ask the human.
+- **Clear → act; ambiguous or irreversible → ask.** Renames, deletions,
+  settings changes, and anything touching releases need the human's go.
+- **Secrets never enter the repository.** Tokens, keys, and credentials live
+  in repo settings / environment only — never in code, docs, or commits.
+  Enforced mechanically by `githooks/check-secrets` in the pre-commit chain;
+  a line that must carry a secret-shaped string takes a
+  `security-scan:allow` marker with a reason.
+
+## 10. Documentation map
 
 | Question | Where |
 |----------|-------|
@@ -199,9 +230,11 @@ code-level.**
 
 Every page has a `*.zh.md` counterpart; §3 governs their sync.
 
-## 10. One-line summary
+## 11. One-line summary
 
 > Self-check the environment on entry; when a check blocks you, fix the code —
 > waive only as a last resort, locally, with a named reason; keep docs and
 > code in the same commit; write commit messages in english; commits are free,
-> release tags are deliberate; let releases speak through CHANGELOG.md.
+> release tags are deliberate; let releases speak through CHANGELOG.md; prove
+> every claim with real output; end sessions clean; secrets never enter the
+> repo.

@@ -22,18 +22,22 @@ cargo install cargo-machete cargo-audit cargo-outdated cargo-deny --locked
 | # | Gate | Command | Purpose |
 |---|------|---------|---------|
 | 1 | fmt | `cargo fmt --all -- --check` | code style |
-| 2 | machete | `cargo machete` | unused dependencies |
-| 3 | docs | `githooks/check-docs` | docs ↔ code alignment |
-| 4 | clippy | `cargo clippy --all-targets --all-features -- -D warnings` | strict lints |
+| 2 | secrets | `githooks/check-secrets` | secret scan on staged changes |
+| 3 | machete | `cargo machete` | unused dependencies |
+| 4 | docs | `githooks/check-docs` | docs ↔ code alignment |
+| 5 | clippy | `cargo clippy --all-targets --all-features -- -D warnings` | strict lints |
+
+Lines that must carry a secret-shaped string (e.g. key-format documentation)
+take a `security-scan:allow` marker with a reason; `check-secrets` skips them.
 
 ## On every push — `githooks/pre-push`
 
 | # | Gate | Command | Purpose |
 |---|------|---------|---------|
-| 5 | audit | `cargo audit` | RustSec security advisories |
-| 6 | deny | `cargo deny check` | licenses / bans / advisories policy |
-| 7 | outdated | `cargo outdated --root-deps-only` | outdated direct dependencies |
-| 8 | test | `cargo test --quiet` | test suite |
+| 6 | audit | `cargo audit` | RustSec security advisories |
+| 7 | deny | `cargo deny check` | licenses / bans / advisories policy |
+| 8 | outdated | `cargo outdated --root-deps-only` | outdated direct dependencies |
+| 9 | test | `cargo test --quiet` | test suite |
 
 ## One-shot run
 
