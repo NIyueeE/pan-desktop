@@ -58,6 +58,16 @@ export default tseslint.config(
         },
     },
     {
+        // Plain Node dev scripts (no type info): expose Node built-in globals.
+        files: ['scripts/**/*.mjs'],
+        languageOptions: {
+            globals: { ...globals.node, fetch: 'readonly', WebSocket: 'readonly' },
+        },
+        rules: {
+            'no-console': 'off',
+        },
+    },
+    {
         files: ['src/**/*.{ts,svelte}'],
         languageOptions: {
             ecmaVersion: 'latest',

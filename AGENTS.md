@@ -72,6 +72,8 @@
 6. **CI 验证**：`gh run list --repo NIyueeE/pan-desktop --limit 2` 看刚才的 push 是否启动；只发 tag 才会触发上传到 Release（见第 6 节）。
 7. **回归用例随修随加**：每修一个 bug，对应一个或多个测试用例纳入 `*.test.ts`；这些用例就是后续的"防回归网"。
 
+**界面类问题的"截屏 → 修改 → 截屏"负反馈循环**（无需 Tauri 后端 / 无需真机）：`preview.html` + `src/preview/mock.ts` 在普通浏览器里注入 `window.__TAURI_INTERNALS__` 内存 mock（config store、events、plugin-http 返回 canned 翻译、plugin-os 注入全局等），把真实窗口组件原样跑起来；`scripts/preview-shot.mjs` 用本机缓存的 Playwright Chromium 无头截屏（CDP 驱动，支持点击 / 注入文本 / 深浅色 / 多语言 / 任意窗口尺寸）。用法：`node scripts/preview-shot.mjs --out-dir /tmp/pan-shots --shot '{"name":"x","query":"label=translate&lang=en"}'`（`query` 走 `label/lang/theme/text/translation/config` 参数，详见脚本头注释）。该 harness 仅限开发：`vite build` 的 rollup input 不含 `preview.html`，产物永远只有四个窗口入口。注意：无头浏览器所在机器若无 CJK 字体，中文会显示 tofu，布局判断仍可用。
+
 ### 3.1 测试基础设施速查
 
 - `src/test/tauri-state.ts`：纯状态模块，**无 imports**（避免被 vi.mock hoisting 抓取），被 `vi.mock` 的工厂函数通过 `await import('./tauri-state')` 延迟加载。导出：`fakeConfigFile`（Map，直接当键值配置源使用）、`storeInstances`、`createFakeStore()`、`eventListeners` + `emitTestEvent()` + `listenerCount()`、`invokeHandlers` + `setInvokeHandler()` + `invokeCalls` + `fakeInvoke(cmd, args)`、`windowState` + `setCurrentWindowLabel()`、`globalShortcutCalls`、`resetTauriState()`。

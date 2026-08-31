@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>pan preview</title>
+    </head>
+    <body>
+        <div id="root"></div>
+        <!-- The mock installs window.__TAURI_INTERNALS__ before any window boots. -->
+        <script type="module" src="/src/preview/mock.ts"></script>
+        <script type="module">
+            // Dev-only harness: boot whichever window entry ?label= names.
+            const label = new URLSearchParams(window.location.search).get('label') ?? 'translate';
+            await import(/* @vite-ignore */ `/src/windows/${label}/main.ts`);
+        </script>
+    </body>
+</html>
