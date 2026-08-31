@@ -1,3 +1,26 @@
+# 4.2.0（未发布）
+
+## 变更
+
+-   **前端整体重写为 Svelte 5 + TypeScript**：移除全部 React 代码（NextUI / jotai / react-i18next / react-beautiful-dnd / framer-motion / react-spring 等依赖全部退出），包管理器从 pnpm 切换为 **bun**。Rust 后端、Tauri 插件与 IPC 契约不变，`config.json` 现有配置与上游 pot 备份继续可用。
+-   **每个窗口独立入口**（`translate.html` / `config.html` / `screenshot.html` / `daemon.html`）：翻译窗口只需解析 ~26KB 脚本（此前所有窗口共享同一份包含全部页面与服务的 bundle），截图遮罩窗口仅 ~2KB；后端 `window.rs` 改为按窗口 label 打开对应 HTML。
+-   **响应式配置快照 store**：启动时一次 `entries()` 批量读取全部配置（替代旧版每个 hook 一次 `store.get` 的 30+ 次串行 IPC），写入立即生效、防抖批量落盘并广播 `<key>_changed` 跨窗口同步事件；文件监听触发一次性整体刷新 + `reload_store`。
+-   **控件精简**：`hide_source`/`hide_language` 两个开关合并为「弹窗布局」单选（旧键自动迁移，语义不变）；移除无效的代理用户名/密码输入框（后端从未读取）；代理字段仅在启用时显示；所有多状态选项统一为单个下拉框。
+-   **i18n 懒加载**：仅加载当前语言 + 英文回退包（旧版一次性打包全部 19 个语言）；`ta_IN` / `tk_TM` 两个此前从未接入的语言文件现已可用；新增布局相关文案键（en / zh_CN / zh_TW）。
+-   **翻译流水线重写**：SSE 流式解析改为逐行缓冲（正确处理跨 chunk 截断），URL 补全规则与 `$text/$from/$to/$detect` 模板保持不变；流式渲染、自动复制、增量翻译、动态翻译、删除换行、失败重试、回译等行为与旧版一致。
+-   **改进**：移除拖动/聚焦窗口时逐事件的 `Move` 日志 IPC；翻译结果不再全文写日志；`tauri.conf.json` 基础配置中的 daemon 窗口不再携带 `--disable-web-security`（Windows 覆盖配置本就正确，跨平台与 AGENTS 红线对齐）。
+
+## 测试与工程化
+
+-   测试栈迁移到 vitest 4 + @testing-library/svelte + jsdom 30：Tauri mock 基建（内存 store、事件总线、invoke 命令表）原样迁移，`src/test/setup.ts` 额外初始化真实英文语言包与环境信息；**85 个用例全绿**。
+-   回归网完整重建：UndefinedSweep（7 配置页 × 3 配置形态 × 首帧+稳定后）、服务设置页（旧备份清洗 / VLM 端点列出 / 系统 OCR 图标资产存在 / 启用与删除持久化）、热键页（组合键格式化 / OK 应用 / 退格清空 / 失焦还原）、翻译窗口（`new_text` 流转 / 删除换行变换 / 服务错误呈现 / `undefined` 泄漏）、关于页品牌钉死、blur 宽限簿记、配置 store（批量读 / 防抖写 / writeThrough 取消挂起写 / 旧键迁移 / undefined 防护）、OpenAI 兼容端点（URL 补全 / Bearer / SSE 逐行解析 / `$lang` 替换 / 默认 prompt 回退）。
+-   `scripts/test-webdav.mjs` 移植为 `scripts/test-webdav.ts`（bun 原生运行 TS），17 节全部保留，包括「Legacy pot backups still restore」兼容性红线。
+-   质量门禁与 CI 全部切换为 bun：`bun run check` = format + lint（eslint 10 + typescript-eslint + eslint-plugin-svelte）+ `svelte-check` 类型检查（`--fail-on-warnings`，0 warning 硬门槛）+ 三套测试 + vite 构建 + cargo check；CI lint/build job 改用 `oven-sh/setup-bun` + `bun install --frozen-lockfile`，每个 build job 同时 `actions/setup-node@v5`（Node 22，跑 vite / vitest / tauri CLI 这些 node-shebang bin），Linux docker action 镜像内 `COPY --from=oven/bun:1` 装 bun、继续下载 Node tarball（rust:bookworm 既无 bun 也无 Node），`scripts/test-webdav.mjs` 移植为 `scripts/test-webdav.ts` 由 bun 直接运行。
+-   svelte-check warning 清零：5 处 `state_referenced_locally` 显式化为「挂载时 seed 一次」（`// svelte-ignore` + 重挂载依据注释）或 `$derived` 派生，a11y 修复（prompt 列表 label 关联 textarea、截图遮罩 `alt` 与裸指针捕获面标注）。
+-   `@tauri-apps/cli` 回归 devDependencies（`^2.11.4`，与 Tauri 2.11 核心版本对齐）—— 重写时遗漏会让所有平台 `bun run tauri build` 立即 "command not found"，CI 全平台 build job 必挂；现与 `package.json` + `bun.lock` 同步提交。
+-   Dependabot 切换到 `package-ecosystem: "bun"`（2025-02 GA），旧 `npm` 条目对仅含 `bun.lock` 的仓库无效。
+-   新增 `com.pan.desktop.metainfo.xml` `<release>` 条目仪式（Linux 包管理器元数据），发版流程同步更新。
+
 # 4.1.3
 
 ## 修复

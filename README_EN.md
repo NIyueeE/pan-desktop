@@ -4,9 +4,9 @@
 
 This fork keeps only three translation entry points:
 
--   **Selection translate**: translate selected text via global shortcut
--   **Input translate**: open the input window from the tray or a global shortcut
--   **OCR translate**: capture a screenshot, recognize text with local OCR, then translate
+- **Selection translate**: translate selected text via global shortcut
+- **Input translate**: open the input window from the tray or a global shortcut
+- **OCR translate**: capture a screenshot, recognize text with local OCR, then translate
 
 The only translation backend is the **OpenAI Chat Completions compatible protocol**, the most widely supported model API format. Any provider with a compatible endpoint can be used by configuring a custom request URL, model, API key and prompt.
 
@@ -16,38 +16,38 @@ The brand was renamed from `pot` to `pan` (app identifier `com.pan.desktop`, bin
 
 ### Kept
 
--   Selection / input / OCR translation
--   OpenAI Chat Completions compatible API
-    -   Custom `Base URL` or full `/chat/completions` endpoint
-    -   Custom model, API key and System/User/Assistant prompts
-    -   Streaming output and custom request arguments
--   Local OCR: system OCR and Tesseract
--   **WebDAV backup & sync**: one-click backup/restore of the whole configuration with optional automatic backups (see below)
--   Auto copy, always on top, window position/size memory, proxy, autostart, theme/font, i18n
+- Selection / input / OCR translation
+- OpenAI Chat Completions compatible API
+    - Custom `Base URL` or full `/chat/completions` endpoint
+    - Custom model, API key and System/User/Assistant prompts
+    - Streaming output and custom request arguments
+- Local OCR: system OCR and Tesseract
+- **WebDAV backup & sync**: one-click backup/restore of the whole configuration with optional automatic backups (see below)
+- Auto copy, always on top, window position/size memory, proxy, autostart, theme/font, i18n
 
 ### Removed
 
--   All other built-in translation services (DeepL, Bing, Google, Ollama, etc.)
--   Other cloud OCR services
--   TTS, collection/flashcards, history
--   Plugin system, local HTTP server, clipboard monitor
--   Standalone OCR window and the built-in updater
+- All other built-in translation services (DeepL, Bing, Google, Ollama, etc.)
+- Other cloud OCR services
+- TTS, collection/flashcards, history
+- Plugin system, local HTTP server, clipboard monitor
+- Standalone OCR window and the built-in updater
 
 ## Tech stack
 
--   Tauri 2.11
--   Rust 2024 Edition (`rust-toolchain.toml` tracks latest stable)
--   React 18 + Vite 5
--   pnpm
+- Tauri 2.11
+- Rust 2024 Edition (`rust-toolchain.toml` tracks latest stable)
+- Svelte 5 + TypeScript + Vite 8 + Tailwind CSS 4 (one HTML entry per window)
+- Bun (package manager / script runner) + Node.js 22 (runtime for the vite / vitest / tauri CLI bins)
 
 ## Development
 
 ### Requirements
 
--   Node.js >= 22
--   pnpm >= 9
--   Latest stable Rust (read from `rust-toolchain.toml`)
--   Tauri 2 system dependencies on Ubuntu/Debian:
+- Bun >= 1.2
+- Node.js >= 22 (`bun run` shells out to node-shebang bins: vite, vitest, svelte-check, the tauri CLI)
+- Latest stable Rust (read from `rust-toolchain.toml`)
+- Tauri 2 system dependencies on Ubuntu/Debian:
 
 ```bash
 sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
@@ -57,30 +57,41 @@ sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
 ### Commands
 
 ```bash
-pnpm install
+bun install
 
 # Run in development
-pnpm tauri dev
+bun run tauri dev
 
 # Build installers
-pnpm tauri build
+bun run tauri build
 
 # Frontend build
-pnpm build
+bun run build
 
 # Format check / fix
-pnpm format
-pnpm format:fix
+bun run format
+bun run format:fix
 
 # Strict lint (zero ESLint warnings + Clippy deny warnings)
-pnpm lint
-pnpm lint:fix
+bun run lint
 
-# Full check
-pnpm check
+# Type checking (svelte-check)
+bun run typecheck
+
+# Full check (CI gate equivalent)
+bun run check
 
 # WebDAV client tests
-pnpm test:webdav
+bun run test:webdav
+
+# Frontend component tests (vitest + jsdom, all Tauri APIs mocked)
+bun run test:ui
+
+# Rust unit tests
+bun run test:rs
+
+# Run all test suites
+bun run test
 ```
 
 ## OpenAI compatible service configuration
@@ -116,20 +127,20 @@ With **Auto Backup** enabled, the resident background process uploads at most on
 
 ### WebDAV client tests
 
-`scripts/test-webdav.mjs` runs the real client code against a built-in mock WebDAV server with zero Node dependencies — covering the smoke cycle and edge cases (path traversal, bad credentials, malformed remote payloads, missing directories, 2 MB values, request timeouts):
+`scripts/test-webdav.ts` runs the real client code against a built-in mock WebDAV server with zero dependencies on Bun — 17 sections covering the smoke cycle and edge cases (path traversal, bad credentials, malformed remote payloads, missing directories, 2 MB values, request timeouts, and the "legacy pot backups still restore" compatibility rule):
 
 ```bash
-pnpm test:webdav
+bun run test:webdav
 ```
 
 ## CI/CD
 
-`.github/workflows/package.yml` runs formatting, ESLint, Clippy, the frontend build and `cargo check` on PRs; pushes to main or tags build macOS, Windows and Linux installers and publish them to a Release.
+`.github/workflows/package.yml` runs formatting, ESLint, svelte-check type checking, Clippy, the three test suites, the frontend build and `cargo check` on PRs; pushes to main or tags build macOS, Windows and Linux installers and publish them to a Release.
 
--   Manual runs via `workflow_dispatch`
--   Superseded builds on the same branch are cancelled automatically (concurrency)
--   pnpm store and Rust dependency caching (Swatinem/rust-cache) for much faster builds
--   All jobs have timeout limits to avoid burning minutes on hangs
+- Manual runs via `workflow_dispatch`
+- Superseded builds on the same branch are cancelled automatically (concurrency)
+- Rust dependency caching (Swatinem/rust-cache) for much faster builds
+- All jobs have timeout limits to avoid burning minutes on hangs
 
 ## License
 

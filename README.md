@@ -4,9 +4,9 @@
 
 本分支只保留三个核心翻译入口：
 
--   **划词翻译**：全局快捷键读取选中文本后翻译
--   **输入翻译**：托盘菜单或全局快捷键打开输入窗口
--   **OCR 翻译**：截图后使用本地 OCR 识别并翻译
+- **划词翻译**：全局快捷键读取选中文本后翻译
+- **输入翻译**：托盘菜单或全局快捷键打开输入窗口
+- **OCR 翻译**：截图后使用本地 OCR 识别并翻译
 
 翻译服务仅保留 **OpenAI Chat Completions 兼容协议**，这是目前第三方模型服务支持最广的接口格式。只要服务商提供兼容端点，即可通过自定义请求地址、模型名、API Key 和 Prompt 接入。
 
@@ -16,38 +16,38 @@
 
 ### 保留
 
--   划词翻译 / 输入翻译 / OCR 翻译
--   OpenAI Chat Completions 兼容 API
-    -   支持自定义 `Base URL` 或完整 `/chat/completions` 地址
-    -   支持自定义模型、API Key、System/User/Assistant Prompt
-    -   支持流式输出和自定义请求参数
--   本地 OCR：系统 OCR 与 Tesseract
--   **WebDAV 备份同步**：一键备份/恢复全部配置，支持自动增量备份（详见下文）
--   自动复制、窗口置顶、窗口位置/大小记忆、代理、开机自启、主题/字体、多语言界面
+- 划词翻译 / 输入翻译 / OCR 翻译
+- OpenAI Chat Completions 兼容 API
+    - 支持自定义 `Base URL` 或完整 `/chat/completions` 地址
+    - 支持自定义模型、API Key、System/User/Assistant Prompt
+    - 支持流式输出和自定义请求参数
+- 本地 OCR：系统 OCR 与 Tesseract
+- **WebDAV 备份同步**：一键备份/恢复全部配置，支持自动增量备份（详见下文）
+- 自动复制、窗口置顶、窗口位置/大小记忆、代理、开机自启、主题/字体、多语言界面
 
 ### 已移除
 
--   其他内置翻译服务（DeepL、Bing、Google、Ollama 等）
--   其他云端 OCR 服务
--   TTS、收藏/生词本、历史记录
--   插件系统、本地 HTTP 服务、剪贴板监听
--   独立 OCR 识别窗口、应用更新器
+- 其他内置翻译服务（DeepL、Bing、Google、Ollama 等）
+- 其他云端 OCR 服务
+- TTS、收藏/生词本、历史记录
+- 插件系统、本地 HTTP 服务、剪贴板监听
+- 独立 OCR 识别窗口、应用更新器
 
 ## 技术栈
 
--   Tauri 2.11
--   Rust 2024 Edition（`rust-toolchain.toml` 跟随最新 stable）
--   React 18 + Vite 5
--   pnpm
+- Tauri 2.11
+- Rust 2024 Edition（`rust-toolchain.toml` 跟随最新 stable）
+- Svelte 5 + TypeScript + Vite 8 + Tailwind CSS 4（每个窗口独立 HTML 入口）
+- Bun（包管理与脚本入口）+ Node.js 22（vite / vitest / tauri CLI 等依赖 bin 的运行时）
 
 ## 本地开发
 
 ### 环境要求
 
--   Node.js >= 22
--   pnpm >= 9
--   最新 Rust stable（`rustup` 会读取仓库根目录的 `rust-toolchain.toml`）
--   Tauri 2 Linux 系统依赖，例如 Ubuntu/Debian：
+- Bun >= 1.2
+- Node.js >= 22（`bun run` 调用的 vite、vitest、svelte-check、tauri CLI 都是 node shebang 脚本）
+- 最新 Rust stable（`rustup` 会读取仓库根目录的 `rust-toolchain.toml`）
+- Tauri 2 Linux 系统依赖，例如 Ubuntu/Debian：
 
 ```bash
 sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
@@ -57,39 +57,41 @@ sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev \
 ### 常用命令
 
 ```bash
-pnpm install
+bun install
 
 # 开发运行
-pnpm tauri dev
+bun run tauri dev
 
 # 构建安装包
-pnpm tauri build
+bun run tauri build
 
 # 前端构建
-pnpm build
+bun run build
 
 # 代码格式检查 / 自动修复
-pnpm format
-pnpm format:fix
+bun run format
+bun run format:fix
 
 # 严格 lint（ESLint 零警告 + Clippy deny warnings）
-pnpm lint
-pnpm lint:fix
+bun run lint
 
-# 完整检查
-pnpm check
+# 类型检查（svelte-check）
+bun run typecheck
+
+# 完整检查（CI 门禁等价）
+bun run check
 
 # WebDAV 客户端测试
-pnpm test:webdav
+bun run test:webdav
 
 # 前端组件测试（vitest + jsdom，Tauri API 全 mock）
-pnpm test:ui
+bun run test:ui
 
 # Rust 单元测试
-pnpm test:rs
+bun run test:rs
 
 # 一次性运行全部测试
-pnpm test
+bun run test
 ```
 
 ## OpenAI 兼容服务配置
@@ -125,24 +127,24 @@ Prompt 中可使用 `$text`、`$from`、`$to`、`$detect` 变量。
 
 ### WebDAV 客户端测试
 
-`scripts/test-webdav.mjs` 用零依赖的 Node 脚本针对内置 mock WebDAV 服务器运行真实客户端代码，覆盖冒烟流程与边界情况（路径穿越、错误口令、畸形远端数据、目录缺失自动建层、2MB 大值、请求超时等）：
+`scripts/test-webdav.ts` 用零依赖的 Bun/TypeScript 脚本针对内置 mock WebDAV 服务器运行真实客户端代码，覆盖 17 节冒烟流程与边界情况（路径穿越、错误口令、畸形远端数据、目录缺失自动建层、2MB 大值、请求超时等，含「上游 pot 旧备份仍可恢复」的兼容性红线）：
 
 ```bash
-pnpm test:webdav
+bun run test:webdav
 ```
 
 ### 前端组件测试（反馈测试流程）
 
-`pnpm test:ui` 使用 Vitest + jsdom 运行真实 React 组件：`src/test/tauri-state.js` + `src/test/setup.js` 把所有 `@tauri-apps/*` 模块 mock 成内存版 store / 事件总线 / invoke 命令表，配置窗口（服务设置、热键设置等页面）可以在无 Tauri 环境下渲染和交互，用于回归验证 Windows 上反馈过的崩溃场景（例如：恢复旧版本备份后服务列表包含已移除的服务）。新增页面或修复 bug 时请同步补充用例。
+`bun run test:ui` 使用 Vitest 4 + jsdom 运行真实 Svelte 5 组件：`src/test/tauri-state.ts` + `src/test/setup.ts` 把所有 `@tauri-apps/*` 模块 mock 成内存版 store / 事件总线 / invoke 命令表，配置窗口（服务设置、热键设置等页面）可以在无 Tauri 环境下渲染和交互，用于回归验证 Windows 上反馈过的崩溃场景（例如：恢复旧版本备份后服务列表包含已移除的服务）。新增页面或修复 bug 时请同步补充用例。
 
 ## CI/CD
 
-`.github/workflows/package.yml` 会在 PR 上执行格式检查、ESLint、Clippy、前端构建和 `cargo check`；推送 main 或 tag 时分别构建 macOS、Windows、Linux 安装包并上传 Release。
+`.github/workflows/package.yml` 会在 PR 上执行格式检查、ESLint、svelte-check 类型检查、Clippy、三套测试、前端构建和 `cargo check`；推送 main 或 tag 时分别构建 macOS、Windows、Linux 安装包并上传 Release。
 
--   支持 `workflow_dispatch` 手动触发
--   同一分支的旧构建自动取消（concurrency）
--   pnpm store 与 Rust 依赖缓存（Swatinem/rust-cache），显著缩短构建时间
--   所有任务设有超时上限，避免挂起消耗额度
+- 支持 `workflow_dispatch` 手动触发
+- 同一分支的旧构建自动取消（concurrency）
+- Rust 依赖缓存（Swatinem/rust-cache），显著缩短构建时间
+- 所有任务设有超时上限，避免挂起消耗额度
 
 ## License
 
