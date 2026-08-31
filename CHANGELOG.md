@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-31
+
+### Added
+
+- Template derivation guide: docs/using-this-template.md rename checklist
+- Issue templates (bug report, feature request) and pull request template
+
+### Fixed
+
+- Release workflow creates the GitHub Release before uploading binaries
+  (upload-rust-binary-action only uploads; the first run failed with
+  "release not found")
+
+### Changed
+
+- Release notes are extracted automatically from this changelog; a missing
+  version section fails the release
+- AGENTS.md rewritten in english and expanded: commit message convention,
+  changelog-driven release process, derivation and day-to-day rules
+
 ## [0.1.0] - 2026-08-31
 
 ### Added
