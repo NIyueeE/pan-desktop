@@ -62,6 +62,10 @@ something the next session needs to know.
 - `actions/checkout` etc. are SHA-pinned with `# vX` comments; bump via
   Dependabot PRs, or update the SHA and the comment together.
 - Renaming anything? Follow docs/using-this-template.md and re-grep for the
-  old name afterwards.
+  old name afterwards. Note: renaming the package can leave a stale
+  `target/` cache that makes `cargo test` fail with
+  `Os { code: 2, NotFound }` (the cached test binary still points at the old
+  bin path). `cargo clean -p <name>` — or touching the test — fixes it
+  locally; fresh checkouts and CI are unaffected.
 - Private vulnerability reporting must stay enabled in repo settings.
 - Never use `--no-verify` (AGENTS.md §4) and never bypass a gate (§2).
