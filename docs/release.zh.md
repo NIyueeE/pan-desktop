@@ -9,8 +9,8 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-`.github/workflows/release.yml` 会为三个目标平台构建二进制,并把压缩包挂到
-GitHub Release 上:
+`.github/workflows/release.yml` 会先创建 GitHub Release,再为三个目标平台构建
+二进制,并把压缩包挂到 Release 上:
 
 | Runner | 目标 |
 |--------|------|

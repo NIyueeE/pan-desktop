@@ -9,8 +9,8 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-`.github/workflows/release.yml` then builds the binary for three targets and
-attaches the archives to the GitHub Release:
+`.github/workflows/release.yml` then creates the GitHub Release and builds the
+binary for three targets, attaching the archives to the release:
 
 | Runner | Target |
 |--------|--------|

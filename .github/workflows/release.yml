@@ -8,8 +8,22 @@ permissions:
   contents: write
 
 jobs:
+  create-release:
+    name: create release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # creates the GitHub Release for the pushed tag;
+      # upload jobs below attach their archives to it
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   upload:
     name: build ${{ matrix.target }}
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
