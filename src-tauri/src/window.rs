@@ -105,9 +105,15 @@ fn build_window(label: &str, title: &str) -> (WebviewWindow, bool) {
     app_handle.get_webview_window(label).map_or_else(
         || {
             info!("Window not existence, Creating new window: {label}");
-            let mut builder =
-                WebviewWindowBuilder::new(app_handle, label, WebviewUrl::App("index.html".into()))
-                    .position(position.x.into(), position.y.into())
+            // One HTML entry per window: every webview only parses and
+            // executes the bundle it actually needs (translate/config/
+            // screenshot are separate Vite inputs).
+            let mut builder = WebviewWindowBuilder::new(
+                app_handle,
+                label,
+                WebviewUrl::App(format!("{label}.html").into()),
+            )
+            .position(position.x.into(), position.y.into())
                     .additional_browser_args(BROWSER_ARGS)
                     .use_https_scheme(true)
                     .title(title)

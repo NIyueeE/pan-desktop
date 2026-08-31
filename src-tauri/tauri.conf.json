@@ -56,7 +56,6 @@
                 "label": "daemon",
                 "visible": false,
                 "url": "daemon.html",
-                "additionalBrowserArgs": "--disable-web-security",
                 "useHttpsScheme": true
             }
         ]

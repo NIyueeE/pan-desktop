@@ -1,37 +1,41 @@
 import js from '@eslint/js';
 import globals from 'globals';
-import reactHooks from 'eslint-plugin-react-hooks';
+import svelte from 'eslint-plugin-svelte';
 import tseslint from 'typescript-eslint';
 
-export default [
+export default tseslint.config(
     {
-        ignores: ['dist/**', 'node_modules/**', 'src-tauri/target/**'],
+        ignores: [
+            'dist/**',
+            'node_modules/**',
+            'src-tauri/target/**',
+            'src-tauri/gen/**',
+            'src/lib/i18n/locales/**',
+        ],
     },
     js.configs.recommended,
     ...tseslint.configs.recommended,
+    ...svelte.configs.recommended,
     {
-        files: ['src/**/*.{js,jsx,ts,tsx}'],
+        files: ['**/*.svelte'],
+        languageOptions: {
+            parserOptions: {
+                parser: tseslint.parser,
+                extraFileExtensions: ['svelte'],
+            },
+        },
+    },
+    {
+        files: ['src/**/*.{ts,svelte}', 'scripts/**/*.ts'],
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
-            parserOptions: {
-                ecmaFeatures: {
-                    jsx: true,
-                },
-            },
             globals: {
                 ...globals.browser,
             },
         },
-        plugins: {
-            'react-hooks': reactHooks,
-        },
         rules: {
-            ...reactHooks.configs.recommended.rules,
-            'react-hooks/set-state-in-effect': 'off',
-            'react-hooks/immutability': 'off',
-            'react-hooks/use-memo': 'off',
-            'no-unused-vars': [
+            '@typescript-eslint/no-unused-vars': [
                 'error',
                 {
                     argsIgnorePattern: '^_',
@@ -39,6 +43,7 @@ export default [
                     caughtErrorsIgnorePattern: '^_',
                 },
             ],
+            '@typescript-eslint/no-explicit-any': 'error',
             'no-var': 'error',
             'prefer-const': 'error',
             eqeqeq: ['error', 'always'],
@@ -46,13 +51,5 @@ export default [
             'no-console': 'warn',
             'no-debugger': 'error',
         },
-    },
-    {
-        files: ['src/**/info.ts', 'src/utils/language.ts'],
-        rules: {
-            'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': 'off',
-            '@typescript-eslint/no-duplicate-enum-values': 'off',
-        },
-    },
-];
+    }
+);

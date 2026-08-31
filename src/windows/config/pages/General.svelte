@@ -1,0 +1,190 @@
+<script lang="ts">
+    import { disable as disableAutostart, enable as enableAutostart, isEnabled } from '@tauri-apps/plugin-autostart';
+    import { onMount } from 'svelte';
+    import { toast, Toaster } from 'svelte-sonner';
+
+    import { cfg, setConfig, trackConfigKeys, type ConfigSchema } from '../../../lib/config/store.svelte';
+    import { fontList, updateTray } from '../../../lib/ipc/commands';
+    import { changeAppLanguage, t, APP_LANGUAGES } from '../../../lib/i18n/i18n.svelte';
+    import PSelect from '../../../lib/ui/PSelect.svelte';
+    import PSwitch from '../../../lib/ui/PSwitch.svelte';
+    import Section from '../../../lib/ui/Section.svelte';
+    import SettingRow from '../../../lib/ui/SettingRow.svelte';
+    import TextField from '../../../lib/ui/TextField.svelte';
+    import { appEnv } from '../../../lib/utils/env.svelte';
+    import { applyTheme, themeState } from '../../../lib/utils/theme.svelte';
+
+    void trackConfigKeys([
+        'app_language',
+        'app_theme',
+        'app_font',
+        'app_font_size',
+        'transparent',
+        'dev_mode',
+        'tray_click_event',
+        'proxy_enable',
+        'proxy_host',
+        'proxy_port',
+        'no_proxy',
+    ]);
+
+    let fonts = $state<string[]>([]);
+    let autoStart = $state(false);
+
+    onMount(() => {
+        void isEnabled().then((v) => (autoStart = v));
+        void fontList().then((v) => (fonts = v));
+    });
+
+    const languageItems = $derived(Object.entries(APP_LANGUAGES).map(([code, name]) => ({ value: code, label: name })));
+    const themeItems = $derived([
+        { value: 'system', label: t('config.general.theme.system') },
+        { value: 'light', label: t('config.general.theme.light') },
+        { value: 'dark', label: t('config.general.theme.dark') },
+    ]);
+    const trayEventItems = $derived([
+        { value: 'config', label: t('config.general.event.config') },
+        { value: 'translate', label: t('config.general.event.translate') },
+        { value: 'ocr_translate', label: t('config.general.event.ocr_translate') },
+        { value: 'disable', label: t('config.general.event.disable') },
+    ]);
+    const fontSizeItems = [10, 12, 14, 16, 18, 20, 24].map((size) => ({ value: String(size), label: `${size} px` }));
+    const fontItems = $derived([
+        { value: 'default', label: t('config.general.default_font') },
+        ...fonts.map((font) => ({ value: font, label: font })),
+    ]);
+
+    const isWindows = $derived(appEnv.osType === 'Windows_NT');
+    const isMac = $derived(appEnv.osType === 'Darwin');
+
+    function onLanguageChange(code: string): void {
+        setConfig('app_language', code);
+        void changeAppLanguage(code);
+        void updateTray(code, '');
+    }
+
+    function onThemeChange(theme: string): void {
+        setConfig('app_theme', theme as ConfigSchema['app_theme']);
+        applyTheme(theme as ConfigSchema['app_theme']);
+    }
+
+    function onAutostartChange(checked: boolean): void {
+        autoStart = checked;
+        if (checked) {
+            void enableAutostart();
+        } else {
+            void disableAutostart();
+        }
+    }
+
+    function onProxyEnable(checked: boolean): void {
+        if (checked && (cfg('proxy_host') === '' || cfg('proxy_port') === '')) {
+            setConfig('proxy_enable', false);
+            toast.error(t('config.general.proxy_error'), { duration: 3000 });
+            return;
+        }
+        setConfig('proxy_enable', checked);
+        toast.success(t('config.general.proxy_change'), { duration: 1000 });
+    }
+
+    function onPortInput(value: string): void {
+        const parsed = parseInt(value);
+        if (Number.isNaN(parsed) || parsed < 0) {
+            setConfig('proxy_port', '');
+        } else if (parsed > 65535) {
+            setConfig('proxy_port', 65535);
+        } else {
+            setConfig('proxy_port', parsed);
+        }
+    }
+</script>
+
+<Toaster theme={themeState.resolved} position="bottom-right" richColors />
+
+<Section>
+    <SettingRow label={t('config.general.auto_start')}>
+        <PSwitch checked={autoStart} onCheckedChange={onAutostartChange} />
+    </SettingRow>
+</Section>
+
+<Section>
+    <SettingRow label={t('config.general.app_language')}>
+        <PSelect
+            value={cfg('app_language')}
+            items={languageItems}
+            triggerClass="min-w-[160px]"
+            onValueChange={onLanguageChange}
+        />
+    </SettingRow>
+    <SettingRow label={t('config.general.app_theme')}>
+        <PSelect
+            value={cfg('app_theme')}
+            items={themeItems}
+            triggerClass="min-w-[120px]"
+            onValueChange={onThemeChange}
+        />
+    </SettingRow>
+    <SettingRow label={t('config.general.app_font')}>
+        <PSelect
+            value={cfg('app_font')}
+            items={fontItems}
+            triggerClass="min-w-[200px]"
+            onValueChange={(v) => setConfig('app_font', v)}
+        />
+    </SettingRow>
+    <SettingRow label={t('config.general.font_size.title')}>
+        <PSelect
+            value={String(cfg('app_font_size'))}
+            items={fontSizeItems}
+            triggerClass="min-w-[100px]"
+            onValueChange={(v) => setConfig('app_font_size', parseInt(v))}
+        />
+    </SettingRow>
+    {#if isWindows}
+        <SettingRow label={t('config.general.tray_click_event')}>
+            <PSelect
+                value={cfg('tray_click_event')}
+                items={trayEventItems}
+                triggerClass="min-w-[140px]"
+                onValueChange={(v) => setConfig('tray_click_event', v as ConfigSchema['tray_click_event'])}
+            />
+        </SettingRow>
+    {/if}
+    {#if !isMac}
+        <SettingRow label={t('config.general.transparent')}>
+            <PSwitch checked={cfg('transparent')} onCheckedChange={(v) => setConfig('transparent', v)} />
+        </SettingRow>
+    {/if}
+    <SettingRow label={t('config.general.dev_mode')}>
+        <PSwitch checked={cfg('dev_mode')} onCheckedChange={(v) => setConfig('dev_mode', v)} />
+    </SettingRow>
+</Section>
+
+<Section>
+    <SettingRow label={t('config.general.proxy.title')}>
+        <PSwitch checked={cfg('proxy_enable')} onCheckedChange={onProxyEnable} />
+    </SettingRow>
+    {#if cfg('proxy_enable')}
+        <SettingRow label={t('config.general.proxy.host')}>
+            <TextField
+                value={cfg('proxy_host')}
+                class="w-[220px]"
+                onValueChange={(v) => setConfig('proxy_host', v)}
+            />
+        </SettingRow>
+        <SettingRow label={t('config.general.proxy.port')}>
+            <TextField
+                value={String(cfg('proxy_port'))}
+                class="w-[220px]"
+                onValueChange={onPortInput}
+            />
+        </SettingRow>
+        <SettingRow label={t('config.general.proxy.no_proxy')}>
+            <TextField
+                value={cfg('no_proxy')}
+                class="w-[220px]"
+                onValueChange={(v) => setConfig('no_proxy', v)}
+            />
+        </SettingRow>
+    {/if}
+</Section>
