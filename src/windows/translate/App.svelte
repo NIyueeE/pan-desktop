@@ -358,7 +358,8 @@
         if (event.key === 'Escape') {
             void appWindow.close();
         }
-        if (cfg('dev_mode') && event.key === 'F12') {
+        // Devtools in development builds only (no user-facing toggle).
+        if (import.meta.env.DEV && event.key === 'F12') {
             void openDevtools();
         }
         if (event.key.startsWith('F') && event.key.length > 1) {

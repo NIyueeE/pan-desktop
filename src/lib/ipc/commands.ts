@@ -23,12 +23,6 @@ export const cutImage = (rect: CropRect): Promise<void> =>
 
 export const getBase64 = () => invoke<string>('get_base64');
 
-export const copyImg = (width: number, height: number) => invoke<void>('copy_img', { width, height });
-
-export const setProxy = () => invoke<boolean>('set_proxy');
-
-export const unsetProxy = () => invoke<boolean>('unset_proxy');
-
 export const fontList = () => invoke<string[]>('font_list');
 
 export const openDevtools = () => invoke<void>('open_devtools');

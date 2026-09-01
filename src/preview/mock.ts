@@ -192,8 +192,6 @@ const handlers: Record<string, (args: InvokeArgs) => unknown> = {
     get_text: () => preview.text,
     reload_store: () => null,
     get_base64: () => '',
-    set_proxy: () => true,
-    unset_proxy: () => true,
     font_list: () => [],
     open_devtools: () => null,
     register_shortcut_by_frontend: () => null,

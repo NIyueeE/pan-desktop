@@ -1,6 +1,6 @@
 use crate::APP;
 use crate::StringWrapper;
-use crate::config::{StoreWrapper, get};
+use crate::config::StoreWrapper;
 use crate::error::Error;
 use log::{error, info, warn};
 use tauri::Manager;
@@ -143,44 +143,6 @@ pub fn copy_img(app_handle: tauri::AppHandle, width: usize, height: usize) -> Re
     };
     Clipboard::new()?.set_image(img)?;
     Ok(())
-}
-
-#[tauri::command]
-pub fn set_proxy() -> bool {
-    let host = match get("proxy_host") {
-        Some(v) => v.as_str().unwrap().to_string(),
-        None => return false,
-    };
-    let port = match get("proxy_port") {
-        Some(v) => v.as_i64().unwrap(),
-        None => return false,
-    };
-    let no_proxy = match get("no_proxy") {
-        Some(v) => v.as_str().unwrap().to_string(),
-        None => return false,
-    };
-    let proxy = format!("http://{host}:{port}");
-
-    // SAFETY: executed once at startup / from the config page before spawning workers.
-    unsafe {
-        std::env::set_var("http_proxy", &proxy);
-        std::env::set_var("https_proxy", &proxy);
-        std::env::set_var("all_proxy", &proxy);
-        std::env::set_var("no_proxy", &no_proxy);
-    }
-    true
-}
-
-#[tauri::command]
-pub fn unset_proxy() -> bool {
-    // SAFETY: executed from the config page before spawning workers.
-    unsafe {
-        std::env::remove_var("http_proxy");
-        std::env::remove_var("https_proxy");
-        std::env::remove_var("all_proxy");
-        std::env::remove_var("no_proxy");
-    }
-    true
 }
 
 #[tauri::command]

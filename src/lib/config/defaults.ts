@@ -29,12 +29,7 @@ export interface ConfigSchema {
     app_font: string;
     app_font_size: number;
     transparent: boolean;
-    dev_mode: boolean;
     tray_click_event: TrayClickEvent;
-    proxy_enable: boolean;
-    proxy_host: string;
-    proxy_port: string | number;
-    no_proxy: string;
     // ── Hotkeys (registered by the backend, written via command) ────────
     hotkey_selection_translate: string;
     hotkey_input_translate: string;
@@ -80,12 +75,7 @@ export const defaults: ConfigSchema = {
     app_font: 'default',
     app_font_size: 16,
     transparent: true,
-    dev_mode: false,
     tray_click_event: 'config',
-    proxy_enable: false,
-    proxy_host: '',
-    proxy_port: '',
-    no_proxy: 'localhost,127.0.0.1',
     hotkey_selection_translate: '',
     hotkey_input_translate: '',
     hotkey_ocr_translate: '',
@@ -130,10 +120,6 @@ export const BACKEND_READ_KEYS = [
     'app_language',
     'translate_auto_copy',
     'tray_click_event',
-    'proxy_enable',
-    'proxy_host',
-    'proxy_port',
-    'no_proxy',
     'translate_service_list',
     'recognize_service_list',
     'translate_window_position',

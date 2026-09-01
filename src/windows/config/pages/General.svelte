@@ -1,7 +1,6 @@
 <script lang="ts">
     import { disable as disableAutostart, enable as enableAutostart, isEnabled } from '@tauri-apps/plugin-autostart';
     import { onMount } from 'svelte';
-    import { toast, Toaster } from 'svelte-sonner';
 
     import { cfg, setConfig, trackConfigKeys } from '../../../lib/config/store.svelte';
     import type { ConfigSchema } from '../../../lib/config/defaults';
@@ -11,23 +10,10 @@
     import PSwitch from '../../../lib/ui/PSwitch.svelte';
     import Section from '../../../lib/ui/Section.svelte';
     import SettingRow from '../../../lib/ui/SettingRow.svelte';
-    import TextField from '../../../lib/ui/TextField.svelte';
     import { appEnv } from '../../../lib/utils/env.svelte';
-    import { applyTheme, themeState } from '../../../lib/utils/theme.svelte';
+    import { applyTheme } from '../../../lib/utils/theme.svelte';
 
-    void trackConfigKeys([
-        'app_language',
-        'app_theme',
-        'app_font',
-        'app_font_size',
-        'transparent',
-        'dev_mode',
-        'tray_click_event',
-        'proxy_enable',
-        'proxy_host',
-        'proxy_port',
-        'no_proxy',
-    ]);
+    void trackConfigKeys(['app_language', 'app_theme', 'app_font', 'app_font_size', 'transparent', 'tray_click_event']);
 
     let fonts = $state<string[]>([]);
     let autoStart = $state(false);
@@ -77,30 +63,7 @@
             void disableAutostart();
         }
     }
-
-    function onProxyEnable(checked: boolean): void {
-        if (checked && (cfg('proxy_host') === '' || cfg('proxy_port') === '')) {
-            setConfig('proxy_enable', false);
-            toast.error(t('config.general.proxy_error'), { duration: 3000 });
-            return;
-        }
-        setConfig('proxy_enable', checked);
-        toast.success(t('config.general.proxy_change'), { duration: 1000 });
-    }
-
-    function onPortInput(value: string): void {
-        const parsed = parseInt(value);
-        if (Number.isNaN(parsed) || parsed < 0) {
-            setConfig('proxy_port', '');
-        } else if (parsed > 65535) {
-            setConfig('proxy_port', 65535);
-        } else {
-            setConfig('proxy_port', parsed);
-        }
-    }
 </script>
-
-<Toaster theme={themeState.resolved} position="bottom-right" richColors />
 
 <Section>
     <SettingRow label={t('config.general.auto_start')}>
@@ -154,26 +117,6 @@
     {#if !isMac}
         <SettingRow label={t('config.general.transparent')}>
             <PSwitch checked={cfg('transparent')} onCheckedChange={(v) => setConfig('transparent', v)} />
-        </SettingRow>
-    {/if}
-    <SettingRow label={t('config.general.dev_mode')}>
-        <PSwitch checked={cfg('dev_mode')} onCheckedChange={(v) => setConfig('dev_mode', v)} />
-    </SettingRow>
-</Section>
-
-<Section>
-    <SettingRow label={t('config.general.proxy.title')}>
-        <PSwitch checked={cfg('proxy_enable')} onCheckedChange={onProxyEnable} />
-    </SettingRow>
-    {#if cfg('proxy_enable')}
-        <SettingRow label={t('config.general.proxy.host')}>
-            <TextField value={cfg('proxy_host')} class="w-[220px]" onValueChange={(v) => setConfig('proxy_host', v)} />
-        </SettingRow>
-        <SettingRow label={t('config.general.proxy.port')}>
-            <TextField value={String(cfg('proxy_port'))} class="w-[220px]" onValueChange={onPortInput} />
-        </SettingRow>
-        <SettingRow label={t('config.general.proxy.no_proxy')}>
-            <TextField value={cfg('no_proxy')} class="w-[220px]" onValueChange={(v) => setConfig('no_proxy', v)} />
         </SettingRow>
     {/if}
 </Section>

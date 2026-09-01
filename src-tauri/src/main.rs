@@ -11,11 +11,8 @@ mod system_ocr;
 mod tray;
 mod window;
 
-use cmd::{
-    copy_img, cut_image, font_list, get_base64, get_text, open_devtools, reload_store, set_proxy,
-    unset_proxy,
-};
-use config::{get, init_config, is_first_run};
+use cmd::{copy_img, cut_image, font_list, get_base64, get_text, open_devtools, reload_store};
+use config::{init_config, is_first_run};
 use hotkey::{register_shortcut, register_shortcut_by_frontend};
 use lang_detect::lang_detect;
 use log::info;
@@ -100,12 +97,6 @@ fn main() {
                         .show();
                 }
             }
-            if let Some(v) = get("proxy_enable")
-                && v.as_bool().unwrap()
-                && get("proxy_host").is_some_and(|host| !host.as_str().unwrap().is_empty())
-            {
-                let _ = set_proxy();
-            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -115,8 +106,6 @@ fn main() {
             get_base64,
             copy_img,
             system_ocr,
-            set_proxy,
-            unset_proxy,
             open_devtools,
             register_shortcut_by_frontend,
             update_tray,

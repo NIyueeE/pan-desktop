@@ -46,7 +46,7 @@
     let page = $state<PageKey>('general');
     let isMaximized = $state(false);
 
-    void trackConfigKeys(['dev_mode', 'app_font', 'app_font_size', 'transparent']);
+    void trackConfigKeys(['app_font', 'app_font_size', 'transparent']);
 
     // Live typography settings (root font scales every rem-based utility).
     $effect(() => {
@@ -71,7 +71,8 @@
         if (event.key === 'Escape') {
             void appWindow.close();
         }
-        if (cfg('dev_mode') && event.key === 'F12') {
+        // Devtools in development builds only (no user-facing toggle).
+        if (import.meta.env.DEV && event.key === 'F12') {
             void openDevtools();
         }
         if (event.key.startsWith('F') && event.key.length > 1) {
