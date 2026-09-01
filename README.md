@@ -1,9 +1,9 @@
-# rust-agents-template
+# pan
 
-> A Rust project template: strict lints, layered git hooks, cargo-deny, CI/CD.
+> A lean translation desktop app - selection / input / OCR translate, on Tauri 2 + Svelte 5.
 
-[![CI](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![CI](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
 
@@ -27,8 +27,8 @@ featuring a strict lint policy and an automated, layered check pipeline
 ## Quick start
 
 ```bash
-git clone https://github.com/NIyueeE/rust-agents-template.git
-cd rust-agents-template
+git clone https://github.com/NIyueeE/pan-desktop.git
+cd pan-desktop
 
 # one-time setup per clone: activate hooks + install missing tools
 just setup   # (or manually: git config core.hooksPath githooks)

@@ -1,14 +1,14 @@
-# rust-agents-template
+# pan
 
-> 一个 Rust 项目模板:严格 lint、分层 git hook、cargo-deny、CI/CD。
+> 一个精简的划词 / 输入 / OCR 翻译桌面应用,Tauri 2 + Svelte 5。
 
-[![CI](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/rust-agents-template/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![CI](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
 
-一个开箱即用、带强约束的 Rust 二进制项目起点——严格的 lint 策略 + 分层自动化
-检查(pre-commit / pre-push / CI)。
+从 rust-agents-template 派生的精简翻译桌面应用——划词 / 输入 / OCR 翻译,
+OpenAI 兼容后端,严格 lint + 分层检查(pre-commit / pre-push / CI)。
 
 ## 特性
 
@@ -26,8 +26,8 @@
 ## 快速开始
 
 ```bash
-git clone https://github.com/NIyueeE/rust-agents-template.git
-cd rust-agents-template
+git clone https://github.com/NIyueeE/pan-desktop.git
+cd pan-desktop
 
 # 每个 clone 一次:激活 hook + 安装缺失工具
 just setup   # (或手动:git config core.hooksPath githooks)

@@ -1,10 +1,10 @@
 [package]
-name = "rust-agents-template"
+name = "pan"
 version = "0.1.0"
 edition = "2024"
-description = "An agent-facing Rust project template with strict lints, layered git hooks, and CI."
+description = "A lean translation desktop app derived from rust-agents-template"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/NIyueeE/rust-agents-template"
+repository = "https://github.com/NIyueeE/pan-desktop"
 
 [dependencies]
 

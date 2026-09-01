@@ -1,1 +1,44 @@
+# Rust
 /target
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Downloaded CI installers (gh run download ... -D ci-artifacts)
+ci-artifacts
+
+# Editor directories and files
+.idea
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ONNX Runtime shared library for the paddle OCR engine: downloaded per
+# target by scripts/fetch-onnxruntime.sh (CI step) or manually for local dev.
+src-tauri/resources/onnxruntime/*
+!src-tauri/resources/onnxruntime/.keep
+# PP-OCRv5 ONNX models: downloaded by scripts/fetch-paddle-models.sh (CI step
+# or manual). Only the recognizer dictionary stays versioned — it is plain
+# text, and keeping it in-tree lets the CTC decode run in plain `cargo test`.
+src-tauri/resources/models/*
+!src-tauri/resources/models/.keep
+!src-tauri/resources/models/paddleocr/
+src-tauri/resources/models/paddleocr/*
+!src-tauri/resources/models/paddleocr/.keep
+!src-tauri/resources/models/paddleocr/ppocrv5_dict.txt
