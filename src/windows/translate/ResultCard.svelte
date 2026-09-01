@@ -5,7 +5,6 @@
     import { sendNotification } from '@tauri-apps/plugin-notification';
     import { info } from '@tauri-apps/plugin-log';
     import { untrack } from 'svelte';
-    import { dragHandle } from 'svelte-dnd-action';
 
     import { cfg, cfgRaw } from '../../lib/config/store.svelte';
     import { t } from '../../lib/i18n/i18n.svelte';
@@ -18,7 +17,19 @@
         instanceKey,
         instances,
         isFirst = false,
-    }: { instanceKey: string; instances: string[]; isFirst?: boolean } = $props();
+        index = 0,
+        dragFrom = null,
+        dragTo = null,
+        onGripPointerDown,
+    }: {
+        instanceKey: string;
+        instances: string[];
+        isFirst?: boolean;
+        index?: number;
+        dragFrom?: number | null;
+        dragTo?: number | null;
+        onGripPointerDown?: (index: number, e: PointerEvent) => void;
+    } = $props();
 
     // ResultCard is keyed by instanceKey in the {#each} block, so it remounts
     // when the card's instance changes — seeding the selection once is fine.
@@ -223,19 +234,21 @@
     }
 </script>
 
-<div class="rounded-[10px] bg-content1 shadow-sm">
+<div class="rounded-[10px] bg-content1 shadow-sm" data-card-index={index}>
+    <!-- Pointer-based drag reorder (see App.svelte): the grip captures the
+         pointer, so crossing the result textarea mid-drag cannot cancel it.
+         Buttons inside the header stay clickable. -->
     <div
-        class={`flex h-[30px] items-center justify-between bg-content2 px-1 ${hidden ? 'rounded-[10px]' : 'rounded-t-[10px]'}`}
+        class={`flex h-[30px] items-center justify-between bg-content2 px-1 ${hidden ? 'rounded-[10px]' : 'rounded-t-[10px]'} ${dragFrom === index ? 'opacity-40' : ''} ${dragTo === index && dragFrom !== null && dragFrom !== index ? 'ring-2 ring-primary' : ''}`}
     >
         <div class="flex items-center">
-            <button
-                type="button"
-                use:dragHandle
-                aria-label="Drag to reorder"
-                class="flex h-[26px] w-[22px] cursor-grab items-center justify-center text-default-400 hover:text-foreground"
+            <span
+                aria-hidden="true"
+                class="flex h-[26px] w-[22px] cursor-grab touch-none items-center justify-center text-default-400"
+                onpointerdown={(e) => onGripPointerDown?.(index, e)}
             >
                 <GripVertical class="size-[16px]" />
-            </button>
+            </span>
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger
                     class="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm outline-none select-none hover:bg-content3"

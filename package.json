@@ -36,7 +36,6 @@
         "bits-ui": "^2.19.0",
         "flag-icons": "^7.2.3",
         "i18next": "^26.4.0",
-        "svelte-dnd-action": "^0.9.79",
         "svelte-sonner": "^1.2.1",
         "tesseract.js": "^5.1.1"
     },

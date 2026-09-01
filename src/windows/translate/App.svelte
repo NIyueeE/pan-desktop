@@ -4,10 +4,10 @@
     import { currentMonitor } from '@tauri-apps/api/window';
     import { listen } from '@tauri-apps/api/event';
     import { info } from '@tauri-apps/plugin-log';
-    import { dragHandleZone, type DndEvent } from 'svelte-dnd-action';
     import { Toaster } from 'svelte-sonner';
 
     import { cfg, cfgRaw, setConfig, trackConfigKeys, writeThrough } from '../../lib/config/store.svelte';
+    import { applyReorder } from '../../lib/utils/reorder';
     import { openDevtools } from '../../lib/ipc/commands';
     import { getBase64 } from '../../lib/ipc/commands';
     import { appEnv } from '../../lib/utils/env.svelte';
@@ -62,21 +62,56 @@
     const hideSource = $derived(cfg('translate_layout') === 'hide_source' || cfg('translate_layout') === 'compact');
     const hideLanguage = $derived(cfg('translate_layout') === 'hide_language' || cfg('translate_layout') === 'compact');
 
-    // Drag-and-drop reorder of the enabled result cards.
-    // eslint-disable-next-line svelte/prefer-writable-derived -- kept writable for the dnd action
-    let dndItems = $state<{ id: string }[]>([{ id: '' }]);
-    $effect(() => {
-        dndItems = enabledInstances.map((id) => ({ id }));
-    });
+    // Pointer-based drag reorder for the enabled result cards. Native HTML5
+    // dnd dies the moment the pointer crosses the result textarea (editable
+    // targets cancel the operation), so the grip captures the pointer and
+    // hit-tests cards itself. Disabled entries keep their stored positions.
+    let cardDragFrom = $state<number | null>(null);
+    let cardDragTo = $state<number | null>(null);
 
-    function handleDndFinalize(event: CustomEvent<DndEvent<{ id: string }>>) {
-        const newOrder = event.detail.items.map((item) => item.id);
-        // Rebuild the full stored list: enabled entries follow the new order,
-        // disabled entries keep their positions.
-        const enabled = new Set(enabledInstances);
-        let cursor = 0;
-        const next = translateInstances.map((key) => (enabled.has(key) ? (newOrder[cursor++] ?? key) : key));
+    function commitCardReorder(from: number, to: number): void {
+        const reordered = applyReorder(enabledInstances, from, to);
+        // Rebuild the full stored list: enabled entries follow the new
+        // order, disabled entries keep their positions.
+        const queue = [...reordered];
+        const next = translateInstances.map((key) => (reordered.includes(key) ? (queue.shift() ?? key) : key));
         setConfig('translate_service_list', next);
+    }
+
+    function handleCardGripPointerDown(index: number, e: PointerEvent): void {
+        if (e.button !== 0) {
+            return;
+        }
+        cardDragFrom = index;
+        cardDragTo = index;
+        e.preventDefault();
+        const grip = e.currentTarget as HTMLElement;
+        // Pointer capture keeps move/up events flowing even when the cursor
+        // travels across textareas and other drop-hostile elements.
+        grip.setPointerCapture?.(e.pointerId);
+        const onMove = (ev: PointerEvent): void => {
+            const card = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-card-index]');
+            const to = card === null || card === undefined ? Number.NaN : Number(card.getAttribute('data-card-index'));
+            if (!Number.isNaN(to)) {
+                cardDragTo = to;
+            }
+        };
+        const onUp = (ev: PointerEvent): void => {
+            grip.releasePointerCapture?.(ev.pointerId);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+            const from = cardDragFrom;
+            const to = cardDragTo;
+            cardDragFrom = null;
+            cardDragTo = null;
+            if (from !== null && to !== null && from !== to) {
+                commitCardReorder(from, to);
+            }
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
     }
 
     // ── Source text orchestration ────────────────────────────────────────
@@ -373,13 +408,17 @@
             {#if !hideLanguage}
                 <LanguageBar />
             {/if}
-            <section
-                class="w-full"
-                use:dragHandleZone={{ items: dndItems, flipDurationMs: 0 }}
-                onfinalize={handleDndFinalize}
-            >
-                {#each dndItems as item, index (item.id)}
-                    <ResultCard instanceKey={item.id} instances={translateInstances} isFirst={index === 0} />
+            <section class="w-full">
+                {#each enabledInstances as instanceKey, index (instanceKey)}
+                    <ResultCard
+                        {instanceKey}
+                        instances={translateInstances}
+                        isFirst={index === 0}
+                        {index}
+                        dragFrom={cardDragFrom}
+                        dragTo={cardDragTo}
+                        onGripPointerDown={handleCardGripPointerDown}
+                    />
                 {/each}
             </section>
         </div>
