@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { render, waitFor } from '@testing-library/svelte';
 
 import { fakeConfigFile, emitTestEvent } from '../../test/tauri-state';
-import { initConfigStore } from '../../lib/config/store.svelte';
+import { __resetConfigStoreForTests, initConfigStore } from '../../lib/config/store.svelte';
 
 import App from './App.svelte';
 import { translateState } from './state.svelte';
@@ -88,5 +88,26 @@ describe('TranslateWindow', () => {
         });
         expect(container.textContent).not.toContain('undefined');
         unmount();
+    });
+
+    it('makes the window root see-through only when transparent is enabled', async () => {
+        fakeConfigFile.set('transparent', true);
+        await initConfigStore();
+        const { container, unmount } = render(App);
+        await waitFor(() => {
+            expect(container.firstElementChild?.classList.contains('bg-transparent')).toBe(true);
+        });
+        unmount();
+
+        // 透明效果 off: the root must paint the opaque background instead of
+        // leaving the wallpaper visible behind the cards.
+        __resetConfigStoreForTests();
+        fakeConfigFile.set('transparent', false);
+        await initConfigStore();
+        const { container: offContainer, unmount: offUnmount } = render(App);
+        await waitFor(() => {
+            expect(offContainer.firstElementChild?.classList.contains('bg-background')).toBe(true);
+        });
+        offUnmount();
     });
 });
