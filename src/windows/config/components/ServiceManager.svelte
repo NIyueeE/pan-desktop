@@ -55,48 +55,50 @@
         }
     });
 
-    // Native HTML5 drag-and-drop reorder. The library variant (svelte-dnd-
-    // action) silently deleted items when a drag ended outside the zone and
-    // desynced from runes state; a small fixed contract is safer: rows are
-    // draggable, dragover marks the target, drop commits via applyReorder.
-    // Nothing outside a successful drop can mutate the list.
+    // Pointer-capture grip reorder. Tauri's drag-drop handler (enabled by
+    // default for file drops) swallows native HTML5 drag events on WebView2,
+    // so `draggable` rows never even fired dragstart there — the translate
+    // window result cards hit the same wall. The proven pattern: the grip
+    // captures the pointer, moves hit-test rows via elementFromPoint, and
+    // pointerup commits through applyReorder. Nothing outside a completed
+    // drag can mutate the list, and the row's checkbox/buttons stay clickable.
     let reorderFrom = $state<number | null>(null);
     let reorderTo = $state<number | null>(null);
 
-    function handleDragStart(index: number, e: DragEvent): void {
-        reorderFrom = index;
-        e.dataTransfer?.setData('text/plain', String(index));
-        if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = 'move';
-            const row = (e.currentTarget as HTMLElement).closest('[data-service-row]');
-            if (row) {
-                e.dataTransfer.setDragImage(row, 24, 16);
-            }
-        }
-    }
-
-    function handleDragOver(index: number, e: DragEvent): void {
-        e.preventDefault();
-        if (e.dataTransfer) {
-            e.dataTransfer.dropEffect = 'move';
-        }
-        reorderTo = index;
-    }
-
-    function handleDrop(index: number, e: DragEvent): void {
-        e.preventDefault();
-        const from = reorderFrom;
-        reorderFrom = null;
-        reorderTo = null;
-        if (from === null || from === index) {
+    function handleGripPointerDown(index: number, e: PointerEvent): void {
+        if (e.button !== 0) {
             return;
         }
-        setConfig(configKey, applyReorder(instances, from, index));
-    }
-
-    function handleDragEnd(): void {
-        reorderFrom = null;
-        reorderTo = null;
+        reorderFrom = index;
+        reorderTo = index;
+        e.preventDefault();
+        const grip = e.currentTarget as HTMLElement;
+        // Capture keeps move/up events flowing even when the cursor crosses
+        // text, checkboxes, or buttons inside the rows.
+        grip.setPointerCapture?.(e.pointerId);
+        const onMove = (ev: PointerEvent): void => {
+            const row = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-service-row]');
+            const to = row === null || row === undefined ? Number.NaN : Number(row.getAttribute('data-service-row'));
+            if (!Number.isNaN(to)) {
+                reorderTo = to;
+            }
+        };
+        const onUp = (ev: PointerEvent): void => {
+            grip.releasePointerCapture?.(ev.pointerId);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+            const from = reorderFrom;
+            const to = reorderTo;
+            reorderFrom = null;
+            reorderTo = null;
+            if (from !== null && to !== null && from !== to) {
+                setConfig(configKey, applyReorder(instances, from, to));
+            }
+        };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
     }
 
     function deleteInstance(instanceKey: string): void {
@@ -169,14 +171,16 @@
                     : ''} {reorderTo === index && reorderFrom !== null && reorderFrom !== index
                     ? 'ring-2 ring-primary'
                     : ''}"
-                draggable="true"
-                ondragstart={(e) => handleDragStart(index, e)}
-                ondragover={(e) => handleDragOver(index, e)}
-                ondrop={(e) => handleDrop(index, e)}
-                ondragend={handleDragEnd}
             >
                 <div class="flex items-center gap-2">
-                    <GripVertical class="size-[20px] shrink-0 cursor-grab text-default-400" />
+                    <span
+                        aria-hidden="true"
+                        data-service-grip={index}
+                        class="flex h-[24px] w-[20px] cursor-grab touch-none items-center justify-center text-default-400"
+                        onpointerdown={(e) => handleGripPointerDown(index, e)}
+                    >
+                        <GripVertical class="size-[20px] shrink-0" />
+                    </span>
                     <img src={serviceIcon(getServiceName(item))} alt="" class="h-[24px] w-[24px]" draggable="false" />
                     <span class="font-medium">{serviceTitle(item)}</span>
                 </div>

@@ -15,6 +15,33 @@ import { cfg, initConfigStore } from '../../lib/config/store.svelte';
 
 import ServiceManager from './components/ServiceManager.svelte';
 
+/**
+ * Simulate a grip pointer-drag (the reorder mechanism — Tauri's drag-drop
+ * handler swallows native HTML5 dnd on WebView2, so rows are moved via
+ * pointer capture). pointerdown on the row's grip, pointermove over `to`
+ * (elementFromPoint stubbed to that row; null clears the target), pointerup.
+ */
+function dragRow(container: HTMLElement, from: number, to: number | null): void {
+    const rows = () => container.querySelectorAll('[data-service-row]');
+    const grip = rows()[from]?.querySelector('[data-service-grip]');
+    expect(grip).toBeTruthy();
+    const target = to === null ? null : (rows()[to] ?? null);
+    const hadOwn = Object.prototype.hasOwnProperty.call(document, 'elementFromPoint');
+    const original = hadOwn ? Object.getOwnPropertyDescriptor(document, 'elementFromPoint') : undefined;
+    Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => target });
+    try {
+        grip!.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 }));
+        window.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }));
+        window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+    } finally {
+        if (original) {
+            Object.defineProperty(document, 'elementFromPoint', original);
+        } else {
+            Reflect.deleteProperty(document, 'elementFromPoint');
+        }
+    }
+}
+
 describe('ServiceManager (translate)', () => {
     it('renders instance titles for the default list', async () => {
         await initConfigStore();
@@ -67,19 +94,16 @@ describe('ServiceManager (translate)', () => {
         expect(dialog.textContent).toContain('Request Path');
     });
 
-    it('keeps the instance when a drag ends without a valid drop', async () => {
+    it('keeps the instance when a grip drag is released without hitting another row', async () => {
         fakeConfigFile.set('translate_service_list', ['openai@1']);
         await initConfigStore();
         const { container } = render(ServiceManager, { props: { kind: 'translate' } });
         await waitFor(() => expect(container.textContent).toContain('OpenAI'));
 
-        // Native HTML5 dnd: dragstart followed by dragend with no drop in
-        // between (released outside any row) must be a no-op — the legacy
-        // dnd-action zone deleted the item in this exact scenario.
-        const row = container.querySelector('[data-service-row="0"]');
-        expect(row).not.toBeNull();
-        row!.dispatchEvent(new Event('dragstart', { bubbles: true }));
-        row!.dispatchEvent(new Event('dragend', { bubbles: true }));
+        // Released over empty space (elementFromPoint → null) must be a
+        // no-op — the legacy dnd-action zone deleted the item in this
+        // exact scenario.
+        dragRow(container, 0, null);
 
         await waitFor(() => {
             expect(container.querySelectorAll('[data-service-row]').length).toBe(1);
@@ -89,7 +113,7 @@ describe('ServiceManager (translate)', () => {
 });
 
 describe('ServiceManager (recognize)', () => {
-    it('persists a legitimate drag reorder', async () => {
+    it('persists a legitimate grip reorder', async () => {
         fakeConfigFile.set('recognize_service_list', ['system@1', 'tesseract@2']);
         await initConfigStore();
         const { container } = render(ServiceManager, { props: { kind: 'recognize' } });
@@ -97,10 +121,7 @@ describe('ServiceManager (recognize)', () => {
 
         const rows = () => container.querySelectorAll('[data-service-row]');
         expect(rows().length).toBe(2);
-        (rows()[0] as HTMLElement).dispatchEvent(new Event('dragstart', { bubbles: true }));
-        (rows()[1] as HTMLElement).dispatchEvent(new Event('dragover', { bubbles: true }));
-        (rows()[1] as HTMLElement).dispatchEvent(new Event('drop', { bubbles: true }));
-        (rows()[1] as HTMLElement).dispatchEvent(new Event('dragend', { bubbles: true }));
+        dragRow(container, 0, 1);
 
         await waitFor(() => {
             expect(cfg('recognize_service_list')).toEqual(['tesseract@2', 'system@1']);
