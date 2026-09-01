@@ -42,6 +42,7 @@
         'translate_service_list',
         'recognize_service_list',
         'translate_layout',
+        'transparent',
     ]);
 
     const isLinux = $derived(appEnv.osType === 'Linux');
@@ -333,12 +334,19 @@
 
 <svelte:window onkeydown={onKeyDown} />
 
-<div class="bg-background h-screen w-screen {isLinux ? 'rounded-[10px] border border-default-100' : ''}">
-    <div class="fixed top-[5px] left-[5px] right-[5px] h-[30px]" data-tauri-drag-region="true"></div>
-    <div class="h-[35px] w-full flex justify-between">
+<div
+    class="h-screen w-screen {cfg('transparent') ? 'bg-transparent' : 'bg-background'} {isLinux
+        ? 'rounded-[10px] border border-default-100'
+        : ''}"
+>
+    <!-- The header row itself is the drag region: clicking empty space targets
+         the row (drags), clicking a button targets the button (no drag). A
+         separate overlay div here sits above the buttons and swallows their
+         clicks on WebView2. -->
+    <div class="h-[35px] w-full flex justify-between" data-tauri-drag-region="true">
         <button
             type="button"
-            class="relative z-10 my-auto ml-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
+            class="my-auto ml-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
             aria-label={translateState.pinned ? 'Unpin window' : 'Pin window'}
             onclick={togglePin}
         >
@@ -350,7 +358,7 @@
         </button>
         <button
             type="button"
-            class="relative z-10 my-auto mr-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
+            class="my-auto mr-[5px] flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content2 hover:text-foreground"
             aria-label="Close window"
             onclick={() => void appWindow.close()}
         >
