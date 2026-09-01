@@ -11,7 +11,7 @@ import { render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 
 import { fakeConfigFile } from '../../test/tauri-state';
-import { initConfigStore } from '../../lib/config/store.svelte';
+import { cfg, initConfigStore } from '../../lib/config/store.svelte';
 
 import ServiceManager from './components/ServiceManager.svelte';
 
@@ -49,7 +49,7 @@ describe('ServiceManager (translate)', () => {
         await user.click(screen.getByRole('button', { name: 'Delete' }));
 
         // Still exactly one item.
-        expect(container.querySelectorAll('[aria-label="Drag to reorder"]').length).toBe(1);
+        expect(container.querySelectorAll('[data-service-row]').length).toBe(1);
     });
 
     it('opens the instance config form directly when there is only one builtin service', async () => {
@@ -66,9 +66,48 @@ describe('ServiceManager (translate)', () => {
         expect(dialog.textContent).toContain('OpenAI Chat Completions');
         expect(dialog.textContent).toContain('Request Path');
     });
+
+    it('keeps the instance when a drag ends without a valid drop', async () => {
+        fakeConfigFile.set('translate_service_list', ['openai@1']);
+        await initConfigStore();
+        const { container } = render(ServiceManager, { props: { kind: 'translate' } });
+        await waitFor(() => expect(container.textContent).toContain('OpenAI'));
+
+        // Native HTML5 dnd: dragstart followed by dragend with no drop in
+        // between (released outside any row) must be a no-op — the legacy
+        // dnd-action zone deleted the item in this exact scenario.
+        const row = container.querySelector('[data-service-row="0"]');
+        expect(row).not.toBeNull();
+        row!.dispatchEvent(new Event('dragstart', { bubbles: true }));
+        row!.dispatchEvent(new Event('dragend', { bubbles: true }));
+
+        await waitFor(() => {
+            expect(container.querySelectorAll('[data-service-row]').length).toBe(1);
+        });
+        expect(cfg('translate_service_list')).toEqual(['openai@1']);
+    });
 });
 
 describe('ServiceManager (recognize)', () => {
+    it('persists a legitimate drag reorder', async () => {
+        fakeConfigFile.set('recognize_service_list', ['system@1', 'tesseract@2']);
+        await initConfigStore();
+        const { container } = render(ServiceManager, { props: { kind: 'recognize' } });
+        await waitFor(() => expect(container.textContent).toContain('Tesseract'));
+
+        const rows = () => container.querySelectorAll('[data-service-row]');
+        expect(rows().length).toBe(2);
+        (rows()[0] as HTMLElement).dispatchEvent(new Event('dragstart', { bubbles: true }));
+        (rows()[1] as HTMLElement).dispatchEvent(new Event('dragover', { bubbles: true }));
+        (rows()[1] as HTMLElement).dispatchEvent(new Event('drop', { bubbles: true }));
+        (rows()[1] as HTMLElement).dispatchEvent(new Event('dragend', { bubbles: true }));
+
+        await waitFor(() => {
+            expect(cfg('recognize_service_list')).toEqual(['tesseract@2', 'system@1']);
+        });
+        expect(rows().length).toBe(2);
+    });
+
     it('offers every built-in recognize service in the add modal, including the VLM endpoint', async () => {
         await initConfigStore();
         const { container } = render(ServiceManager, { props: { kind: 'recognize' } });
@@ -113,7 +152,7 @@ describe('ServiceManager (recognize)', () => {
         await initConfigStore();
         const deleteSpy = vi.spyOn(fakeConfigFile, 'delete');
         const { container } = render(ServiceManager, { props: { kind: 'recognize' } });
-        await waitFor(() => expect(container.querySelectorAll('[aria-label="Drag to reorder"]').length).toBe(2));
+        await waitFor(() => expect(container.querySelectorAll('[data-service-row]').length).toBe(2));
 
         const user = userEvent.setup();
         await user.click(screen.getAllByRole('button', { name: 'Delete' })[0] as Element);

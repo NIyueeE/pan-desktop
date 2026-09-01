@@ -1,6 +1,5 @@
 <script lang="ts">
     import { GripVertical, Pencil, Plus, Trash2 } from '@lucide/svelte';
-    import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
     import { toast } from 'svelte-sonner';
 
     import {
@@ -12,6 +11,7 @@
         writeThrough,
     } from '../../../lib/config/store.svelte';
     import { t } from '../../../lib/i18n/i18n.svelte';
+    import { applyReorder } from '../../../lib/utils/reorder';
     import type { RecognizeServiceName, TranslateServiceName } from './registry';
     import { recognizeRegistry, translateRegistry } from './registry';
     import {
@@ -55,17 +55,48 @@
         }
     });
 
-    // eslint-disable-next-line svelte/prefer-writable-derived -- kept writable for the dnd action
-    let dndItems = $state<{ id: string }[]>([{ id: '' }]);
-    $effect(() => {
-        dndItems = instances.map((id) => ({ id }));
-    });
+    // Native HTML5 drag-and-drop reorder. The library variant (svelte-dnd-
+    // action) silently deleted items when a drag ended outside the zone and
+    // desynced from runes state; a small fixed contract is safer: rows are
+    // draggable, dragover marks the target, drop commits via applyReorder.
+    // Nothing outside a successful drop can mutate the list.
+    let reorderFrom = $state<number | null>(null);
+    let reorderTo = $state<number | null>(null);
 
-    function handleDndFinalize(event: CustomEvent<DndEvent<{ id: string }>>) {
-        setConfig(
-            configKey,
-            event.detail.items.map((item) => item.id)
-        );
+    function handleDragStart(index: number, e: DragEvent): void {
+        reorderFrom = index;
+        e.dataTransfer?.setData('text/plain', String(index));
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            const row = (e.currentTarget as HTMLElement).closest('[data-service-row]');
+            if (row) {
+                e.dataTransfer.setDragImage(row, 24, 16);
+            }
+        }
+    }
+
+    function handleDragOver(index: number, e: DragEvent): void {
+        e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
+        }
+        reorderTo = index;
+    }
+
+    function handleDrop(index: number, e: DragEvent): void {
+        e.preventDefault();
+        const from = reorderFrom;
+        reorderFrom = null;
+        reorderTo = null;
+        if (from === null || from === index) {
+            return;
+        }
+        setConfig(configKey, applyReorder(instances, from, index));
+    }
+
+    function handleDragEnd(): void {
+        reorderFrom = null;
+        reorderTo = null;
     }
 
     function deleteInstance(instanceKey: string): void {
@@ -124,71 +155,71 @@
     }
 </script>
 
-<div class="flex h-[calc(100vh-70px)] flex-col justify-between">
-    <div class="mb-3 h-full overflow-y-auto">
-        <h3 class="mb-2 text-sm font-medium">{t(`config.service.${kind}`)}</h3>
-        <div use:dragHandleZone={{ items: dndItems, flipDurationMs: 0 }} onfinalize={handleDndFinalize}>
-            {#each dndItems as item (item.id)}
-                {@const config = (cfgRaw(item.id) as ServiceInstanceConfig | undefined) ?? {}}
-                <div class="mb-[8px] flex items-center justify-between rounded-md bg-content2 px-[10px] py-[10px]">
-                    <div class="flex items-center gap-2">
-                        <button
-                            type="button"
-                            use:dragHandle
-                            aria-label="Drag to reorder"
-                            class="cursor-grab text-default-400 hover:text-foreground"
-                        >
-                            <GripVertical class="size-[20px]" />
-                        </button>
-                        <img
-                            src={serviceIcon(getServiceName(item.id))}
-                            alt=""
-                            class="h-[24px] w-[24px]"
-                            draggable="false"
-                        />
-                        <span class="font-medium">{serviceTitle(item.id)}</span>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <label class="flex items-center gap-1 text-xs text-default-400">
-                            <input
-                                type="checkbox"
-                                checked={config.enable !== false}
-                                onchange={(e) =>
-                                    void writeThrough(item.id, {
-                                        ...config,
-                                        enable: e.currentTarget.checked,
-                                    })}
-                                class="accent-[var(--color-primary)]"
-                            />
-                            {t('config.service.enable')}
-                        </label>
-                        <button
-                            type="button"
-                            class="flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content3 hover:text-foreground"
-                            aria-label="Edit"
-                            onclick={() => {
-                                editingKey = item.id;
-                                configModalOpen = true;
-                            }}
-                        >
-                            <Pencil class="size-[16px]" />
-                        </button>
-                        <button
-                            type="button"
-                            class="flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content3 hover:text-danger"
-                            aria-label="Delete"
-                            onclick={() => deleteInstance(item.id)}
-                        >
-                            <Trash2 class="size-[16px]" />
-                        </button>
-                    </div>
+<div>
+    <h3 class="mb-2 text-sm font-medium">{t(`config.service.${kind}`)}</h3>
+    <div data-service-zone={kind} role="list">
+        {#each instances as item, index (item)}
+            {@const config = (cfgRaw(item) as ServiceInstanceConfig | undefined) ?? {}}
+            <div
+                data-service-row={index}
+                role="listitem"
+                class="mb-[8px] flex items-center justify-between rounded-md bg-content2 px-[10px] py-[10px] {reorderFrom ===
+                index
+                    ? 'opacity-40'
+                    : ''} {reorderTo === index && reorderFrom !== null && reorderFrom !== index
+                    ? 'ring-2 ring-primary'
+                    : ''}"
+                draggable="true"
+                ondragstart={(e) => handleDragStart(index, e)}
+                ondragover={(e) => handleDragOver(index, e)}
+                ondrop={(e) => handleDrop(index, e)}
+                ondragend={handleDragEnd}
+            >
+                <div class="flex items-center gap-2">
+                    <GripVertical class="size-[20px] shrink-0 cursor-grab text-default-400" />
+                    <img src={serviceIcon(getServiceName(item))} alt="" class="h-[24px] w-[24px]" draggable="false" />
+                    <span class="font-medium">{serviceTitle(item)}</span>
                 </div>
-            {/each}
-        </div>
+                <div class="flex items-center gap-1">
+                    <label class="flex items-center gap-1 text-xs text-default-400">
+                        <input
+                            type="checkbox"
+                            checked={config.enable !== false}
+                            onchange={(e) =>
+                                void writeThrough(item, {
+                                    ...config,
+                                    enable: e.currentTarget.checked,
+                                })}
+                            class="accent-[var(--color-primary)]"
+                        />
+                        {t('config.service.enable')}
+                    </label>
+                    <button
+                        type="button"
+                        class="flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content3 hover:text-foreground"
+                        aria-label="Edit"
+                        onclick={() => {
+                            editingKey = item;
+                            configModalOpen = true;
+                        }}
+                    >
+                        <Pencil class="size-[16px]" />
+                    </button>
+                    <button
+                        type="button"
+                        class="flex h-[28px] w-[28px] items-center justify-center rounded-md text-default-400 hover:bg-content3 hover:text-danger"
+                        aria-label="Delete"
+                        onclick={() => deleteInstance(item)}
+                    >
+                        <Trash2 class="size-[16px]" />
+                    </button>
+                </div>
+            </div>
+        {/each}
     </div>
     <button
         type="button"
-        class="flex h-[36px] w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm text-primary-foreground hover:opacity-90"
+        class="mt-2 flex h-[36px] w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm text-primary-foreground hover:opacity-90"
         onclick={() => openAddFlow()}
     >
         <Plus class="size-[16px]" />
