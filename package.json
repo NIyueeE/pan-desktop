@@ -34,7 +34,6 @@
         "@tauri-apps/plugin-shell": "^2.3.5",
         "@tauri-apps/plugin-store": "^2.4.4",
         "bits-ui": "^2.19.0",
-        "flag-icons": "^7.2.3",
         "i18next": "^26.4.0",
         "svelte-sonner": "^1.2.1",
         "tesseract.js": "^5.1.1"

@@ -22,10 +22,6 @@ export function getServiceName(serviceInstanceKey: string): string {
     return serviceInstanceKey.split('@')[0] ?? serviceInstanceKey;
 }
 
-export function getDisplayInstanceName(instanceName: string, serviceNameSupplier: () => string): string {
-    return instanceName || serviceNameSupplier();
-}
-
 /**
  * Keep only list entries whose service name is still built-in and unique.
  * Returns the fallback list when `list` is not an array or nothing survives.
