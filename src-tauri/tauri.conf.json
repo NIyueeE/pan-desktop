@@ -1,0 +1,64 @@
+{
+    "build": {
+        "beforeDevCommand": "bun run dev",
+        "beforeBuildCommand": "bun run build",
+        "frontendDist": "../dist",
+        "devUrl": "http://localhost:1420"
+    },
+    "bundle": {
+        "active": true,
+        "category": "Utility",
+        "copyright": "GPLv3",
+        "targets": "all",
+        "macOS": {
+            "entitlements": null,
+            "exceptionDomain": "",
+            "frameworks": [],
+            "providerShortName": null,
+            "signingIdentity": null
+        },
+        "longDescription": "A cross-platform text translation and ocr software",
+        "shortDescription": "Pan App",
+        "externalBin": [],
+        "resources": ["resources/models/paddleocr/*", "resources/onnxruntime/*"],
+        "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+        "linux": {
+            "deb": {
+                "depends": ["libxdo3", "libxcb1", "libxrandr2"]
+            },
+            "rpm": {
+                "depends": ["libxdo", "libxcb", "libXrandr"]
+            }
+        }
+    },
+    "productName": "pan",
+    "mainBinaryName": "pan",
+    "version": "4.3.0",
+    "identifier": "com.pan.desktop",
+    "plugins": {
+        "shell": {
+            "open": ".*"
+        }
+    },
+    "app": {
+        "withGlobalTauri": false,
+        "security": {
+            "assetProtocol": {
+                "scope": ["$CACHE/**", "$CONFIG/**"],
+                "enable": true
+            },
+            "devCsp": "default-src * data: ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval';",
+            "csp": "default-src * data: ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval'; connect-src ipc: http://ipc.localhost http: https:"
+        },
+        "windows": [
+            {
+                "title": "Daemon",
+                "label": "daemon",
+                "visible": false,
+                "url": "daemon.html",
+                "useHttpsScheme": true
+            }
+        ]
+    },
+    "$schema": "https://schema.tauri.app/config/2"
+}

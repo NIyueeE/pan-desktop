@@ -1,0 +1,31 @@
+{
+    "app": {
+        "windows": [
+            {
+                "title": "Daemon",
+                "label": "daemon",
+                "visible": false,
+                "url": "daemon.html",
+                "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection",
+                "useHttpsScheme": false
+            }
+        ]
+    },
+    "bundle": {
+        "windows": {
+            "certificateThumbprint": null,
+            "digestAlgorithm": "sha256",
+            "timestampUrl": "",
+            "webviewInstallMode": {
+                "silent": true,
+                "type": "embedBootstrapper"
+            },
+            "nsis": {
+                "displayLanguageSelector": true,
+                "installerIcon": "icons/icon.ico",
+                "installMode": "perMachine",
+                "languages": ["SimpChinese", "TradChinese", "English"]
+            }
+        }
+    }
+}
