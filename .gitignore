@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Downloaded CI installers (gh run download ... -D ci-artifacts)
+ci-artifacts
+
 # Editor directories and files
 .idea
 .DS_Store

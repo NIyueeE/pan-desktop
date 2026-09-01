@@ -12,7 +12,7 @@
 - **兼容性红线**：上游 pot 生成的 WebDAV 备份（`app: 'pot'`）必须永远可以恢复 —— 备份校验只看 `type: 'config-backup'`，**不要**加 `app` 字段校验（有专门回归用例：`scripts/test-webdav.ts` 的 "Legacy pot backups still restore" 一节）。
 - **技术栈**：
     - Tauri 2.11（Rust 2024 stable + `rustfmt` + `clippy`，`lints.clippy: all/pedantic/nursery` 全部 deny warnings）。
-    - Svelte 5（runes）+ TypeScript strict（`noUncheckedIndexedAccess`、`verbatimModuleSyntax`、`isolatedModules`）+ Vite 8（多 HTML 入口）+ Tailwind CSS 4 + bits-ui + svelte-dnd-action + svelte-sonner + @lucide/svelte + i18next。
+    - Svelte 5（runes）+ TypeScript strict（`noUncheckedIndexedAccess`、`verbatimModuleSyntax`、`isolatedModules`）+ Vite 8（多 HTML 入口）+ Tailwind CSS 4 + bits-ui + svelte-sonner + @lucide/svelte + i18next（服务列表拖拽排序用原生 HTML5 DnD，见 `ServiceManager.svelte`）。
     - **Bun**（包管理 / 脚本入口，`bun.lock` 锁定）+ **Node.js >= 22**（vite / vitest / svelte-check / tauri CLI 等依赖 bin 的运行时；见上文双运行时注）。
     - vitest 4 + @testing-library/svelte 5 + jsdom 30；ESLint 10 flat config + typescript-eslint + eslint-plugin-svelte + svelte-check。
 - **目录结构**（`/` 仓库根）：
