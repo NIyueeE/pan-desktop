@@ -1,0 +1,79 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic palette mirroring the previous NextUI look. Runtime-switchable via
+   the `.dark` class; `@theme inline` keeps utilities pointing at the vars. */
+:root {
+    --pan-background: #ffffff;
+    --pan-foreground: #11181c;
+    --pan-content1: #ffffff;
+    --pan-content2: #f4f4f5;
+    --pan-content3: #e4e4e7;
+    --pan-default-100: #f4f4f5;
+    --pan-default-200: #e4e4e7;
+    --pan-default-300: #d4d4d8;
+    --pan-default-400: #a1a1aa;
+    --pan-divider: rgba(17, 17, 17, 0.15);
+}
+
+.dark {
+    --pan-background: #000000;
+    --pan-foreground: #ecedee;
+    --pan-content1: #181818;
+    --pan-content2: #27272a;
+    --pan-content3: #3f3f46;
+    --pan-default-100: #262629;
+    --pan-default-200: #2e2e30;
+    --pan-default-300: #36363a;
+    --pan-default-400: #7d7d82;
+    --pan-divider: rgba(255, 255, 255, 0.15);
+}
+
+@theme inline {
+    --color-background: var(--pan-background);
+    --color-foreground: var(--pan-foreground);
+    --color-content1: var(--pan-content1);
+    --color-content2: var(--pan-content2);
+    --color-content3: var(--pan-content3);
+    --color-default-100: var(--pan-default-100);
+    --color-default-200: var(--pan-default-200);
+    --color-default-300: var(--pan-default-300);
+    --color-default-400: var(--pan-default-400);
+    --color-divider: var(--pan-divider);
+    --color-primary: #006fee;
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #ebdbff;
+    --color-secondary-foreground: #5b2e91;
+    --color-danger: #f31260;
+}
+
+/* Legacy reset. It MUST live in @layer base: Tailwind 4 emits utilities in
+   @layer utilities, and an unlayered rule would beat every layered
+   padding/margin utility in the cascade (Tailwind 3 emitted unlayered
+   utilities where file order kept the reset from winning). */
+@layer base {
+    * {
+        margin: 0;
+        padding: 0;
+    }
+}
+
+html {
+    border-radius: 10px !important;
+    background: transparent !important;
+    overflow: hidden;
+}
+
+*::-webkit-scrollbar {
+    width: 5px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #c0c1c550;
+    border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #c0c1c550;
+}
