@@ -227,6 +227,53 @@ async function captureShot(cdp, shot, outDir) {
         await sleep(shot.evalWait ?? 400);
     }
 
+    // Press -> move in steps -> release: reproduces drag-and-drop with
+    // trusted events (svelte-dnd-action ignores synthetic DOM events).
+    for (const [x1, y1, x2, y2] of shot.drags ?? []) {
+        await cdp.send('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: x1,
+            y: y1,
+            button: 'left',
+            buttons: 1,
+            clickCount: 1,
+        });
+        await sleep(150);
+        const steps = 12;
+        for (let i = 1; i <= steps; i++) {
+            await cdp.send('Input.dispatchMouseEvent', {
+                type: 'mouseMoved',
+                x: Math.round(x1 + ((x2 - x1) * i) / steps),
+                y: Math.round(y1 + ((y2 - y1) * i) / steps),
+                button: 'left',
+                buttons: 1,
+            });
+            await sleep(40);
+        }
+        await sleep(250);
+        await cdp.send('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: x2,
+            y: y2,
+            button: 'left',
+            buttons: 0,
+            clickCount: 1,
+        });
+        await sleep(shot.evalWait ?? 600);
+    }
+
+    for (const snippet of shot.evalsAfter ?? []) {
+        const result = await cdp.send('Runtime.evaluate', {
+            expression: snippet,
+            awaitPromise: true,
+            returnByValue: true,
+        });
+        if (shot.print) {
+            console.log(`[${shot.name}] after =>`, JSON.stringify(result.result?.value ?? result.result));
+        }
+        await sleep(shot.evalWait ?? 400);
+    }
+
     const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' });
     const out = join(outDir, `${shot.name}.png`);
     mkdirSync(dirname(out), { recursive: true });
