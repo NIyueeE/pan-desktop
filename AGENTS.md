@@ -68,7 +68,7 @@
     - `UndefinedSweep` 模式：在 `render()` 同步返回**之后**就立即遍历 DOM（首帧 / 稳定后两阶段），能抓"配置未加载完成时泄漏"这类问题（见 `src/windows/config/ConfigWindow.test.ts` 的 sweep suite，7 配置页 × 3 配置形态）。
 3. **最小修复**：定位根因后改最小代码面；不要顺手"清理"无关代码（独立提交）。
 4. **本机全量门禁**：`bun run check` 须 exit 0。
-5. **提交 + 推送**：`git commit -m "fix(...): ..."` 然后 `git push pan <branch>`；`pan` 是工作远端，`origin` 指上游 `pot-app/pot-desktop`（通常没有写权限）。
+5. **提交 + 推送**：`git commit -m "fix(...): ..."` 然后 `git push pan HEAD:main`；`pan` 是工作远端且**只有 `main` 一个分支**（远端特性分支已清理，不要重建），`origin` 指上游 `pot-app/pot-desktop`（通常没有写权限）。
 6. **CI 验证**：`gh run list --repo NIyueeE/pan-desktop --limit 2` 看刚才的 push 是否启动；只发 tag 才会触发上传到 Release（见第 6 节）。
 7. **回归用例随修随加**：每修一个 bug，对应一个或多个测试用例纳入 `*.test.ts`；这些用例就是后续的"防回归网"。
 
