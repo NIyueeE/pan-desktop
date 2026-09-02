@@ -199,10 +199,26 @@ vi.mock('@tauri-apps/plugin-http', () => ({
 beforeEach(() => {
     resetTauriState();
     __resetConfigStoreForTests();
+    // Belt-and-suspenders for the afterEach body-style reset below: a dialog
+    // opened by a test's final synchronous action schedules its afterTick
+    // microtask, which can land after afterEach already ran and re-apply
+    // `pointer-events: none` to body. Start every test from a clean body.
+    document.body.removeAttribute('style');
 });
 
 afterEach(() => {
     cleanup();
+    // bits-ui's Dialog scroll lock writes `pointer-events: none` (plus padding
+    // / overflow / --scrollbar-width) onto document.body via an afterTick
+    // microtask and restores it through a real 24ms setTimeout. Under load the
+    // restore timer can fire long after the next test started, leaking the
+    // lock style across the test boundary; `pointer-events` is inherited, so
+    // user-event then rejects every pointer interaction with
+    // "Unable to perform pointer interaction as the element has
+    // `pointer-events: none`" (CI flake: the ServicePage "Add Builtin
+    // Service" click). Drop any leftover body inline style so no lock state
+    // survives a test, regardless of bits-ui's internal restore timing.
+    document.body.removeAttribute('style');
 });
 
 // jsdom lacks several browser APIs that headless UI primitives rely on.
