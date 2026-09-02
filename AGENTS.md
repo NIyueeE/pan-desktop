@@ -77,17 +77,19 @@
 ### 3.1 测试基础设施速查
 
 - `src/test/tauri-state.ts`：纯状态模块，**无 imports**（避免被 vi.mock hoisting 抓取），被 `vi.mock` 的工厂函数通过 `await import('./tauri-state')` 延迟加载。导出：`fakeConfigFile`（Map，直接当键值配置源使用）、`storeInstances`、`createFakeStore()`、`eventListeners` + `emitTestEvent()` + `listenerCount()`、`invokeHandlers` + `setInvokeHandler()` + `invokeCalls` + `fakeInvoke(cmd, args)`、`windowState` + `setCurrentWindowLabel()`、`globalShortcutCalls`、`resetTauriState()`。
-- `src/test/setup.ts`：vitest 全局 setup；为 `core` / `event` / `webviewWindow` / `window` 及 `plugin-{store,fs,log,os,http,global-shortcut,notification,autostart,shell,clipboard-manager}` 全套 `@tauri-apps/*` 写 `vi.mock(...)`（路径必须字面量、工厂内通过动态 `import` 拿状态）；**`await initI18n('en')` + `await initEnv()`** 顶层执行，让 `t()` / `osType` 在测试中能直接工作（生产代码由 `bootWindow` 串行执行）；注册 `unhandledrejection` 静默 logger；`afterEach` 调 `cleanup()` + `resetTauriState()`。
+- `src/test/setup.ts`：vitest 全局 setup；为 `core` / `event` / `webviewWindow` / `window` 及 `plugin-{store,fs,log,os,http,global-shortcut,notification,autostart,shell,clipboard-manager}` 全套 `@tauri-apps/*` 写 `vi.mock(...)`（路径必须字面量、工厂内通过动态 `import` 拿状态）；**`await initI18n('en')` + `await initEnv()`** 顶层执行，让 `t()` / `osType` 在测试中能直接工作（生产代码由 `bootWindow` 串行执行）；注册 `unhandledrejection` 静默 logger；`beforeEach` 调 `resetTauriState()` + `__resetConfigStoreForTests()` + 清扫 body 残留内联样式，`afterEach` 调 `cleanup()` + 同样的样式清扫（原因见第 5 节 bits-ui scroll-lock 陷阱）。
 - 断言用 `import '@testing-library/jest-dom/vitest'`（**不要**直接 `expect.extend(jestDom)`，否则在 `globals: false` 下 `expect is not defined`）。
 - **vitest 4** 配套 **Vite 8** + **@testing-library/svelte 5** + **jsdom 30**：`vitest.config.ts` 设 `conditions: ['browser']`（Svelte 5 client runtime 在 jsdom 下解析到浏览器构建）、`testTimeout: 15000`、`hookTimeout: 15000`、`include: ['src/**/*.test.{js,ts}']`、`globals: false`（所有 vitest API 必须显式 import）。
-- **回归网 85 用例 / 11 文件全绿**（持续扩充）：
+- **回归网 96 用例 / 13 文件全绿**（持续扩充）：
     - `src/lib/config/store.test.ts` — 启动 `entries()` 批量读 / 防抖落盘 / `writeThrough` 取消挂起写 / `<key>_changed` 广播 / 旧键（`hide_source`+`hide_language`）迁移 / `setConfigRaw` 拒绝 `undefined|null`。
     - `src/lib/utils/env.test.ts` — `normalizeOsType` 小写值归一化（`'windows'|'macos'|'linux'` → `Windows_NT`/`Darwin`/`Linux`） + `initEnv` 装载 `appEnv`。
     - `src/lib/services/openai_url.test.ts` — `resolveChatCompletionsUrl` URL 补全规则。
     - `src/lib/services/translate/openai.test.ts` — `buildTranslateMessages` + `createSseDeltaParser`（逐行缓冲 + 跨 chunk 截断处理）。
     - `src/lib/services/recognize/openai.test.ts` — VLM OCR `buildOcrRequest`（URL 补全 / Bearer 头 / `image_url` data URL / `$lang` 替换 / 默认 prompt 回退）。
+    - `src/lib/utils/reorder.test.ts` — `applyReorder` 拖拽排序语义：前移 / 后移、相同下标 no-op、越界不丢项、不 mutate 输入。
     - `src/windows/translate/focus.test.ts` — 失焦宽限簿记：程序性聚焦后 800ms 内的假 blur 被忽略、真 blur 仍关窗、标记刷新延长宽限。
     - `src/windows/translate/TranslateWindow.test.ts` — `new_text` 事件路由到源 textarea / 服务调用失败呈现 / 首帧无 `languages.undefined` 泄漏。
+    - `src/windows/translate/ResultCard.test.ts` — 服务调用失败展开折叠卡片 / 未运行翻译时空卡片保持折叠。
     - `src/windows/config/ConfigWindow.test.ts` — UndefinedSweep（7 配置页 × empty/partial/restored-pot 三种配置 × 首帧 + 稳定后两阶段扫描 DOM 里的 `undefined`）。
     - `src/windows/config/ServicePage.test.ts` — 翻译 / 识别服务列表（旧备份清洗 / 缺实例配置降级 / 删除实例键与配置 / 模态完整性 / 系统 OCR 图标资产存在）。
     - `src/windows/config/HotkeyPage.test.ts` — `formatHotkeyEvent` 组合键格式化 / `HotkeyInput` 的 OK 应用 / 退格清空 / 失焦还原。
@@ -150,6 +152,7 @@
 - **翻译窗口 close-on-blur 三层防护不可拆**：程序性聚焦后 800ms 宽限期（`src/windows/translate/focus.ts`）、`Confirm Blur` 前复查 `isFocused()`、拖动/聚焦取消。Windows/WebView2（透明+无边框+skip-taskbar）会自发 Focus/Blur 振荡，裸定时器关窗会在用户打字时把窗口关掉。
 - **`tauri-plugin-fs` 的 watch 命令在非默认 cargo feature 里**：`tauri-plugin-fs = { version = "...", features = ["watch"] }`。报 `Command watch not found` = 命令被 feature gate 编译掉了，**不是** ACL/权限问题。插件命令"不存在"类报错的排查顺序：① `generate_handler!` 是否注册；② cargo feature 是否 gate；③ capabilities 是否覆盖该 window label。
 - **tauri-plugin-log 默认 UTC 时间戳**（用户看到的日志时间会差时区），已设 `TimezoneStrategy::UseLocal`；新日志排查先确认时间基准。
+- **bits-ui Dialog 的 body scroll-lock 会跨测试泄漏 `pointer-events: none`**：锁样式经 `afterTick`（微任务）写到 `document.body` 上，靠**真实的 24ms `setTimeout`** 恢复；jsdom 里组件卸载后该定时器在 CI 高负载下可能迟到 100ms+，锁样式于是落进后续测试。`pointer-events` 是可继承属性，jsdom 会把继承值算给每个元素 → user-event 报 "Unable to perform pointer interaction as the element has `pointer-events: none`"（错误树只有目标元素一个，因为继承值在目标上就命中了）。`src/test/setup.ts` 的 `beforeEach`/`afterEach` 现在会清掉 body 内联样式；再遇到同类"幽灵 pointer-events"报错，先查跨测试泄漏的 DOM 全局状态，而不是怀疑组件本身。
 
 ## 6. GitHub CI/CD 协调模式
 
@@ -234,7 +237,7 @@ Dependabot 自动 PR 走的是同一条 `lint` job（含 vitest 与 cargo 测试
 ## 7. 提交 / 发布前自检清单
 
 - [ ] `bun run check` 0 退出码（含 prettier / eslint / svelte-check / clippy / test:webdav / test:ui / test:rs / vite build / cargo check）。
-- [ ] 改动对应的 `*.test.ts`（前端）或 Rust 单测已新增/更新；测试仍 85/85 全绿或更多。
+- [ ] 改动对应的 `*.test.ts`（前端）或 Rust 单测已新增/更新；测试仍全绿（当前 96 用例 / 13 文件）或更多。
 - [ ] `bun.lock` 同步提交（任何 `bun add` / `bun install` 后）。
 - [ ] CHANGELOG 顶部 #X.Y.Z 段已写；i18n 新键已加到 en/zh_CN/zh_TW；新增 locale 已在 `i18n.svelte.ts` 的 `LOCALE_FILES` 注册。
 - [ ] 若改 Rust：`src-tauri/Cargo.lock` 也更新（`cargo build` 后自动改）。
