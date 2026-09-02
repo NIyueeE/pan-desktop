@@ -31,7 +31,7 @@ jobs:
             # `bun run <script>` shells out to node-shebang bins (vite, vitest,
             # svelte-check, the tauri CLI): Node is their runtime, not Bun.
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
@@ -86,7 +86,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
@@ -143,7 +143,7 @@ jobs:
 
             # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
@@ -221,7 +221,7 @@ jobs:
 
             # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
