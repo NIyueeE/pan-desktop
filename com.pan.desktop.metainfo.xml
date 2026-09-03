@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>com.pan.desktop</id>
+    <name>Pan</name>
+    <summary>A translation and OCR app powered by OpenAI-compatible APIs</summary>
+    <summary xml:lang="zh-Hans">一款基于 OpenAI 兼容接口的划词翻译和 OCR 翻译软件</summary>
+    <developer id="com.pan">
+        <name>pan-desktop</name>
+    </developer>
+    <url type="homepage">https://github.com/NIyueeE/pan-desktop</url>
+    <url type="bugtracker">https://github.com/NIyueeE/pan-desktop/issues</url>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-only</project_license>
+    <description>
+        <p>A cross-platform translator with selection, input and screenshot OCR translation, powered by any OpenAI Chat Completions compatible API.</p>
+        <p xml:lang="zh-Hans">一款支持划词翻译、输入翻译和截图 OCR 翻译的跨平台软件，可接入任意 OpenAI Chat Completions 兼容接口。</p>
+        <ul>
+            <li>Selection translation</li>
+            <li xml:lang="zh-Hans">划词翻译</li>
+            <li>Input translation</li>
+            <li xml:lang="zh-Hans">输入翻译</li>
+            <li>Screenshot OCR translation</li>
+            <li xml:lang="zh-Hans">截图 OCR 翻译</li>
+            <li>OpenAI Chat Completions compatible API</li>
+            <li xml:lang="zh-Hans">OpenAI Chat Completions 兼容接口</li>
+            <li>Local OCR engines: system OCR and Tesseract</li>
+            <li xml:lang="zh-Hans">本地 OCR 引擎：系统 OCR 与 Tesseract</li>
+            <li>Cross-platform support (Windows, macOS and Linux)</li>
+            <li xml:lang="zh-Hans">支持 Windows、macOS 和 Linux</li>
+            <li>Multi-language support</li>
+            <li xml:lang="zh-Hans">多语言支持</li>
+        </ul>
+    </description>
+    <launchable type="desktop-id">com.pan.desktop.desktop</launchable>
+    <releases>
+        <release version="4.3.0" date="2026-09-04">
+            <url type="details">https://github.com/NIyueeE/pan-desktop/releases</url>
+        </release>
+        <release version="4.2.1" date="2026-09-02">
+            <url type="details">https://github.com/NIyueeE/pan-desktop/releases</url>
+        </release>
+        <release version="4.2.0" date="2026-09-02">
+            <url type="details">https://github.com/NIyueeE/pan-desktop/releases</url>
+        </release>
+        <release version="4.1.3" date="2025-08-30">
+            <url type="details">https://github.com/NIyueeE/pan-desktop/releases</url>
+        </release>
+    </releases>
+</component>

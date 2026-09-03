@@ -1,0 +1,378 @@
+name: Build and release
+
+on:
+    push:
+        branches: [main]
+        tags: ['*']
+    pull_request:
+        branches: [main]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v5
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+
+            # `bun run <script>` shells out to node-shebang bins (vite, vitest,
+            # svelte-check, the tauri CLI): Node is their runtime, not Bun.
+            - name: Setup Node
+              uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: rustfmt, clippy
+
+            - name: Rust cache
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: src-tauri
+
+            - name: Install Linux dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Check formatting and lint
+              run: |
+                  bun run format
+                  bun run lint
+
+            - name: Typecheck frontend
+              run: bun run typecheck
+
+            - name: WebDAV client tests
+              run: bun run test:webdav
+
+            - name: Frontend unit tests
+              run: bun run test:ui
+
+            - name: Build frontend and check Rust
+              run: |
+                  bun run build
+                  cargo check --manifest-path src-tauri/Cargo.toml
+                  cargo test --manifest-path src-tauri/Cargo.toml
+
+    change-version:
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        outputs:
+            version: ${{ steps.version.outputs.VERSION }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node
+              uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+
+            - id: version
+              name: Resolve release version
+              run: |
+                  TAG_VERSION="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^[vV]//' || true)"
+                  if [ -z "$TAG_VERSION" ]; then
+                      TAG_VERSION="$(node -p "require('./package.json').version")"
+                  fi
+                  echo "VERSION=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+
+            - name: Apply version
+              run: |
+                  VERSION="${{ steps.version.outputs.VERSION }}"
+                  sed -i "s/\"version\":.*/\"version\": \"${VERSION}\",/g" package.json
+                  sed -i "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/g" src-tauri/tauri.conf.json
+                  sed -i "s/version = \"0.0.0\"/version = \"${VERSION}\"/g" src-tauri/Cargo.toml
+
+            - name: Extract release notes
+              run: |
+                  awk '/^# /{if (seen) exit; seen=1; next} seen{print}' CHANGELOG | sed -e '/./,$!d' > RELEASE_NOTES.md
+                  printf '%s\n' "$(cat RELEASE_NOTES.md)" > RELEASE_NOTES.md
+
+            - name: Upload source artifact
+              uses: actions/upload-artifact@v7
+              with:
+                  name: source
+                  path: ./*
+                  include-hidden-files: true
+                  if-no-files-found: error
+
+    build-for-macos:
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        needs: [change-version, lint]
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: false
+            matrix:
+                target: [aarch64-apple-darwin, x86_64-apple-darwin]
+        runs-on: macos-latest
+        timeout-minutes: 90
+        steps:
+            - name: Download source
+              uses: actions/download-artifact@v7
+              with:
+                  name: source
+
+            - name: Cache paddle OCR assets
+              uses: actions/cache@v4
+              with:
+                  # ModelScope rate-limits anonymous downloads; cache the
+                  # fetched models + runtime so one success per script
+                  # version is enough.
+                  path: |
+                      src-tauri/resources/models/paddleocr
+                      src-tauri/resources/onnxruntime
+                  key: paddle-assets-${{ hashFiles('scripts/fetch-onnxruntime.sh', 'scripts/fetch-paddle-models.sh') }}
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+
+            # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
+            - name: Setup Node
+              uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.target }}
+
+            - name: Rust cache
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: src-tauri
+                  key: ${{ matrix.target }}
+
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Fetch paddle OCR runtime assets
+              run: |
+                  # The source artifact is a zip and drops the exec bit.
+                  bash scripts/fetch-onnxruntime.sh ${{ matrix.target }}
+                  bash scripts/fetch-paddle-models.sh
+
+            - name: Restore exec bit for bundled resources
+              run: chmod +x src-tauri/resources/*
+
+            - name: Build and package
+              env:
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+                  APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+                  APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+                  APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+                  APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+                  APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+                  APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+                  APPLE_ID: ${{ secrets.APPLE_ID }}
+                  APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+              run: |
+                  if [ -z "${APPLE_CERTIFICATE:-}" ]; then
+                      unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_TEAM_ID APPLE_API_ISSUER APPLE_API_KEY APPLE_ID APPLE_PASSWORD
+                  fi
+                  bun run tauri build --target ${{ matrix.target }}
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v7
+              with:
+                  name: macos_${{ matrix.target }}_dmg
+                  path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+                  if-no-files-found: error
+
+            - name: Upload release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v3
+              with:
+                  body_path: RELEASE_NOTES.md
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  files: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+
+    build-for-windows:
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        needs: [change-version, lint]
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: false
+            matrix:
+                target: [x86_64-pc-windows-msvc, i686-pc-windows-msvc, aarch64-pc-windows-msvc]
+        runs-on: windows-latest
+        timeout-minutes: 90
+        steps:
+            - name: Download source
+              uses: actions/download-artifact@v7
+              with:
+                  name: source
+
+            - name: Cache paddle OCR assets
+              uses: actions/cache@v4
+              with:
+                  # ModelScope rate-limits anonymous downloads; cache the
+                  # fetched models + runtime so one success per script
+                  # version is enough.
+                  path: |
+                      src-tauri/resources/models/paddleocr
+                      src-tauri/resources/onnxruntime
+                  key: paddle-assets-${{ hashFiles('scripts/fetch-onnxruntime.sh', 'scripts/fetch-paddle-models.sh') }}
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+
+            # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
+            - name: Setup Node
+              uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.target }}
+
+            - name: Rust cache
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: src-tauri
+                  key: ${{ matrix.target }}
+
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Fetch paddle OCR runtime assets
+              shell: bash
+              run: |
+                  # The source artifact is a zip and drops the exec bit.
+                  bash scripts/fetch-onnxruntime.sh ${{ matrix.target }}
+                  bash scripts/fetch-paddle-models.sh
+
+            - name: Build and package
+              env:
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+              run: bun run tauri build -b nsis --target ${{ matrix.target }}
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v7
+              with:
+                  name: windows_${{ matrix.target }}
+                  path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
+                  if-no-files-found: error
+
+            - name: Upload release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v3
+              with:
+                  body_path: RELEASE_NOTES.md
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  files: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
+
+    build-for-linux:
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        needs: [change-version, lint]
+        permissions:
+            contents: write
+        strategy:
+            fail-fast: false
+            matrix:
+                target: [x86_64-unknown-linux-gnu]
+        runs-on: ubuntu-latest
+        timeout-minutes: 90
+        steps:
+            - name: Download source
+              uses: actions/download-artifact@v7
+              with:
+                  name: source
+
+            - name: Cache paddle OCR assets
+              uses: actions/cache@v4
+              with:
+                  # ModelScope rate-limits anonymous downloads; cache the
+                  # fetched models + runtime so one success per script
+                  # version is enough.
+                  path: |
+                      src-tauri/resources/models/paddleocr
+                      src-tauri/resources/onnxruntime
+                  key: paddle-assets-${{ hashFiles('scripts/fetch-onnxruntime.sh', 'scripts/fetch-paddle-models.sh') }}
+
+            - name: Build for Linux
+              uses: ./.github/actions/build-for-linux
+              env:
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+              with:
+                  target: ${{ matrix.target }}
+
+            - name: Upload Debian artifact
+              uses: actions/upload-artifact@v7
+              with:
+                  name: linux_${{ matrix.target }}_deb
+                  path: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+                  if-no-files-found: error
+
+            - name: Upload RPM artifact
+              uses: actions/upload-artifact@v7
+              with:
+                  name: linux_${{ matrix.target }}_rpm
+                  path: src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+                  if-no-files-found: error
+
+            - name: Upload AppImage artifact
+              if: matrix.target == 'x86_64-unknown-linux-gnu'
+              uses: actions/upload-artifact@v7
+              with:
+                  name: linux_${{ matrix.target }}_appimage
+                  path: src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage*
+                  if-no-files-found: error
+
+            - name: Upload AppImage release
+              if: startsWith(github.ref, 'refs/tags/') && matrix.target == 'x86_64-unknown-linux-gnu'
+              uses: softprops/action-gh-release@v3
+              with:
+                  body_path: RELEASE_NOTES.md
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  files: src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage*
+
+            - name: Upload Debian release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v3
+              with:
+                  body_path: RELEASE_NOTES.md
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  files: src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+
+            - name: Upload RPM release
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: softprops/action-gh-release@v3
+              with:
+                  body_path: RELEASE_NOTES.md
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  files: src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
