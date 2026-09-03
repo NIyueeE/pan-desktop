@@ -12,11 +12,11 @@ git push origin v0.1.0
 `.github/workflows/release.yml` then creates the GitHub Release and builds the
 binary for three targets, attaching the archives to the release:
 
-| Runner | Target |
-|--------|--------|
-| ubuntu-latest | x86_64-unknown-linux-gnu |
-| macos-latest | aarch64-apple-darwin |
-| windows-latest | x86_64-pc-windows-msvc |
+| Runner         | Target                   |
+| -------------- | ------------------------ |
+| ubuntu-latest  | x86_64-unknown-linux-gnu |
+| macos-latest   | aarch64-apple-darwin     |
+| windows-latest | x86_64-pc-windows-msvc   |
 
 Each archive contains the binary plus `LICENSE`, `LICENSE-MIT`,
 `LICENSE-APACHE`, and `README.md`.

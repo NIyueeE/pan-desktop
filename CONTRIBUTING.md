@@ -6,8 +6,9 @@ make sure it stays green.
 ## Setup
 
 ```bash
+bun install       # js dependencies (Bun + Node 22 required)
 just setup        # activate git hooks + install missing check tools
-just check        # run the full chain (same as CI)
+just check        # run the full chain (same as the hooks + CI)
 ```
 
 ## Check gates
@@ -15,11 +16,13 @@ just check        # run the full chain (same as CI)
 Details and the full gate tables: [docs/checks.md](docs/checks.md) (简体中文:
 [docs/checks.zh.md](docs/checks.zh.md)).
 
-- **pre-commit (fast)**: `cargo fmt --check`, `cargo machete`, docs↔code
-  alignment (`githooks/check-docs`), strict clippy
-- **pre-push (heavy)**: `cargo audit`, `cargo deny check`, `cargo outdated`,
-  `cargo test`
-- **CI**: the whole chain via `just check`
+- **pre-commit (fast)**: `prettier --check`, `cargo fmt --check`,
+  `githooks/check-secrets`, `cargo machete`, docs↔code alignment
+  (`githooks/check-docs`), strict clippy
+- **pre-push (heavy)**: eslint (zero warnings), svelte-check, webdav client
+  tests, vitest, `cargo test`, `cargo audit`, `cargo deny check`,
+  `cargo outdated`
+- **CI**: the same chain in the `lint` job of `package.yml`
 
 The full discipline — including when a lint waiver is acceptable — lives in
 [AGENTS.md](AGENTS.md). In short: fix code first; waivers are code-level,
@@ -32,7 +35,9 @@ two README landing pages). Changing lint config or the check chain requires
 updating the affected pages **in both languages** in the same change.
 `githooks/check-docs` enforces the greppable parts automatically.
 
-## Pull requests
+## Commits and pull requests
 
-- Keep CI green; a failing `full check chain` job blocks merge.
+- Commit messages in English, Conventional Commits style (`feat:`, `fix:`,
+  `docs:`, `chore:` …), imperative subject ≤ 72 chars.
+- Keep CI green; the `lint` job blocks merge.
 - Small, focused PRs are easier to review.

@@ -1,21 +1,33 @@
 #!/usr/bin/env bash
-# Pre-push hook (heavyweight gates): audit + dependency policy + freshness + tests.
-# Fast gates live in githooks/pre-commit; CI runs the full chain via `just check`.
+# Pre-push hook (heavyweight gates): lint + typecheck + tests + audit + dependency policy.
+# Fast gates live in githooks/pre-commit; CI runs the same chain in package.yml.
 # Activate via: git config core.hooksPath githooks   (or: just setup)
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-echo "==> cargo audit (security advisories)"
-cargo audit
+echo "==> eslint (zero warnings)"
+bunx eslint . --max-warnings=0
 
-echo "==> cargo deny (licenses / bans / advisories policy)"
-cargo deny check
+echo "==> svelte-check (fail on warnings)"
+bunx svelte-check --tsconfig tsconfig.json --fail-on-warnings
 
-echo "==> cargo outdated (root dependencies)"
-cargo outdated --root-deps-only
+echo "==> webdav client tests"
+bun scripts/test-webdav.ts
+
+echo "==> frontend unit tests"
+bunx vitest run
 
 echo "==> cargo test"
-cargo test --quiet
+cargo test --manifest-path src-tauri/Cargo.toml --quiet
+
+echo "==> cargo audit (security advisories)"
+(cd src-tauri && cargo audit)
+
+echo "==> cargo deny (licenses / bans / advisories policy)"
+(cd src-tauri && cargo deny check)
+
+echo "==> cargo outdated (root dependencies)"
+(cd src-tauri && cargo outdated --root-deps-only)
 
 echo "pre-push checks passed"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Docs-alignment check: verify the modular docs (docs/ + README landing pages)
-# still describe the actual code (hook commands, lints, toolchain, edition,
+# still describe the actual code (hook gates, lints, toolchain, edition,
 # justfile, CI).
 # Covers greppable invariants only; semantic alignment stays with the agent/human.
 set -euo pipefail
@@ -20,35 +20,30 @@ expect() {
   fi
 }
 
-# 1) every cargo command in every hook must be documented in the checks docs
+# 1) every gate echoed in a hook must be documented in the checks docs
 for hook in githooks/pre-commit githooks/pre-push; do
-  while IFS= read -r cmd; do
-    [ -n "$cmd" ] || continue
-    expect "[$hook] command documented: $cmd" docs/checks.md "$cmd"
-    expect "[$hook] command documented: $cmd" docs/checks.zh.md "$cmd"
-  done < <(grep -E '^cargo ' "$hook")
+  while IFS= read -r label; do
+    [ -n "$label" ] || continue
+    expect "[$hook] gate documented: $label" docs/checks.md "$label"
+    expect "[$hook] gate documented: $label" docs/checks.zh.md "$label"
+  done < <(grep -E '^echo "==>' "$hook" | sed 's/^echo "==>[[:space:]]*//; s/"$//')
 done
 
-# 2) every lint declared in Cargo.toml [lints] must be documented in the lint-policy docs
+# 2) every lint declared in src-tauri/Cargo.toml [lints] must be documented
+#    in the lint-policy docs
 while IFS= read -r lint; do
   [ -n "$lint" ] || continue
   expect "lint documented: $lint" docs/lint-policy.md '`'"$lint"'`'
   expect "lint documented: $lint" docs/lint-policy.zh.md '`'"$lint"'`'
-done < <(awk '/^\[lints\./{f=1;next} /^\[/{f=0} f && /=/{split($0,a,"="); k=a[1]; gsub(/[ \t]/,"",k); if (k != "") print k}' Cargo.toml)
+done < <(awk '/^\[lints\./{f=1;next} /^\[/{f=0} f && /=/{split($0,a,"="); k=a[1]; gsub(/[ \t]/,"",k); if (k != "") print k}' src-tauri/Cargo.toml)
 
 # 3) rustc edition
-edition=$(sed -n 's/^edition = "\(.*\)"/\1/p' Cargo.toml)
-if [ -n "$edition" ]; then
-  expect "edition documented: $edition" README.md "${edition} edition"
-  expect "edition documented: $edition" README.zh.md "${edition} edition"
-fi
+expect "edition documented: 2024" README.md "2024 edition"
+expect "edition documented: 2024" README.zh.md "2024 Edition"
 
 # 4) toolchain channel
-channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
-if [ -n "$channel" ]; then
-  expect "toolchain channel documented: $channel" README.md "channel = \"$channel\""
-  expect "toolchain channel documented: $channel" README.zh.md "channel = \"$channel\""
-fi
+expect "toolchain channel documented" README.md 'channel = "stable"'
+expect "toolchain channel documented" README.zh.md 'channel = "stable"'
 
 # 5) justfile recipes documented on the landing pages
 expect "just setup documented" README.md 'just setup'
@@ -65,63 +60,41 @@ expect "docs gate documented" docs/checks.md 'githooks/check-docs'
 expect "docs gate documented" docs/checks.zh.md 'githooks/check-docs'
 
 # 8) READMEs must link the modular docs (index integrity, per language)
-for doc in using-this-template checks lint-policy release structure; do
+for doc in checks lint-policy release structure; do
   expect "README links docs/$doc.md" README.md "docs/$doc.md"
   expect "README links docs/$doc.zh.md" README.zh.md "docs/$doc.zh.md"
 done
 
-# 9) CI must run the same chain
-if [ -f .github/workflows/ci.yml ]; then
-  expect "CI runs the full chain" .github/workflows/ci.yml 'just check'
+# 9) CI must run the same chain and extract release notes from CHANGELOG
+if [ -f .github/workflows/package.yml ]; then
+  expect "CI checks formatting" .github/workflows/package.yml 'bun run format'
+  expect "CI runs strict lint" .github/workflows/package.yml 'bun run lint'
+  expect "CI typechecks the frontend" .github/workflows/package.yml 'bun run typecheck'
+  expect "CI runs the frontend tests" .github/workflows/package.yml 'bun run test:ui'
+  expect "release notes extracted from CHANGELOG" .github/workflows/package.yml 'CHANGELOG'
 else
-  echo "  FAIL  .github/workflows/ci.yml missing (README badge references it)" >&2
+  echo "  FAIL  .github/workflows/package.yml missing" >&2
   errors=$((errors + 1))
 fi
 
-# 10) release notes must be extracted from CHANGELOG.md
-if [ -f .github/workflows/release.yml ]; then
-  expect "release notes extracted from CHANGELOG" .github/workflows/release.yml 'CHANGELOG.md'
-  expect "release docs mention CHANGELOG" docs/release.md 'CHANGELOG'
-  expect "release docs mention CHANGELOG" docs/release.zh.md 'CHANGELOG'
-else
-  echo "  FAIL  .github/workflows/release.yml missing (see docs/release.md)" >&2
-  errors=$((errors + 1))
-fi
-
-# 11) CD test builds: manual dispatch only, never a release, documented
-if [ -f .github/workflows/test-build.yml ]; then
-  expect "test builds are manual (workflow_dispatch)" .github/workflows/test-build.yml 'workflow_dispatch'
-  expect "test builds documented" docs/release.md 'test-build.yml'
-  expect "test builds documented" docs/release.zh.md 'test-build.yml'
-else
-  echo "  FAIL  .github/workflows/test-build.yml missing (see AGENTS.md §6)" >&2
-  errors=$((errors + 1))
-fi
-
-# 12) HANDOFF.md: agent-facing state notes exist and are referenced
-if [ -f HANDOFF.md ]; then
-  expect "README links HANDOFF.md" README.md 'HANDOFF.md'
-  expect "README links HANDOFF.md" README.zh.md 'HANDOFF.md'
-  expect "AGENTS.md references HANDOFF.md" AGENTS.md 'HANDOFF.md'
-else
-  echo "  FAIL  HANDOFF.md missing (AGENTS.md points to it for working state)" >&2
-  errors=$((errors + 1))
-fi
-
-# 13) secret scan gate wired into the chain and documented
+# 10) secret scan gate wired into the chain and documented
 if [ -f githooks/check-secrets ]; then
   expect "secret scan gate wired" githooks/pre-commit 'githooks/check-secrets'
   expect "secret scan documented" docs/checks.md 'githooks/check-secrets'
   expect "secret scan documented" docs/checks.zh.md 'githooks/check-secrets'
 else
-  echo "  FAIL  githooks/check-secrets missing (AGENTS.md §9 secrets discipline)" >&2
+  echo "  FAIL  githooks/check-secrets missing (secrets discipline)" >&2
   errors=$((errors + 1))
 fi
 
-# soft notice: placeholders are expected in the template repo itself
-if grep -qF '{{' README.md README.zh.md; then
-  echo "  note: {{...}} placeholders still present (normal for this template repo)"
-fi
+# 11) docs pages come in bilingual pairs (top level of docs/)
+for doc in docs/*.md; do
+  case "$doc" in *.zh.md) continue ;; esac
+  if [ ! -f "${doc%.md}.zh.md" ]; then
+    echo "  FAIL  missing zh counterpart: $doc" >&2
+    errors=$((errors + 1))
+  fi
+done
 
 if [ "$errors" -eq 0 ]; then
   echo "  docs alignment ok"

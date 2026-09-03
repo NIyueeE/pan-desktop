@@ -15,24 +15,24 @@ Before touching anything, verify three things:
    `githooks`. If empty, run (prefer `just setup`, which also installs missing
    tools):
 
-   ```bash
-   git config core.hooksPath githooks
-   ```
+    ```bash
+    git config core.hooksPath githooks
+    ```
 
 2. **hook dependencies are installed** — four external tools must be on PATH:
 
-   ```bash
-   command -v cargo-machete cargo-audit cargo-outdated cargo-deny
-   ```
+    ```bash
+    command -v cargo-machete cargo-audit cargo-outdated cargo-deny
+    ```
 
-   Install whatever is missing (with `--locked`):
+    Install whatever is missing (with `--locked`):
 
-   ```bash
-   cargo install cargo-machete cargo-audit cargo-outdated cargo-deny --locked
-   ```
+    ```bash
+    cargo install cargo-machete cargo-audit cargo-outdated cargo-deny --locked
+    ```
 
-   Note: `cargo fmt` and `cargo clippy` are guaranteed by the components
-   declared in `rust-toolchain.toml`; rustup installs them with the toolchain.
+    Note: `cargo fmt` and `cargo clippy` are guaranteed by the components
+    declared in `rust-toolchain.toml`; rustup installs them with the toolchain.
 
 3. **toolchain** — `rust-toolchain.toml` declares `channel = "stable"`; rustup
    resolves the latest stable automatically. Never hardcode a version number
@@ -50,19 +50,19 @@ code-level.**
 - Never "make errors disappear" by editing `Cargo.toml` `[lints]`,
   `githooks/pre-commit`, or any check command.
 - When a waiver is truly needed, relax **in code only**:
-  - prefer `#[expect(clippy::lint_name)]` (it starts producing a compile
-    warning once the lint stops firing, preventing stale allows), fall back to
-    `#[allow(clippy::lint_name)]`;
-  - minimal scope: a single statement or one function; never function groups,
-    module-level `#![allow(...)]`, or crate-level relaxation;
-  - a one-line reason comment at the waiver point is mandatory (plus a linked
-    issue, if any).
+    - prefer `#[expect(clippy::lint_name)]` (it starts producing a compile
+      warning once the lint stops firing, preventing stale allows), fall back to
+      `#[allow(clippy::lint_name)]`;
+    - minimal scope: a single statement or one function; never function groups,
+      module-level `#![allow(...)]`, or crate-level relaxation;
+    - a one-line reason comment at the waiver point is mandatory (plus a linked
+      issue, if any).
 - Only two legitimate scenarios:
-  1. **genuinely unavoidable** — the business need demands it and no equally
-     reasonable alternative exists;
-  2. **upstream problems** — false positives, macro/derive-generated code, or
-     audit noise from dependencies themselves (e.g. RustSec unmaintained
-     notices).
+    1. **genuinely unavoidable** — the business need demands it and no equally
+       reasonable alternative exists;
+    2. **upstream problems** — false positives, macro/derive-generated code, or
+       audit noise from dependencies themselves (e.g. RustSec unmaintained
+       notices).
 - All other audits and extra checks (machete, audit, deny, outdated,
   docs-sync, and anything added later) follow the **same discipline**: fix if
   fixable; waive only as above when truly unfixable. Never delete, comment
@@ -76,15 +76,15 @@ code-level.**
 ## 3. Before every commit: docs ↔ code alignment (every commit)
 
 - Verify the docs still tell the truth about the code:
-  - lint tables in docs/lint-policy.md / docs/lint-policy.zh.md ↔
-    `[lints]` in `Cargo.toml`;
-  - gate tables in docs/checks.md / docs/checks.zh.md ↔ the actual commands in
-    both hooks (`githooks/pre-commit` and `githooks/pre-push`);
-  - README.md / README.zh.md as landing pages: quick-start commands, docs
-    index links, and feature claims still hold;
-  - toolchain description ↔ `rust-toolchain.toml`; layout ↔
-    docs/structure(.zh).md; command examples; version numbers;
-  - source doc comments (`//!` / `///`) ↔ actual behavior.
+    - lint tables in docs/lint-policy.md / docs/lint-policy.zh.md ↔
+      `[lints]` in `Cargo.toml`;
+    - gate tables in docs/checks.md / docs/checks.zh.md ↔ the actual commands in
+      both hooks (`githooks/pre-commit` and `githooks/pre-push`);
+    - README.md / README.zh.md as landing pages: quick-start commands, docs
+      index links, and feature claims still hold;
+    - toolchain description ↔ `rust-toolchain.toml`; layout ↔
+      docs/structure(.zh).md; command examples; version numbers;
+    - source doc comments (`//!` / `///`) ↔ actual behavior.
 - Docs are bilingual pairs (`*.md` + `*.zh.md`) and must change together;
   never update one language only.
 - Changing lint config or the check chain requires syncing the affected docs
@@ -122,11 +122,11 @@ code-level.**
   `## [x.y.z] - YYYY-MM-DD` (the git tag is the same version with a `v`
   prefix, e.g. `v0.2.0`).
 - Pushing a `v*` tag triggers `.github/workflows/release.yml`, which:
-  1. extracts the section matching the tag from `CHANGELOG.md` and uses it as
-     the release notes,
-  2. creates the GitHub Release,
-  3. builds and attaches archives for three targets (x86_64-linux-gnu,
-     aarch64-macOS, x86_64-windows-msvc).
+    1. extracts the section matching the tag from `CHANGELOG.md` and uses it as
+       the release notes,
+    2. creates the GitHub Release,
+    3. builds and attaches archives for three targets (x86_64-linux-gnu,
+       aarch64-macOS, x86_64-windows-msvc).
 - A missing or empty changelog section **fails the release**. Fix: add the
   section, delete and re-push the tag. Never hand-edit release notes on
   GitHub; the changelog is the source.
@@ -134,13 +134,13 @@ code-level.**
   the fast gates guard them and they trigger nothing public. Pushing a `v*`
   tag is a deliberate release act; **all** of the following must hold before
   pushing one:
-  1. an explicit human request (agents must never create release tags on
-     their own initiative);
-  2. `version` in `Cargo.toml` equals the tag version;
-  3. a dated `## [x.y.z] - YYYY-MM-DD` section exists in `CHANGELOG.md`;
-  4. `just check` is green on the tagged commit.
-  Re-tagging is allowed only to fix a failed release (delete the tag, fix,
-  re-push). For verifying a commit without releasing, use CD test builds (§6).
+    1. an explicit human request (agents must never create release tags on
+       their own initiative);
+    2. `version` in `Cargo.toml` equals the tag version;
+    3. a dated `## [x.y.z] - YYYY-MM-DD` section exists in `CHANGELOG.md`;
+    4. `just check` is green on the tagged commit.
+       Re-tagging is allowed only to fix a failed release (delete the tag, fix,
+       re-push). For verifying a commit without releasing, use CD test builds (§6).
 
 ## 6. CD test builds: per-commit, per-platform artifacts
 
@@ -160,9 +160,9 @@ code-level.**
 - Click **Use this template**, then follow the rename checklist in
   docs/using-this-template.md. The three traps that break automation if
   missed:
-  1. `Cargo.toml` — `name` / `repository`;
-  2. `tests/cli.rs` — `env!("CARGO_BIN_EXE_rust-agents-template")`;
-  3. `.github/workflows/release.yml` — `bin: rust-agents-template`.
+    1. `Cargo.toml` — `name` / `repository`;
+    2. `tests/cli.rs` — `env!("CARGO_BIN_EXE_rust-agents-template")`;
+    3. `.github/workflows/release.yml` — `bin: rust-agents-template`.
 - After renaming: `just setup` → `just check` → first commit (the pre-commit
   gate runs automatically and `just check` is the safety net for anything
   missed).
@@ -219,14 +219,14 @@ code-level.**
 
 ## 10. Documentation map
 
-| Question | Where |
-|----------|-------|
-| How to derive and rename a new project | docs/using-this-template.md |
-| What each gate runs, how to handle a block | docs/checks.md |
-| Lint levels and waiver rules | docs/lint-policy.md |
-| Release mechanics, test builds | docs/release.md |
-| What every file in this repo is for | docs/structure.md |
-| Current working state, decisions, open threads | HANDOFF.md |
+| Question                                       | Where                       |
+| ---------------------------------------------- | --------------------------- |
+| How to derive and rename a new project         | docs/using-this-template.md |
+| What each gate runs, how to handle a block     | docs/checks.md              |
+| Lint levels and waiver rules                   | docs/lint-policy.md         |
+| Release mechanics, test builds                 | docs/release.md             |
+| What every file in this repo is for            | docs/structure.md           |
+| Current working state, decisions, open threads | HANDOFF.md                  |
 
 Every page has a `*.zh.md` counterpart; §3 governs their sync.
 

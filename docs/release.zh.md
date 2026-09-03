@@ -12,11 +12,11 @@ git push origin v0.1.0
 `.github/workflows/release.yml` 会先创建 GitHub Release,再为三个目标平台构建
 二进制,并把压缩包挂到 Release 上:
 
-| Runner | 目标 |
-|--------|------|
-| ubuntu-latest | x86_64-unknown-linux-gnu |
-| macos-latest | aarch64-apple-darwin |
-| windows-latest | x86_64-pc-windows-msvc |
+| Runner         | 目标                     |
+| -------------- | ------------------------ |
+| ubuntu-latest  | x86_64-unknown-linux-gnu |
+| macos-latest   | aarch64-apple-darwin     |
+| windows-latest | x86_64-pc-windows-msvc   |
 
 每个压缩包内含二进制,以及 `LICENSE`、`LICENSE-MIT`、`LICENSE-APACHE` 和
 `README.md`。

@@ -1,24 +1,27 @@
 #!/usr/bin/env bash
 # Pre-commit hook (fast gates): format + secret scan + unused deps + docs-sync + strict clippy.
-# Heavyweight gates (audit / outdated / test) live in githooks/pre-push.
+# Heavyweight gates (eslint / svelte-check / tests / audit / deny / outdated) live in githooks/pre-push.
 # Activate via: git config core.hooksPath githooks   (or: just setup)
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
+echo "==> prettier --check"
+bunx prettier --check .
+
 echo "==> cargo fmt --check"
-cargo fmt --all -- --check
+cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 
 echo "==> secret scan (githooks/check-secrets)"
 githooks/check-secrets
 
 echo "==> cargo machete (unused dependencies)"
-cargo machete
+(cd src-tauri && cargo machete)
 
 echo "==> docs alignment (githooks/check-docs)"
 githooks/check-docs
 
-echo "==> cargo clippy (strict lints from Cargo.toml)"
-cargo clippy --all-targets --all-features -- -D warnings
+echo "==> cargo clippy (strict lints from src-tauri/Cargo.toml)"
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 echo "pre-commit checks passed"
