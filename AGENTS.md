@@ -9,7 +9,7 @@ wins — and §3 requires fixing the docs in the same change.
 
 ## 1. Entering the repository: routine self-check (every time)
 
-Before touching anything, verify three things:
+Before touching anything, verify four things:
 
 1. **pre-commit is enabled** — `git config core.hooksPath` must print
    `githooks`. If empty, run (prefer `just setup`, which also installs missing
@@ -19,10 +19,14 @@ Before touching anything, verify three things:
     git config core.hooksPath githooks
     ```
 
-2. **hook dependencies are installed** — four external tools must be on PATH:
+2. **js dependencies are installed** — `bun install` (the repo locks
+   `bun.lock`; `package.json` and `bun.lock` are always committed together).
+
+3. **check tools are on PATH** — bun, node (>= 22), cargo, plus the four
+   cargo gate tools:
 
     ```bash
-    command -v cargo-machete cargo-audit cargo-outdated cargo-deny
+    command -v bun node cargo cargo-machete cargo-audit cargo-outdated cargo-deny
     ```
 
     Install whatever is missing (with `--locked`):
@@ -34,7 +38,7 @@ Before touching anything, verify three things:
     Note: `cargo fmt` and `cargo clippy` are guaranteed by the components
     declared in `rust-toolchain.toml`; rustup installs them with the toolchain.
 
-3. **toolchain** — `rust-toolchain.toml` declares `channel = "stable"`; rustup
+4. **toolchain** — `rust-toolchain.toml` declares `channel = "stable"`; rustup
    resolves the latest stable automatically. Never hardcode a version number
    and never bypass this file.
 
@@ -47,14 +51,18 @@ normal).
 Principle: **fix the code first; a waiver is the last resort, and only
 code-level.**
 
-- Never "make errors disappear" by editing `Cargo.toml` `[lints]`,
+- Never "make errors disappear" by editing `src-tauri/Cargo.toml` `[lints]`,
   `githooks/pre-commit`, or any check command.
 - When a waiver is truly needed, relax **in code only**:
-    - prefer `#[expect(clippy::lint_name)]` (it starts producing a compile
+    - Rust: prefer `#[expect(clippy::lint_name)]` (it starts producing a compile
       warning once the lint stops firing, preventing stale allows), fall back to
       `#[allow(clippy::lint_name)]`;
+    - JS/TS: a scoped `// eslint-disable-next-line <rule>` with a reason; svelte
+      compiler ignores (`<!-- svelte-ignore code -->`) only where the compiler
+      demands them, and the ignore code must stand alone in its comment;
     - minimal scope: a single statement or one function; never function groups,
-      module-level `#![allow(...)]`, or crate-level relaxation;
+      module-level `#![allow(...)]`, crate-level relaxation, or file-wide
+      eslint disables;
     - a one-line reason comment at the waiver point is mandatory (plus a linked
       issue, if any).
 - Only two legitimate scenarios:
@@ -67,19 +75,18 @@ code-level.**
   docs-sync, and anything added later) follow the **same discipline**: fix if
   fixable; waive only as above when truly unfixable. Never delete, comment
   out, or bypass a check.
-- The chain has two layers: **fast gates** (`githooks/pre-commit`: fmt /
-  secrets / machete / docs / clippy) run on commit, **heavy gates**
-  (`githooks/pre-push`: audit / deny / outdated / test) run on push; CI runs
-  the whole chain via `just check`. All three are "the checks" and bound by
-  this discipline.
+- The chain has two layers: **fast gates** (`githooks/pre-commit`) run on
+  commit, **heavy gates** (`githooks/pre-push`) run on push; the `lint` job in
+  `package.yml` runs the same chain on CI. All three are "the checks" and
+  bound by this discipline. Gate tables: [docs/checks.md](docs/checks.md).
 
 ## 3. Before every commit: docs ↔ code alignment (every commit)
 
 - Verify the docs still tell the truth about the code:
-    - lint tables in docs/lint-policy.md / docs/lint-policy.zh.md ↔
-      `[lints]` in `Cargo.toml`;
-    - gate tables in docs/checks.md / docs/checks.zh.md ↔ the actual commands in
-      both hooks (`githooks/pre-commit` and `githooks/pre-push`);
+    - lint tables in docs/lint-policy.md / docs/lint-policy.zh.md ↔ `[lints]` in
+      `src-tauri/Cargo.toml`;
+    - gate tables in docs/checks.md / docs/checks.zh.md ↔ the `echo "==>"` gate
+      labels in both hooks (`githooks/pre-commit`, `githooks/pre-push`);
     - README.md / README.zh.md as landing pages: quick-start commands, docs
       index links, and feature claims still hold;
     - toolchain description ↔ `rust-toolchain.toml`; layout ↔
@@ -90,10 +97,9 @@ code-level.**
 - Changing lint config or the check chain requires syncing the affected docs
   pages, both READMEs, and this file **in the same commit**.
 - The mechanical part is automated in `githooks/check-docs`, wired into the
-  pre-commit chain. It only covers greppable invariants (hook commands ↔
+  pre-commit chain. It only covers greppable invariants (gate labels ↔
   docs/checks, lint names ↔ docs/lint-policy, edition, channel, just recipes,
-  README docs index, CI entry, CHANGELOG extraction, test-build entry,
-  secret-scan gate).
+  README docs index, CI chain greps, secret-scan gate, bilingual pairs).
   **Semantic alignment** (outdated prose, runnable examples, consistent tone)
   cannot be mechanized — it stays with the agent or a human reviewer.
 
@@ -101,7 +107,8 @@ code-level.**
 
 - **English only**, regardless of the author's language.
 - Conventional Commits prefixes: `feat:`, `fix:`, `docs:`, `chore:`,
-  `refactor:`, `test:`, `ci:`, `perf:`.
+  `refactor:`, `test:`, `ci:`, `perf:` — scope with the area (`hotkey`,
+  `webdav`, `ui`, `config`, `translate`, `tauri`, `ci`, `hooks`, `docs`).
 - Subject line: imperative mood ("add", not "added"), ≤ 72 characters, no
   trailing period.
 - Body (optional): explain **why**, wrap long lines; breaking changes append
@@ -109,101 +116,165 @@ code-level.**
 - Every commit must pass the pre-commit gate — it runs automatically; do not
   use `--no-verify`.
 
-## 5. Releases: tag-driven, automated
+## 5. Test-driven feedback workflow (core loop)
 
-- **Releases are tag-driven.** The only trigger of a release is pushing a
-  `v*` tag; `.github/workflows/release.yml` owns the whole flow and no other
-  path publishes a release.
-- `CHANGELOG.md` is the **single source of release notes**, maintained in
-  [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and
-  following [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-- During development, record notable changes under `## [Unreleased]`.
-- Before tagging, move that content into a dated section:
-  `## [x.y.z] - YYYY-MM-DD` (the git tag is the same version with a `v`
-  prefix, e.g. `v0.2.0`).
-- Pushing a `v*` tag triggers `.github/workflows/release.yml`, which:
-    1. extracts the section matching the tag from `CHANGELOG.md` and uses it as
-       the release notes,
-    2. creates the GitHub Release,
-    3. builds and attaches archives for three targets (x86_64-linux-gnu,
-       aarch64-macOS, x86_64-windows-msvc).
-- A missing or empty changelog section **fails the release**. Fix: add the
-  section, delete and re-push the tag. Never hand-edit release notes on
-  GitHub; the changelog is the source.
-- **Tag-push policy: no casual release pushes.** Commits are always allowed —
-  the fast gates guard them and they trigger nothing public. Pushing a `v*`
-  tag is a deliberate release act; **all** of the following must hold before
-  pushing one:
-    1. an explicit human request (agents must never create release tags on
-       their own initiative);
-    2. `version` in `Cargo.toml` equals the tag version;
-    3. a dated `## [x.y.z] - YYYY-MM-DD` section exists in `CHANGELOG.md`;
-    4. `just check` is green on the tagged commit.
-       Re-tagging is allowed only to fix a failed release (delete the tag, fix,
-       re-push). For verifying a commit without releasing, use CD test builds (§6).
+> Principle: reproduce first, fix second, verify last. Tests come **before**
+> code changes and **before** manual verification; every fix lands with a
+> regression test (docs/config-only changes excepted).
 
-## 6. CD test builds: per-commit, per-platform artifacts
+1. **Understand the symptom** — which window, which service, what is
+   observable (`Cannot read properties of undefined`, `languages.undefined`
+   leaking into a dropdown, a hotkey that registers but does nothing, …).
+2. **Build or reuse a reproduction test** next to the code
+   (`src/windows/<area>/*.test.ts`, `src/lib/<area>/*.test.ts`), reusing
+   `src/test/setup.ts` + `src/test/tauri-state.ts`. Seed through
+   `fakeConfigFile` → `await initConfigStore()` → `render(Component)`;
+   never seed via `setConfig()` (writes are debounced).
+    - **UndefinedSweep**: walk the DOM right after `render()` and again after
+      settling, to catch config-not-loaded-yet leaks
+      (`src/windows/config/ConfigWindow.test.ts` is the model).
+3. **Minimal fix** — touch the smallest surface; unrelated cleanup goes in its
+   own commit.
+4. **Full gate** — `bun run check` must exit 0 before committing.
+5. **Prove the net catches it** — revert the fix (`git stash push <file>`),
+   watch the new test fail, restore. A regression test that never fails is
+   not a test.
 
-- `.github/workflows/test-build.yml` builds **test artifacts** from any
-  commit without creating a release: dispatch it manually from the Actions
-  tab, choose a `ref` (commit SHA, branch, or tag) and `targets`
-  (`linux`, `macos`, `windows`).
-- Artifacts are ephemeral (7-day retention) and are never a Release — do not
-  hand out release links for them, and do not reference them in the
-  changelog.
-- Typical uses: verifying that a specific commit compiles on all platforms
-  before tagging (§5), and reproducing platform-specific issues on an exact
-  commit.
+## 6. Frontend invariants (do not break these)
 
-## 7. Deriving a new project from this template
+- **Two config write channels.** `setConfig()` debounces, batches and
+  broadcasts `<key>_changed`; `writeThrough()` persists immediately and
+  cancels a pending write for the same key — required whenever the window may
+  vanish mid-write (hotkey bindings, service-instance modal save/delete).
+  Using `setConfig()` for a hotkey means the hotkey lands after the window
+  is gone.
+- **`setConfigRaw` rejects `undefined` / `null`.** Never bypass the store to
+  `store.set(key, undefined)` — a cleared key leaks `prefix.undefined` through
+  `t('prefix.${value}')` into dropdowns.
+- **Service lists must be sanitized.** `translate_service_list` /
+  `recognize_service_list` may contain keys of removed services (restored
+  backups). Every consumer (`ServiceManager`, config modals, target/source
+  dropdowns) degrades gracefully instead of crashing;
+  `sanitizeServiceInstanceList` is the gate. Builtin names: `openai`
+  (translate), `paddle` / `system` / `openai` (recognize).
+- **Legacy pot backups must always restore.** Backup validation checks only
+  `type: 'config-backup'` — never add an `app` field check. The regression
+  case lives in `scripts/test-webdav.ts` ("Legacy pot backups still restore").
+- **Svelte 5 reactivity traps.** `$effect` tracks synchronously: reading a
+  freshly built array/object inside it re-runs the effect every frame (the
+  fresh-array-deps trap). One-shot loading goes through `untrack(...)` or an
+  once-guard boolean; non-reactive bookkeeping takes
+  `// eslint-disable-next-line svelte/prefer-svelte-reactivity`
+  (`src/windows/translate/App.svelte` carries the model comment). Seed
+  `$state` from props through a closure function (`seededConfig()`), not a
+  bare prop read.
+- **Tests must `unmount()`.** `$effect` does not clean up across cases;
+  `render()`'s `unmount()` is the only listener/DOM cleanup.
+- **i18n.** New keys land in `src/lib/i18n/locales/en_US.json` /
+  `zh_CN.json` / `zh_TW.json` (others fall back via `FALLBACK_CHAINS`); a new
+  locale file must be registered in `LOCALE_FILES` inside
+  `i18n.svelte.ts`. Keys go under `common.*` or a business namespace.
+- **plugin-os returns lowercase** (`'windows' | 'macos' | 'linux'`); the
+  codebase compares v1 names (`Windows_NT` / `Darwin` / `Linux`). The single
+  normalization point is `normalizeOsType()` in `src/lib/utils/env.svelte.ts`.
+- **Bun does not run node-shebang bins.** `bun run build` / `test:ui` /
+  `tauri build` shell out to `vite` / `vitest` / `svelte-check` / the tauri
+  CLI — all need Node.js >= 22 on PATH. `@tauri-apps/cli` stays in
+  devDependencies or every `tauri build` dies with "command not found".
 
-- Click **Use this template**, then follow the rename checklist in
-  docs/using-this-template.md. The three traps that break automation if
-  missed:
-    1. `Cargo.toml` — `name` / `repository`;
-    2. `tests/cli.rs` — `env!("CARGO_BIN_EXE_rust-agents-template")`;
-    3. `.github/workflows/release.yml` — `bin: rust-agents-template`.
-- After renaming: `just setup` → `just check` → first commit (the pre-commit
-  gate runs automatically and `just check` is the safety net for anything
-  missed).
-- Start the project changelog in `CHANGELOG.md` under `## [Unreleased]` (§5).
+## 7. Backend invariants (do not break these)
 
-## 8. Day-to-day operations
+- **Heavy work never runs on the main thread.** Every Tauri command that can
+  exceed ~10 ms (full-screen capture, PNG encode, WinRT OCR `block_on`, file
+  IO) must be `#[tauri::command(async)]`. WM_HOTKEY is dispatched by the main
+  WndProc; a blocked event loop starves every global hotkey. Background
+  WinRT threads must `CoInitializeEx(COINIT_MULTITHREADED)` first (the main
+  thread is STA, owned by tao) — `system_ocr.rs` is the model.
+- **No `unwrap()` on the hotkey / tray / window paths.** DPI anomalies,
+  display enumeration and window-attribute failures are real on Windows and
+  they kill the process silently. Use `let _ = ...` plus `log::warn!`.
+- **tao `set_focus()` injects synthetic ALT keystrokes** when
+  `SetForegroundWindow` is refused — it breaks IME composition and steals
+  focus back. Focus the translate window on demand, once, after checking
+  `isVisible()` / `isFocused()`; never chain `.focused(true)` on hidden
+  window creation.
+- **The close-on-blur three-layer protection is load-bearing**: the 800 ms
+  programmatic-focus grace (`src/windows/translate/focus.ts`), the
+  `isFocused()` recheck before confirming a blur, and drag/focus cancel.
+  WebView2 oscillates focus on transparent borderless windows; a bare blur
+  timer closes the window under the user's hands.
+- **`tauri.windows.conf.json` `additionalBrowserArgs` must stay in sync with
+  `BROWSER_ARGS` in `src-tauri/src/window.rs`** (WebView2 shares one process
+  across windows). Never add `--disable-web-security` to the daemon window:
+  WebView2 then drops the `Origin` header and the IPC layer rejects every
+  invoke (white screen, `missing Origin header`).
+- **Plugin command "not found" triage order**: ① `generate_handler!`
+  registration, ② cargo feature gate (`tauri-plugin-fs` ships `watch`
+  behind a non-default feature), ③ capabilities coverage for the window
+  label.
+- **`tauri-plugin-log` timestamps use `TimezoneStrategy::UseLocal`** — do not
+  regress to UTC when touching the logger.
 
-- commit → fast gates; push to a branch → heavy gates; **push of a `v*` tag →
-  release (§5, deliberate)**; PR or push to `main` → CI runs the identical
-  chain; branch protection on `main` requires the `full check chain` check,
-  forbids force-pushes, and auto-deletes merged branches.
-- Formatting: `just fmt` auto-fixes; `just check` rehearses the whole chain
-  before committing.
-- Dependencies: add or remove them only through cargo — `cargo add` (add
-  `--dev` for dev-dependencies, `--package` in workspaces) and
-  `cargo remove`. Never hand-edit the `[dependencies]` / `[dev-dependencies]`
-  tables in `Cargo.toml`: `cargo add` resolves a compatible version
-  requirement and updates `Cargo.lock` in the same step, avoiding
-  hand-written specs that drift from the lock or trip the dependency gates.
-- Maintenance: Dependabot opens weekly updates for GitHub Actions and cargo
-  dependencies; they merge only with CI green.
+## 8. Releases: tag-driven, automated
+
+- **Releases are tag-driven.** Pushing any tag triggers
+  `.github/workflows/package.yml`; every `main` push runs the same pipeline
+  as a verification build (no Release). Only tag pushes upload assets.
+- Tag naming convention: **`VX.Y.Z`** with a capital `V` (e.g. `V4.3.0`).
+- `CHANGELOG` (no extension) is the **single source of release notes**: the
+  workflow extracts the first `# X.Y.Z` section via awk into
+  `RELEASE_NOTES.md`. A missing or empty section yields empty release notes —
+  write the section before tagging.
+- **Version bump ritual** (a dedicated `chore(release): vX.Y.Z — …` commit):
+    1. `package.json`, `src-tauri/tauri.conf.json` (+ `Cargo.toml` /
+       `Cargo.lock` if touched) agree on `X.Y.Z` — CI's `change-version` job
+       overwrites them from the latest tag anyway; `tauri.conf.json` is the
+       effective installer-version source;
+    2. `CHANGELOG` gains a top `# X.Y.Z` section;
+    3. `com.pan.desktop.metainfo.xml` gains a `<release version="X.Y.Z" …>`
+       entry (Linux package-manager metadata — without it users never see the
+       new version);
+    4. push `main` first, wait for the verification build, then push the tag.
+- **Tag-push policy: no casual release pushes.** Agents never create or push
+  release tags on their own initiative — an explicit human request, version
+  agreement, a `CHANGELOG` section, and a green `just check` must all hold.
+  Re-tagging is allowed only to fix a failed release (delete the tag, fix,
+  re-push).
+
+## 9. Day-to-day operations
+
+- commit → fast gates; push to `main` → heavy gates + CI + verification
+  builds; tag push → release (deliberate, §8). The remote keeps **only
+  `main`** — push with `git push pan HEAD:main`; do not recreate feature
+  branches there.
+- Formatting: `just fmt` auto-fixes; `just check` rehearses the whole chain.
+  Prettier also checks `AGENTS.md`, `README*.md`, `CHANGELOG`, `*.yml` and
+  `*.json` — run `bun run format:fix` after touching any of them.
+- Dependencies: js side through `bun add` / `bun remove` (never hand-edit
+  `package.json` without refreshing `bun.lock`); rust side through
+  `cargo add` / `cargo remove` against `src-tauri` (never hand-edit the
+  `[dependencies]` tables — hand-written specs drift from `Cargo.lock` and
+  trip the dependency gates).
+- Maintenance: Dependabot opens weekly updates for GitHub Actions, bun and
+  cargo dependencies; they merge only with CI green.
 - Security reports go through GitHub's private vulnerability reporting
   (SECURITY.md), never public issues.
 
-## 9. Working discipline (daily rules)
+## 10. Working discipline (daily rules)
 
 - **Stage with eyes open.** Review `git status` and stage selectively
-  (`git add -p`); never blanket `git add -A` while the worktree holds
-  unrelated changes. One commit = one logical change: features, refactors,
-  and fixes do not share a commit.
-- **main stays releasable.** Direct pushes to main are allowed, so CI red on
-  main is the top priority — fix it before starting new work; experiments go
-  to a branch.
+  (`git add -p`); never blanket `git add -A`. One commit = one logical
+  change.
+- **main stays releasable.** CI red on main is the top priority — fix it
+  before starting new work; experiments go to a branch.
 - **No drive-by dependency upgrades.** Upgrades are Dependabot's job (or a
   dedicated commit); never bundle them into feature work — keep bisect clean.
-- **CHANGELOG as you go.** A user-visible change and its `## [Unreleased]`
-  entry land in the same commit; never backfill at release time (§5).
+- **CHANGELOG as you go.** A user-visible change and its `CHANGELOG` entry
+  land in the same commit; never backfill at release time (§8).
 - **Prove it, don't assume it.** Every "it works" claim must be backed by
   real command output from this session; no output, no claim.
 - **No corpses.** Commented-out code and `todo!()` stubs get removed, not
-  accumulated (the `todo` lint already watches).
+  accumulated (the `todo` lint already denies).
 - **End-of-session ritual.** A session ends with `just fmt` + `just check`,
   everything committed and pushed — never a dirty tree, never unpushed
   commits.
@@ -212,29 +283,39 @@ code-level.**
 - **Clear → act; ambiguous or irreversible → ask.** Renames, deletions,
   settings changes, and anything touching releases need the human's go.
 - **Secrets never enter the repository.** Tokens, keys, and credentials live
-  in repo settings / environment only — never in code, docs, or commits.
-  Enforced mechanically by `githooks/check-secrets` in the pre-commit chain;
-  a line that must carry a secret-shaped string takes a
-  `security-scan:allow` marker with a reason.
+  in repo settings / environment only. Enforced mechanically by
+  `githooks/check-secrets`; a line that must carry a secret-shaped string
+  takes a `security-scan:allow` marker with a reason.
 
-## 10. Documentation map
+## 11. Windows debugging: start at the handbook
 
-| Question                                       | Where                       |
-| ---------------------------------------------- | --------------------------- |
-| How to derive and rename a new project         | docs/using-this-template.md |
-| What each gate runs, how to handle a block     | docs/checks.md              |
-| Lint levels and waiver rules                   | docs/lint-policy.md         |
-| Release mechanics, test builds                 | docs/release.md             |
-| What every file in this repo is for            | docs/structure.md           |
-| Current working state, decisions, open threads | HANDOFF.md                  |
+Hotkey, focus, IME and window-lifetime problems on Windows have a
+symptom → root-cause map, a dual-layer logging method (native
+`on_window_event` + webview events) and a set of source-verified tao /
+global-hotkey / plugin conclusions, kept in
+[docs/windows-troubleshooting.md](docs/windows-troubleshooting.md). Read it
+before guessing; pull the log from
+`%LOCALAPPDATA%\com.pan.desktop\logs\pan.log` (local timestamps).
 
-Every page has a `*.zh.md` counterpart; §3 governs their sync.
+## 12. Documentation map
 
-## 11. One-line summary
+| Question                                       | Where                           |
+| ---------------------------------------------- | ------------------------------- |
+| What each gate runs, how to handle a block     | docs/checks.md                  |
+| Lint levels and waiver rules                   | docs/lint-policy.md             |
+| Release mechanics                              | docs/release.md                 |
+| What every file in this repo is for            | docs/structure.md               |
+| Windows hotkey / focus / IME debugging         | docs/windows-troubleshooting.md |
+| Rewrite design decisions                       | docs/rewrite/design.md          |
+| Legacy IPC / config contract to keep           | docs/rewrite/contract.md        |
+| Current working state, decisions, open threads | HANDOFF.md                      |
+
+Every `docs/*.md` page has a `*.zh.md` counterpart; §3 governs their sync.
+
+## 13. One-line summary
 
 > Self-check the environment on entry; when a check blocks you, fix the code —
 > waive only as a last resort, locally, with a named reason; keep docs and
-> code in the same commit; write commit messages in english; commits are free,
-> release tags are deliberate; let releases speak through CHANGELOG.md; prove
-> every claim with real output; end sessions clean; secrets never enter the
-> repo.
+> code in the same commit; tests come before fixes; write commit messages in
+> english; commits are free, release tags are deliberate; prove every claim
+> with real output; end sessions clean; secrets never enter the repo.

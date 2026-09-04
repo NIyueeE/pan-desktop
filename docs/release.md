@@ -2,40 +2,55 @@
 
 > English | [简体中文](release.zh.md)
 
-Cutting a release is a single tag push:
+`.github/workflows/package.yml` is the only pipeline. It runs on every push
+to `main`, on pull requests, and on **every tag push**:
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
+- **push `main`** → `lint` job (the full check chain) + verification builds
+  for all platforms. No Release is created — this is the pre-tag rehearsal.
+- **push a tag** → same pipeline, plus the `Upload release` steps attach the
+  installers to the GitHub Release.
 
-`.github/workflows/release.yml` then creates the GitHub Release and builds the
-binary for three targets, attaching the archives to the release:
+Tag naming convention: **`VX.Y.Z`** with a capital `V` (e.g. `V4.3.0`).
 
-| Runner         | Target                   |
-| -------------- | ------------------------ |
-| ubuntu-latest  | x86_64-unknown-linux-gnu |
-| macos-latest   | aarch64-apple-darwin     |
-| windows-latest | x86_64-pc-windows-msvc   |
+## Artifacts
 
-Each archive contains the binary plus `LICENSE`, `LICENSE-MIT`,
-`LICENSE-APACHE`, and `README.md`.
+| Platform                     | Runner                  | Bundles                       |
+| ---------------------------- | ----------------------- | ----------------------------- |
+| macOS (aarch64, x86_64)      | `macos-latest`          | `.dmg`                        |
+| Windows (x64, i686, aarch64) | `windows-latest`        | NSIS setup                    |
+| Linux (x86_64)               | docker composite action | `.deb` / `.rpm` / `.AppImage` |
 
-## Test builds (not releases)
+The Linux leg builds inside the `build-for-linux` docker action (rust image +
+bun + Node tarball), because `bun run tauri build` needs both runtimes and the
+webkit/gtk system libraries.
 
-`.github/workflows/test-build.yml` builds **test artifacts** for chosen
-platforms from any commit — dispatch it from the Actions tab
-(**Test build → Run workflow**), pick a `ref` (commit SHA, branch, or tag)
-and `targets` (`linux`, `macos`, `windows`). Artifacts are ephemeral
-(7-day retention) and never published as a Release. Releases stay tag-driven.
+Paddle OCR assets are fetched at build time by `scripts/fetch-onnxruntime.sh`
+and `scripts/fetch-paddle-models.sh` and cached; they are never committed.
 
-## Notes
+## Version and release notes
 
-- **Release notes come from `CHANGELOG.md`** (Keep a Changelog format): record
-  changes under `## [Unreleased]`, rename it to the version section before
-  tagging. The workflow fails if the tag's section is missing.
-- Keep `version` in `Cargo.toml` in sync with the tag before pushing it
-  (manually, or automate with a tool like release-plz).
-- The workflow needs `contents: write` — already declared in the file.
-- Re-running a failed build: delete and re-push the tag
-  (`git push origin :v0.1.0`), or re-run the workflow from the Actions tab.
+- The `change-version` job resolves the version from the latest tag
+  (`git describe --tags`, `v`/`V` stripped; falls back to `package.json`) and
+  writes it into `package.json` / `tauri.conf.json` / `Cargo.toml` — so the
+  built installers carry the tag's version. `src-tauri/tauri.conf.json` is
+  the effective installer-version source.
+- Release notes are extracted from `CHANGELOG` (the first `# X.Y.Z` section,
+  via awk) into `RELEASE_NOTES.md` and used as the release body. A missing or
+  empty section produces empty notes — write the section before tagging.
+
+## Cutting a release
+
+1. Version bump ritual in a dedicated `chore(release): vX.Y.Z — …` commit:
+   `package.json` + `src-tauri/tauri.conf.json` (+ `Cargo.toml`/`Cargo.lock`
+   if touched) agree, `CHANGELOG` gains a top `# X.Y.Z` section,
+   `com.pan.desktop.metainfo.xml` gains a `<release>` entry.
+2. `git push pan HEAD:main` — wait for the verification build (lint must be
+   green; watch with `gh run watch`).
+3. `git tag VX.Y.Z && git push pan VX.Y.Z` — the pipeline attaches all
+   installers to the Release.
+4. Verify with `gh release view VX.Y.Z --repo NIyueeE/pan-desktop --json
+assets --jq '.assets[].name'`.
+
+Re-tagging is allowed only to fix a failed release (delete the tag, fix,
+re-push). Agents never create or push release tags without an explicit human
+request — see [AGENTS.md](../AGENTS.md) §8.

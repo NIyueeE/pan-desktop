@@ -42,16 +42,17 @@ just check
 
 ## 文档
 
-| 文档                                             | 内容                                  |
-| ------------------------------------------------ | ------------------------------------- |
-| [docs/checks.zh.md](docs/checks.zh.md)           | 十四道检查门、分层 hook、CI           |
-| [docs/lint-policy.zh.md](docs/lint-policy.zh.md) | 每条 lint 与级别、放行规则            |
-| [docs/release.zh.md](docs/release.zh.md)         | 打标签 → 多平台安装包                 |
-| [docs/structure.zh.md](docs/structure.zh.md)     | 仓库里每个文件的用途                  |
-| [HANDOFF.md](HANDOFF.md)                         | 交接文档:当前工作状态、决策与开放事项 |
-| [CONTRIBUTING.md](CONTRIBUTING.md)               | 如何参与贡献                          |
-| [SECURITY.md](SECURITY.md)                       | 漏洞报告                              |
-| [AGENTS.md](AGENTS.md)                           | AI 编码代理(以及人类)的守则           |
+| 文档                                                                     | 内容                                  |
+| ------------------------------------------------------------------------ | ------------------------------------- |
+| [docs/checks.zh.md](docs/checks.zh.md)                                   | 十四道检查门、分层 hook、CI           |
+| [docs/lint-policy.zh.md](docs/lint-policy.zh.md)                         | 每条 lint 与级别、放行规则            |
+| [docs/release.zh.md](docs/release.zh.md)                                 | 打标签 → 多平台安装包                 |
+| [docs/structure.zh.md](docs/structure.zh.md)                             | 仓库里每个文件的用途                  |
+| [docs/windows-troubleshooting.zh.md](docs/windows-troubleshooting.zh.md) | windows 热键 / 焦点 / 输入法排查      |
+| [HANDOFF.md](HANDOFF.md)                                                 | 交接文档:当前工作状态、决策与开放事项 |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                       | 如何参与贡献                          |
+| [SECURITY.md](SECURITY.md)                                               | 漏洞报告                              |
+| [AGENTS.md](AGENTS.md)                                                   | AI 编码代理(以及人类)的守则           |
 
 每篇文档都有对应的 English 版本(同目录下去掉 `.zh` 后缀)。
 

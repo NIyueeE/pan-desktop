@@ -44,16 +44,17 @@ just check
 
 ## Documentation
 
-| Document                                   | Content                                               |
-| ------------------------------------------ | ----------------------------------------------------- |
-| [docs/checks.md](docs/checks.md)           | the fourteen gates, layered hooks, CI                 |
-| [docs/lint-policy.md](docs/lint-policy.md) | every lint and its level, waiver rules                |
-| [docs/release.md](docs/release.md)         | tagging → multi-platform installers                   |
-| [docs/structure.md](docs/structure.md)     | what every file in this repo is for                   |
-| [HANDOFF.md](HANDOFF.md)                   | agent handoff: current state, decisions, open threads |
-| [CONTRIBUTING.md](CONTRIBUTING.md)         | how to contribute                                     |
-| [SECURITY.md](SECURITY.md)                 | reporting vulnerabilities                             |
-| [AGENTS.md](AGENTS.md)                     | rules for AI coding agents (and humans)               |
+| Document                                                           | Content                                               |
+| ------------------------------------------------------------------ | ----------------------------------------------------- |
+| [docs/checks.md](docs/checks.md)                                   | the fourteen gates, layered hooks, CI                 |
+| [docs/lint-policy.md](docs/lint-policy.md)                         | every lint and its level, waiver rules                |
+| [docs/release.md](docs/release.md)                                 | tagging → multi-platform installers                   |
+| [docs/structure.md](docs/structure.md)                             | what every file in this repo is for                   |
+| [docs/windows-troubleshooting.md](docs/windows-troubleshooting.md) | windows hotkey / focus / IME debugging                |
+| [HANDOFF.md](HANDOFF.md)                                           | agent handoff: current state, decisions, open threads |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                 | how to contribute                                     |
+| [SECURITY.md](SECURITY.md)                                         | reporting vulnerabilities                             |
+| [AGENTS.md](AGENTS.md)                                             | rules for AI coding agents (and humans)               |
 
 Each document has a `*.zh.md` 简体中文 counterpart.
 

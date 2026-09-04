@@ -60,7 +60,7 @@ expect "docs gate documented" docs/checks.md 'githooks/check-docs'
 expect "docs gate documented" docs/checks.zh.md 'githooks/check-docs'
 
 # 8) READMEs must link the modular docs (index integrity, per language)
-for doc in checks lint-policy release structure; do
+for doc in checks lint-policy release structure windows-troubleshooting; do
   expect "README links docs/$doc.md" README.md "docs/$doc.md"
   expect "README links docs/$doc.zh.md" README.zh.md "docs/$doc.zh.md"
 done
@@ -94,7 +94,17 @@ for doc in docs/*.md; do
     echo "  FAIL  missing zh counterpart: $doc" >&2
     errors=$((errors + 1))
   fi
-done
+ done
+
+# 12) HANDOFF.md: agent-facing state notes exist and are referenced
+if [ -f HANDOFF.md ]; then
+  expect "README links HANDOFF.md" README.md 'HANDOFF.md'
+  expect "README links HANDOFF.md" README.zh.md 'HANDOFF.md'
+  expect "AGENTS.md references HANDOFF.md" AGENTS.md 'HANDOFF.md'
+else
+  echo "  FAIL  HANDOFF.md missing (AGENTS.md points to it for working state)" >&2
+  errors=$((errors + 1))
+fi
 
 if [ "$errors" -eq 0 ]; then
   echo "  docs alignment ok"
