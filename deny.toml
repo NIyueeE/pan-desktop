@@ -20,6 +20,15 @@ allow = [
     "Zlib",
     "CC0-1.0",
     "MPL-2.0",
+    # permissive licenses present in pan's dependency graph
+    # (clipboard-win / error-code ship BSL-1.0; libfuzzer-sys pulls NCSA;
+    # webpki-root-certs ships CDLA-Permissive-2.0)
+    "BSL-1.0",
+    "NCSA",
+    "CDLA-Permissive-2.0",
+    # pan is GPL-3.0-only (inherited from pot-desktop), so GPL dependencies
+    # such as `selection` are compatible by definition
+    "GPL-3.0-only",
 ]
 
 [bans]

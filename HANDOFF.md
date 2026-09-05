@@ -59,9 +59,19 @@ warnings`) because nursery noise fluctuates between rustc releases.
 
 ## Open threads
 
-- cargo-deny license allow-list: validated against the current dependency
-  graph on 2026-09-05; a new dependency with a license outside the list needs
-  a deliberate row (with a comment) rather than a waiver.
+- **Pre-push audit/deny gate is red on 2 pre-existing RustSec advisories**:
+  quick-xml 0.28.2 (RUSTSEC-2026-0194/0195, DoS-class) — pinned by the Linux
+  screenshot stack (`screenshots` → `libwayshot` → `wayland-scanner`); no
+  0.28.x patch release exists, so only an upstream bump fixes it. Input comes
+  from the wayland protocol, not arbitrary files, so practical risk is low.
+  Resolution needs a decision: a dedicated dependency-bump commit when
+  upstream moves, or an explicit audit/deny ignore with a justification
+  (AGENTS.md §2). `cargo outdated` lists routine minor bumps — Dependabot's
+  territory, not drive-by material.
+- cargo-deny license allow-list: extended with BSL-1.0, NCSA,
+  CDLA-Permissive-2.0 and GPL-3.0-only (all present in pan's dependency
+  graph; GPL is compatible with pan's own GPL-3.0-only, inherited from
+  pot-desktop); `cargo deny check licenses` is green.
 - Packaging legs beyond Linux were only exercised through CI; local machines
   cannot cross-build MSVC/macOS targets (`ring` blocks `cargo check
 --target x86_64-pc-windows-msvc` — don't try, watch the CI jobs).
