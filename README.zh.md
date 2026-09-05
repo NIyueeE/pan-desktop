@@ -48,6 +48,7 @@ just check
 | [docs/lint-policy.zh.md](docs/lint-policy.zh.md)                         | 每条 lint 与级别、放行规则            |
 | [docs/release.zh.md](docs/release.zh.md)                                 | 打标签 → 多平台安装包                 |
 | [docs/structure.zh.md](docs/structure.zh.md)                             | 仓库里每个文件的用途                  |
+| [docs/usage.zh.md](docs/usage.zh.md)                                     | 服务配置、WebDAV 备份与同步           |
 | [docs/windows-troubleshooting.zh.md](docs/windows-troubleshooting.zh.md) | windows 热键 / 焦点 / 输入法排查      |
 | [HANDOFF.md](HANDOFF.md)                                                 | 交接文档:当前工作状态、决策与开放事项 |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                                       | 如何参与贡献                          |

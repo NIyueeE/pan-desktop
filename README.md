@@ -50,6 +50,7 @@ just check
 | [docs/lint-policy.md](docs/lint-policy.md)                         | every lint and its level, waiver rules                |
 | [docs/release.md](docs/release.md)                                 | tagging → multi-platform installers                   |
 | [docs/structure.md](docs/structure.md)                             | what every file in this repo is for                   |
+| [docs/usage.md](docs/usage.md)                                     | configuring services, WebDAV backup & sync            |
 | [docs/windows-troubleshooting.md](docs/windows-troubleshooting.md) | windows hotkey / focus / IME debugging                |
 | [HANDOFF.md](HANDOFF.md)                                           | agent handoff: current state, decisions, open threads |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                                 | how to contribute                                     |

@@ -60,7 +60,7 @@ expect "docs gate documented" docs/checks.md 'githooks/check-docs'
 expect "docs gate documented" docs/checks.zh.md 'githooks/check-docs'
 
 # 8) READMEs must link the modular docs (index integrity, per language)
-for doc in checks lint-policy release structure windows-troubleshooting; do
+for doc in checks lint-policy release structure usage windows-troubleshooting; do
   expect "README links docs/$doc.md" README.md "docs/$doc.md"
   expect "README links docs/$doc.zh.md" README.zh.md "docs/$doc.zh.md"
 done
