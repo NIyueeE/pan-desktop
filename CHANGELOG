@@ -1,0 +1,134 @@
+# 4.3.0
+
+## 变更
+
+-   **OCR 引擎升级为 PaddleOCR PP-OCRv5**：移除 Tesseract（网页端 tesseract.js 与 Linux 上的 tesseract 系统依赖全部退场），内置 PP-OCRv5 mobile ONNX 三件套（检测 / 方向分类 / 识别，约 22MB 随安装包分发，ONNX Runtime 按平台打包），在独立后台线程推理。一个识别模型原生覆盖**简体、繁体、英文、日文混排**；默认优先级 Paddle → 系统 OCR → VLM，任一失败自动降级；Linux 从此开箱即用（不再要求安装 tesseract-ocr）。无官方 ONNX Runtime 的目标（Windows x86、macOS Intel）自动跳过 Paddle，回落系统 OCR。
+-   **服务设置页重构**：三个标签页——翻译 / OCR / 语音合成，原侧边栏「文字识别」选项（识别语言、自动删除换行）并入 OCR 标签顶部；实例行精简为「图标 + 名称 + 编辑 + 删除」；翻译页无拖动（所有实例并发出结果卡），OCR / 语音合成 / 词典页拖动即优先级（运行时失败自动降级）；「启用 / 停用」概念整体移除，历史配置里的 `enable` 字段忽略。
+-   **词典服务**：翻译设置页底部新增「词典」区块（总开关默认开启 + Free Dictionary API 实例列表）；翻译窗口的词典卡片常驻显示——查到（含回落英语后查到）展开显示单词、音标、真人发音与按词性分组的释义例句，查不到（404 / 不支持的语言 / 多词短语）保持折叠；语言检测不出时回落英语查询一次。
+-   **语言检测调优**：短词歧义输入（如 "test"）现在报告「未知」——语言徽标隐藏、词典回落英语，不再给出自信但错误的猜测（此前 "test" 会被误判为意大利语）。
+-   **首启跟随系统语言**：首次运行（无任何配置）时按操作系统语言自动选择显示语言——简体 / 繁体中文按地区与文字方案分流，葡萄牙语、挪威语变体正确匹配，其余语言精确映射；检测一次后落盘，之后不再覆盖用户的手动选择。
+-   **翻译窗口位置规则修复**：每次唤出都重新应用位置规则——「跟随鼠标」每次都跟随（此前窗口可见时跳过定位导致规则失效）；多显示器下按鼠标所在屏幕计算越界翻转与夹取（此前错用窗口所在屏幕）。
+
+## 修复
+
+-   **全局热键偶发无响应**（三处根因一并修复）：三个热键处理体（划词的 Ctrl+C 模拟 + 剪贴板轮询 + 建窗聚焦）挪出主线程WndProc；`copy_img` / `font_list` / `reload_store` 等重负载命令全部后台化，不再冻结事件循环；热键健康探针间隔 60s → 15s，并检测休眠唤醒（墙钟跳变）立即重注册。
+-   **划词翻译：没划就不唤窗**：Windows 上记录剪贴板序号 → 模拟 Ctrl+C → 轮询序号变化（上限约 300ms）——序号没变 = 没划选 = 直接返回，不再建窗、不再把旧剪贴板内容当作划词文本翻译；macOS / Linux 直接读选中文本，非空才唤窗。
+-   macOS 截图路径不再打印到 stdout（改走日志）。
+
+## 测试与工程化
+
+-   回归网扩充至 **147 个前端用例 + 20 个 Rust 用例**：PaddleOCR 端到端冒烟测试（拉丁 / 中日韩混排 / 倒置文本恢复，模型缺失时自动跳过）、CTC 解码与检测后处理单测、服务页 tesseract → paddle 清洗、系统语言映射表等。
+-   CI：打包前下载模型与 ONNX Runtime 并跨构建缓存；抓取脚本对 ModelScope 限流 404 重试；Windows 用 bsdtar 解压官方 zip 包。
+
+# 4.2.1
+
+## 变更
+
+-   **新增词典服务**：接入 Free Dictionary API（零配置、免费），划词翻译时若源文是单个词，翻译窗口会自动显示词典卡片——单词、音标、按词性分组的释义与例句，并可直接播放真人发音。
+-   **新增语音合成（TTS）服务**：内置「系统语音」（离线、零配置）与「OpenAI 兼容 TTS」（可配请求路径 / 密钥 / 模型 / 音色）两种服务；源文卡片与每个翻译结果卡片新增朗读按钮。
+-   **翻译窗口常驻**：启动时即预创建翻译窗口（隐藏），热键唤出不再等待 WebView2 冷启动，延迟从秒级降至约 100ms；关闭/失焦改为隐藏而非销毁，可在服务设置中关闭此行为。
+-   **翻译窗口不透明度可调**：翻译设置页新增不透明度滑条（10%-100%，默认 85%）；配置窗口不再透明。
+-   **修复热键静默失效**：每 60 秒自检全局热键注册状态并自动恢复；配置重载不再整体拆除热键；恢复失败会弹系统通知。
+-   **修复 Windows 翻译窗口无边界**：Windows 上补充圆角与描边，半透明时窗口轮廓清晰。
+-   **其他**：修复 CI 前端测试偶发失败（bits-ui 弹窗滚动锁样式跨测试泄漏）；前端死代码清理。
+
+# 4.2.0
+
+## 变更
+
+-   **前端整体重写为 Svelte 5 + TypeScript**：移除全部 React 代码（NextUI / jotai / react-i18next / react-beautiful-dnd / framer-motion / react-spring 等依赖全部退出），包管理器从 pnpm 切换为 **bun**。Rust 后端、Tauri 插件与 IPC 契约不变，`config.json` 现有配置与上游 pot 备份继续可用。
+-   **每个窗口独立入口**（`translate.html` / `config.html` / `screenshot.html` / `daemon.html`）：翻译窗口只需解析 ~26KB 脚本（此前所有窗口共享同一份包含全部页面与服务的 bundle），截图遮罩窗口仅 ~2KB；后端 `window.rs` 改为按窗口 label 打开对应 HTML。
+-   **响应式配置快照 store**：启动时一次 `entries()` 批量读取全部配置（替代旧版每个 hook 一次 `store.get` 的 30+ 次串行 IPC），写入立即生效、防抖批量落盘并广播 `<key>_changed` 跨窗口同步事件；文件监听触发一次性整体刷新 + `reload_store`。
+-   **控件精简**：`hide_source`/`hide_language` 两个开关合并为「弹窗布局」单选（旧键自动迁移，语义不变）；移除无效的代理用户名/密码输入框（后端从未读取）；代理字段仅在启用时显示；所有多状态选项统一为单个下拉框。
+-   **i18n 懒加载**：仅加载当前语言 + 英文回退包（旧版一次性打包全部 19 个语言）；`ta_IN` / `tk_TM` 两个此前从未接入的语言文件现已可用；新增布局相关文案键（en / zh_CN / zh_TW）。
+-   **翻译流水线重写**：SSE 流式解析改为逐行缓冲（正确处理跨 chunk 截断），URL 补全规则与 `$text/$from/$to/$detect` 模板保持不变；流式渲染、自动复制、增量翻译、动态翻译、删除换行、失败重试、回译等行为与旧版一致。
+-   **改进**：移除拖动/聚焦窗口时逐事件的 `Move` 日志 IPC；翻译结果不再全文写日志；`tauri.conf.json` 基础配置中的 daemon 窗口不再携带 `--disable-web-security`（Windows 覆盖配置本就正确，跨平台与 AGENTS 红线对齐）。
+
+## 测试与工程化
+
+-   测试栈迁移到 vitest 4 + @testing-library/svelte + jsdom 30：Tauri mock 基建（内存 store、事件总线、invoke 命令表）原样迁移，`src/test/setup.ts` 额外初始化真实英文语言包与环境信息；**85 个用例全绿**。
+-   回归网完整重建：UndefinedSweep（7 配置页 × 3 配置形态 × 首帧+稳定后）、服务设置页（旧备份清洗 / VLM 端点列出 / 系统 OCR 图标资产存在 / 启用与删除持久化）、热键页（组合键格式化 / OK 应用 / 退格清空 / 失焦还原）、翻译窗口（`new_text` 流转 / 删除换行变换 / 服务错误呈现 / `undefined` 泄漏）、关于页品牌钉死、blur 宽限簿记、配置 store（批量读 / 防抖写 / writeThrough 取消挂起写 / 旧键迁移 / undefined 防护）、OpenAI 兼容端点（URL 补全 / Bearer / SSE 逐行解析 / `$lang` 替换 / 默认 prompt 回退）。
+-   `scripts/test-webdav.mjs` 移植为 `scripts/test-webdav.ts`（bun 原生运行 TS），17 节全部保留，包括「Legacy pot backups still restore」兼容性红线。
+-   质量门禁与 CI 全部切换为 bun：`bun run check` = format + lint（eslint 10 + typescript-eslint + eslint-plugin-svelte）+ `svelte-check` 类型检查（`--fail-on-warnings`，0 warning 硬门槛）+ 三套测试 + vite 构建 + cargo check；CI lint/build job 改用 `oven-sh/setup-bun` + `bun install --frozen-lockfile`，每个 build job 同时 `actions/setup-node@v5`（Node 22，跑 vite / vitest / tauri CLI 这些 node-shebang bin），Linux docker action 镜像内 `COPY --from=oven/bun:1` 装 bun、继续下载 Node tarball（rust:bookworm 既无 bun 也无 Node），`scripts/test-webdav.mjs` 移植为 `scripts/test-webdav.ts` 由 bun 直接运行。
+-   svelte-check warning 清零：5 处 `state_referenced_locally` 显式化为「挂载时 seed 一次」（`// svelte-ignore` + 重挂载依据注释）或 `$derived` 派生，a11y 修复（prompt 列表 label 关联 textarea、截图遮罩 `alt` 与裸指针捕获面标注）。
+-   `@tauri-apps/cli` 回归 devDependencies（`^2.11.4`，与 Tauri 2.11 核心版本对齐）—— 重写时遗漏会让所有平台 `bun run tauri build` 立即 "command not found"，CI 全平台 build job 必挂；现与 `package.json` + `bun.lock` 同步提交。
+-   Dependabot 切换到 `package-ecosystem: "bun"`（2025-02 GA），旧 `npm` 条目对仅含 `bun.lock` 的仓库无效。
+-   新增 `com.pan.desktop.metainfo.xml` `<release>` 条目仪式（Linux 包管理器元数据），发版流程同步更新。
+
+# 4.1.3
+
+## 修复
+
+-   **下拉选择框显示 `undefined`**：翻译窗口的两个语言选择框使用无初始值的 jotai atom，配置加载完成前（以及「记忆语言」开启时把 `undefined` 写入配置后）会一直显示 `languages.undefined`。现在：atom 与配置使用相同的默认值（`auto`/`zh_cn`）；「记忆语言」不再写入未加载的选择；`useConfig` 把 `undefined` 一律按「未设置」处理（读回默认值、拒绝写入），语言标签统一走 `languageLabel()`（未知语言码回退显示原始码，不再输出 i18n key）；General/Translate/Recognize 页由配置值驱动的下拉框标题增加 `defaultValue` 兜底。
+-   **OpenAI 服务配置弹窗字段空白**：实例配置只存了部分字段（如恢复的旧备份）时，输入框变成非受控并丢失内容。现在存储的实例配置会与默认配置合并，所有字段始终有值。
+-   **「服务设置」页面打不开（白屏）**：配置中存在本分支已移除的服务实例键（典型来源：用旧版本/完整版 pot 创建的 WebDAV 备份恢复配置）时，服务页面直接抛 `Cannot read properties of undefined` 并整窗崩溃。现在三层防护：前端渲染前过滤未知服务并回写清洗后的列表；`ServiceItem` / `ConfigModal` 对未知服务降级显示；配置窗口新增错误边界，任何页面异常都会显示错误信息与「重试」按钮，不再白屏。
+-   **服务列表损坏时崩溃**：`translate_service_list` / `recognize_service_list` 不是数组（配置损坏/坏备份）时前端 `.map` 崩溃，现在前后端都会用默认列表替换（Rust 侧清洗逻辑重写为纯函数 `sanitized_service_value` 并补充 5 组单元测试）。
+-   **全局热键设置页会弄丢热键**：点击输入框即清空并注销当前快捷键，误触后未重新设置会导致热键永久失效。改为：编辑中保留原值，失焦自动还原；按新键后需点击「确定」才应用；注册失败自动还原原热键；退格清空立即生效；纯按修饰键不再误存为快捷键。
+-   **热键变更未注销旧键**：修改热键后旧组合仍然占用（下次注册会报 Already registered）。Rust 端 `register_shortcut_by_frontend` 现在原子完成「注册新键 → 注销旧键 → 持久化」，并支持清空（`shortcut` 为空）语义；`hotkey.rs` 对配置读取做了防 panic 处理。
+-   **热键触发路径防崩溃**：划词/输入/截图翻译窗口创建、显示器获取、窗口属性设置、事件发射等处的大量 `unwrap()` 在 Windows 某些环境（DPI/显示器枚举失败）会直接 panic 掉整个进程（表现为按热键后应用消失），全部改为记录日志并优雅降级。
+-   **WebDAV 恢复备份**：恢复时自动过滤已移除的服务实例键、修复损坏的服务列表（是「恢复备份后服务设置打不开」的根源）；恢复完成重新加载配置后立即生效——重建托盘菜单并重新注册全局热键，无需重启。
+-   **WebDAV 非 ASCII 凭据**：`btoa` 对含中文等非 Latin1 字符的用户名/密码直接抛异常，改为显式 UTF-8 编码 Basic 认证；备份上传前先 `reload()`，减少多窗口写入时备份到过期配置的概率。
+
+## 测试与工程化
+
+-   新增前端组件测试框架（Vitest + jsdom + Testing Library）：`src/test/` 提供完整的 Tauri API mock（内存 store、事件总线、invoke 命令表、全局快捷键记录器），可在无 Tauri 环境渲染配置窗口真实组件；新增 38 组用例覆盖服务设置页（全新配置 / 含已移除服务 / 缺失实例配置 / 非法列表 / 错误边界 / 添加服务弹窗 / 全新实例表单完整性）、热键页（组合键格式化 / 焦点保留 / 应用与持久化 / 清空 / 冲突拒绝 / 失败还原）、翻译窗口语言下拉框与全页面 `undefined` 泄漏扫描（首帧 + 稳定后 × 空配置 / 常规配置 / 空值配置）。
+-   WebDAV 测试套件新增 2 组用例（恢复清洗、非 ASCII 凭据），mock 服务器支持多 Authorization 白名单。
+-   `pnpm test` 现在依次运行 WebDAV、前端、Rust 三套测试；CI 质量门禁同步接入 `pnpm test:ui` 与 `cargo test`。
+-   `useConfig` 的 `forceSync` 写入改为立即落盘（并取消挂起的防抖写），热键等关键配置不再有 500ms 丢失窗口。
+
+# 4.1.2
+
+## 修复
+
+-   Windows 安装后启动报 `Frontend failed to start: missing Origin header`：4.1.0 为绕开 WebView2 协议问题在 `additionalBrowserArgs` 中加入的 `--disable-web-security` 与 IPC 校验逻辑冲突，导致 WebView2 在 IPC 请求中不再附带 `Origin` 头，Tauri IPC 协议处理器拒绝首个 `invoke`，前端无法启动（已知 Tauri 上游问题 tauri-apps/tauri#9454）。已从 Windows 与其他平台的浏览器参数中移除该 flag；原先依赖该 flag 调用本地 HTTP（Ollama 流式）的代码改走 `tauri-plugin-http` 的 `fetch`，不受 webview CORS 影响。
+
+# 4.1.1
+
+## 修复（WebDAV 备份同步加固）
+
+-   目标目录不存在时自动创建（MKCOL 重试），兼容坚果云、Nextcloud 等严格 WebDAV 服务端
+-   所有请求增加 30 秒超时，服务器挂起不再导致界面卡死
+-   备份/恢复前统一校验服务器地址格式
+-   备份文件名拒绝路径穿越（`..`、反斜杠），支持 Unicode 文件名与子目录
+-   远端文件非 JSON、格式非法（缺 data 字段、数组 payload）时给出明确错误提示
+-   恢复备份改为全量覆盖：备份中不存在的配置项会被移除；写入失败自动回滚内存状态
+-   恢复操作前增加确认弹窗，避免误覆盖全部设置
+
+## 测试与工程化
+
+-   新增 WebDAV 客户端测试套件（`pnpm test:webdav`）：针对内置 mock 服务器运行真实客户端代码，覆盖冒烟流程与边界情况（路径穿越、错误口令、畸形数据、自动建目录、2MB 大值、超时等 14 组用例）
+-   WebDAV 测试已接入 CI 质量门禁，与 lint 一起在每次 PR/推送时执行
+
+# 4.1.0
+
+## 修复
+
+-   Windows 下应用启动后无界面：偏好设置窗口现在由 Rust 侧直接显示，不再依赖前端加载完成
+-   移除配置文件自动创建的多余托盘图标（此前托盘区出现两个图标）
+-   Windows WebView2 参数恢复默认 feature flags 并统一所有窗口参数，改用 http scheme，避免自定义协议导致的白屏
+-   托盘「退出」菜单此前被 prevent_exit 拦截而无法退出
+-   修复划词翻译快捷键注册失败时会跳过其余快捷键注册的问题
+-   修复乌克兰语界面存在但语言检测从未启用乌克兰语的问题
+-   截图裁剪越界、屏幕列表获取失败等场景不再导致进程崩溃
+-   前端启动失败时错误会写入日志并显示在窗口中，便于排查
+-   App/WindowControl 组件事件监听器泄漏与 vite 构建目标判断失效修复
+
+## 新功能
+
+-   **WebDAV 备份同步**：偏好设置新增「备份」页，支持将全部配置一键备份到任意 WebDAV 网盘（坚果云 / Nextcloud / Alist 等）、测试连接、从云端恢复；可选自动备份（运行期间每小时最多一次）
+
+## CI/CD 与工程化
+
+-   工作流支持手动触发（workflow_dispatch）与同分支并发构建自动取消
+-   引入 pnpm store 缓存与 Swatinem/rust-cache Rust 编译缓存，大幅缩短构建时间
+-   所有任务增加超时上限；修正 macOS 资源文件执行位设置顺序
+
+# 3.0.7-lite
+
+- 仅保留划词翻译、输入翻译和 OCR 翻译
+- 翻译服务仅保留 OpenAI Chat Completions 兼容 API
+- OCR 仅保留系统 OCR 与 Tesseract
+- 移除 TTS、收藏、历史记录、备份、插件系统、本地服务、剪贴板监听与更新器
+- 升级至 Tauri 2 / Rust 2024 / 最新稳定工具链
+- 增加 ESLint、Clippy 严格检查与 CI 质量门禁
+- 品牌名 pot 保持不变
