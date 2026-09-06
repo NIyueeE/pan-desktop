@@ -21,7 +21,7 @@ jobs:
         timeout-minutes: 30
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v7
 
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
@@ -31,7 +31,7 @@ jobs:
             # `bun run <script>` shells out to node-shebang bins (vite, vitest,
             # svelte-check, the tauri CLI): Node is their runtime, not Bun.
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
@@ -81,12 +81,12 @@ jobs:
             version: ${{ steps.version.outputs.VERSION }}
         steps:
             - name: Checkout
-              uses: actions/checkout@v5
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
 
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
@@ -132,7 +132,7 @@ jobs:
         timeout-minutes: 90
         steps:
             - name: Download source
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: source
 
@@ -154,7 +154,7 @@ jobs:
 
             # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
@@ -227,7 +227,7 @@ jobs:
         timeout-minutes: 90
         steps:
             - name: Download source
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: source
 
@@ -249,7 +249,7 @@ jobs:
 
             # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
             - name: Setup Node
-              uses: actions/setup-node@v5
+              uses: actions/setup-node@v7
               with:
                   node-version: 22
 
@@ -308,7 +308,7 @@ jobs:
         timeout-minutes: 90
         steps:
             - name: Download source
-              uses: actions/download-artifact@v7
+              uses: actions/download-artifact@v8
               with:
                   name: source
 
