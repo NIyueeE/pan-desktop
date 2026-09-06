@@ -137,7 +137,7 @@ jobs:
                   name: source
 
             - name: Cache paddle OCR assets
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   # ModelScope rate-limits anonymous downloads; cache the
                   # fetched models + runtime so one success per script
@@ -232,7 +232,7 @@ jobs:
                   name: source
 
             - name: Cache paddle OCR assets
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   # ModelScope rate-limits anonymous downloads; cache the
                   # fetched models + runtime so one success per script
@@ -313,7 +313,7 @@ jobs:
                   name: source
 
             - name: Cache paddle OCR assets
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   # ModelScope rate-limits anonymous downloads; cache the
                   # fetched models + runtime so one success per script
