@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveChatCompletionsUrl } from './openai_url';
+import { isKeylessLocalEndpoint, resolveChatCompletionsUrl } from './openai_url';
 
 describe('resolveChatCompletionsUrl', () => {
     it('completes a bare domain to /v1/chat/completions', () => {
@@ -39,5 +39,27 @@ describe('resolveChatCompletionsUrl', () => {
         expect(resolveChatCompletionsUrl('http://ollama.local:11434/v1')).toBe(
             'http://ollama.local:11434/v1/chat/completions'
         );
+    });
+});
+
+describe('isKeylessLocalEndpoint', () => {
+    it('accepts loopback, .local and private-range hosts (the keyless case)', () => {
+        expect(isKeylessLocalEndpoint('http://localhost:11434/v1/chat/completions')).toBe(true);
+        expect(isKeylessLocalEndpoint('http://127.0.0.1:8080/api/v1/chat/completions')).toBe(true);
+        expect(isKeylessLocalEndpoint('http://[::1]:11434/v1/chat/completions')).toBe(true);
+        expect(isKeylessLocalEndpoint('http://mypc.local:11434/v1/chat/completions')).toBe(true);
+        expect(isKeylessLocalEndpoint('http://10.0.0.5/v1/chat/completions')).toBe(true);
+        expect(isKeylessLocalEndpoint('http://192.168.1.20:11434/v1/chat/completions')).toBe(true);
+        expect(isKeylessLocalEndpoint('http://172.16.3.9/v1/chat/completions')).toBe(true);
+        expect(isKeylessLocalEndpoint('http://172.31.255.1/v1/chat/completions')).toBe(true);
+    });
+
+    it('rejects public hosts (a missing key there is always an error)', () => {
+        expect(isKeylessLocalEndpoint('https://api.openai.com/v1/chat/completions')).toBe(false);
+        expect(isKeylessLocalEndpoint('https://api.deepseek.com/v1/chat/completions')).toBe(false);
+        expect(isKeylessLocalEndpoint('https://example.com/api/v1/chat/completions')).toBe(false);
+        expect(isKeylessLocalEndpoint('http://172.32.0.1/v1/chat/completions')).toBe(false);
+        expect(isKeylessLocalEndpoint('http://11.0.0.1/v1/chat/completions')).toBe(false);
+        expect(isKeylessLocalEndpoint('not a url')).toBe(false);
     });
 });

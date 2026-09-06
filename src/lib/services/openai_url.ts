@@ -21,3 +21,29 @@ export function resolveChatCompletionsUrl(requestPath: string): string {
     apiUrl.pathname = pathname;
     return apiUrl.href;
 }
+
+/**
+ * True when the endpoint points at a machine-local address (loopback,
+ * `.local` mDNS names, RFC1918 private ranges). Local inference servers
+ * (Ollama, LM Studio, one-api on a NAS, …) are the common keyless case, so
+ * a missing API key is not automatically an error there.
+ */
+export function isKeylessLocalEndpoint(url: string): boolean {
+    try {
+        // IPv6 hostnames keep their brackets in URL.hostname — strip them.
+        const host = new URL(url).hostname.toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+        if (host === 'localhost' || host === '::1' || host.endsWith('.local')) {
+            return true;
+        }
+        const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+        if (ipv4 !== null) {
+            const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+            if (a === 127 || a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31)) {
+                return true;
+            }
+        }
+        return false;
+    } catch {
+        return false;
+    }
+}

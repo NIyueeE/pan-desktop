@@ -2,7 +2,7 @@ import { fetch } from '@tauri-apps/plugin-http';
 
 import type { RecognizeRequestOptions } from '../types';
 import type { ServiceInstanceConfig } from '../../utils/service_instance';
-import { resolveChatCompletionsUrl } from '../openai_url';
+import { isKeylessLocalEndpoint, resolveChatCompletionsUrl } from '../openai_url';
 
 export const info = { name: 'openai', icon: 'logo/openai.svg' };
 
@@ -93,6 +93,11 @@ export function buildOcrRequest(config: OpenAiOcrConfig | undefined, base64: str
 export async function recognize(base64: string, language: string, options?: RecognizeRequestOptions): Promise<string> {
     const config = (options?.config ?? {}) as OpenAiOcrConfig;
     const { url, headers, body } = buildOcrRequest(config, base64, Language[language] ?? language ?? '');
+    // Same missing-key discipline as the translate service: public endpoint
+    // without a key is a guaranteed 401 — fail before any network waits.
+    if (!(config.apiKey ?? '').trim() && !isKeylessLocalEndpoint(url)) {
+        throw new Error('API key is not configured');
+    }
 
     const res = await fetch(url, {
         method: 'POST',

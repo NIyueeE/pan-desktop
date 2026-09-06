@@ -1,6 +1,7 @@
 import { fetch } from '@tauri-apps/plugin-http';
 
 import type { ServiceInfo, TtsRequestOptions } from '../types';
+import { isKeylessLocalEndpoint } from '../openai_url';
 
 export const info: ServiceInfo = { name: 'openai', icon: '' };
 
@@ -39,7 +40,13 @@ export function buildSpeechRequest(
 /** Speak through an OpenAI-compatible `/v1/audio/speech` endpoint. The voice
  * carries the language, so the spoken language parameter is unused here. */
 export async function speak(text: string, _language: string, options: TtsRequestOptions): Promise<void> {
-    const { url, headers, body } = buildSpeechRequest((options.config ?? {}) as OpenAiTtsConfig, text);
+    const config = (options.config ?? {}) as OpenAiTtsConfig;
+    const { url, headers, body } = buildSpeechRequest(config, text);
+    // Same missing-key discipline as the translate service: fail before any
+    // network waits on a public endpoint that can only answer 401.
+    if (!(config.apiKey ?? '').trim() && !isKeylessLocalEndpoint(url)) {
+        throw new Error('API key is not configured');
+    }
     const response = await fetch(url, {
         method: 'POST',
         headers,
