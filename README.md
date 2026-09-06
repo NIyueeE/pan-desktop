@@ -48,6 +48,7 @@ just check
 | ------------------------------------------------------------------ | ----------------------------------------------------- |
 | [docs/checks.md](docs/checks.md)                                   | the fourteen gates, layered hooks, CI                 |
 | [docs/lint-policy.md](docs/lint-policy.md)                         | every lint and its level, waiver rules                |
+| [docs/invariants.md](docs/invariants.md)                           | load-bearing platform rules — read before touching    |
 | [docs/release.md](docs/release.md)                                 | tagging → multi-platform installers                   |
 | [docs/structure.md](docs/structure.md)                             | what every file in this repo is for                   |
 | [docs/usage.md](docs/usage.md)                                     | configuring services, WebDAV backup & sync            |

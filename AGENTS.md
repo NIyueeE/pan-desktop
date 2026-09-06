@@ -117,7 +117,7 @@ code-level.**
 - Every commit must pass the pre-commit gate — it runs automatically; do not
   use `--no-verify`.
 
-## 5. Test-driven feedback workflow (core loop)
+## 5. Testing: the feedback loop
 
 > Principle: reproduce first, fix second, verify last. Tests come **before**
 > code changes and **before** manual verification; every fix lands with a
@@ -126,110 +126,37 @@ code-level.**
 1. **Understand the symptom** — which window, which service, what is
    observable (`Cannot read properties of undefined`, `languages.undefined`
    leaking into a dropdown, a hotkey that registers but does nothing, …).
-2. **Build or reuse a reproduction test** next to the code
-   (`src/windows/<area>/*.test.ts`, `src/lib/<area>/*.test.ts`), reusing
+2. **Build or reuse a reproduction test** next to the code, reusing
    `src/test/setup.ts` + `src/test/tauri-state.ts`. Seed through
    `fakeConfigFile` → `await initConfigStore()` → `render(Component)`;
    never seed via `setConfig()` (writes are debounced).
-    - **UndefinedSweep**: walk the DOM right after `render()` and again after
-      settling, to catch config-not-loaded-yet leaks
-      (`src/windows/config/ConfigWindow.test.ts` is the model).
-3. **Minimal fix** — touch the smallest surface; unrelated cleanup goes in its
-   own commit.
+3. **Minimal fix** — touch the smallest surface; unrelated cleanup goes in
+   its own commit.
 4. **Full gate** — `bun run check` must exit 0 before committing.
 5. **Prove the net catches it** — revert the fix (`git stash push <file>`),
    watch the new test fail, restore. A regression test that never fails is
    not a test.
+6. **Mocks must be honest** — a mock returns what the real plugin returns, or
+   tests stay green while the real machine fails.
 
-## 6. Frontend invariants (do not break these)
+The testing infrastructure quick facts (UndefinedSweep, unmount discipline,
+bits-ui scroll-lock leakage) live in
+[docs/invariants.md](docs/invariants.md).
 
-- **Two config write channels.** `setConfig()` debounces, batches and
-  broadcasts `<key>_changed`; `writeThrough()` persists immediately and
-  cancels a pending write for the same key — required whenever the window may
-  vanish mid-write (hotkey bindings, service-instance modal save/delete).
-  Using `setConfig()` for a hotkey means the hotkey lands after the window
-  is gone.
-- **`setConfigRaw` rejects `undefined` / `null`.** Never bypass the store to
-  `store.set(key, undefined)` — a cleared key leaks `prefix.undefined` through
-  `t('prefix.${value}')` into dropdowns.
-- **Service lists must be sanitized.** `translate_service_list` /
-  `recognize_service_list` may contain keys of removed services (restored
-  backups). Every consumer (`ServiceManager`, config modals, target/source
-  dropdowns) degrades gracefully instead of crashing;
-  `sanitizeServiceInstanceList` is the gate. Builtin names: `openai`
-  (translate), `paddle` / `system` / `openai` (recognize).
-- **Legacy pot backups must always restore.** Backup validation checks only
-  `type: 'config-backup'` — never add an `app` field check. The regression
-  case lives in `scripts/test-webdav.ts` ("Legacy pot backups still restore").
-- **Svelte 5 reactivity traps.** `$effect` tracks synchronously: reading a
-  freshly built array/object inside it re-runs the effect every frame (the
-  fresh-array-deps trap). One-shot loading goes through `untrack(...)` or an
-  once-guard boolean; non-reactive bookkeeping takes
-  `// eslint-disable-next-line svelte/prefer-svelte-reactivity`
-  (`src/windows/translate/App.svelte` carries the model comment). Seed
-  `$state` from props through a closure function (`seededConfig()`), not a
-  bare prop read.
-- **Tests must `unmount()`.** `$effect` does not clean up across cases;
-  `render()`'s `unmount()` is the only listener/DOM cleanup.
-- **i18n.** New keys land in `src/lib/i18n/locales/en_US.json` /
-  `zh_CN.json` / `zh_TW.json` (others fall back via `FALLBACK_CHAINS`); a new
-  locale file must be registered in `LOCALE_FILES` inside
-  `i18n.svelte.ts`. Keys go under `common.*` or a business namespace.
-- **plugin-os returns lowercase** (`'windows' | 'macos' | 'linux'`); the
-  codebase compares v1 names (`Windows_NT` / `Darwin` / `Linux`). The single
-  normalization point is `normalizeOsType()` in `src/lib/utils/env.svelte.ts`.
-- **Bun does not run node-shebang bins.** `bun run build` / `test:ui` /
-  `tauri build` shell out to `vite` / `vitest` / `svelte-check` / the tauri
-  CLI — all need Node.js >= 22 on PATH. `@tauri-apps/cli` stays in
-  devDependencies or every `tauri build` dies with "command not found".
-
-## 7. Backend invariants (do not break these)
-
-- **Heavy work never runs on the main thread.** Every Tauri command that can
-  exceed ~10 ms (full-screen capture, PNG encode, WinRT OCR `block_on`, file
-  IO) must be `#[tauri::command(async)]`. WM_HOTKEY is dispatched by the main
-  WndProc; a blocked event loop starves every global hotkey. Background
-  WinRT threads must `CoInitializeEx(COINIT_MULTITHREADED)` first (the main
-  thread is STA, owned by tao) — `system_ocr.rs` is the model.
-- **No `unwrap()` on the hotkey / tray / window paths.** DPI anomalies,
-  display enumeration and window-attribute failures are real on Windows and
-  they kill the process silently. Use `let _ = ...` plus `log::warn!`.
-- **tao `set_focus()` injects synthetic ALT keystrokes** when
-  `SetForegroundWindow` is refused — it breaks IME composition and steals
-  focus back. Focus the translate window on demand, once, after checking
-  `isVisible()` / `isFocused()`; never chain `.focused(true)` on hidden
-  window creation.
-- **The close-on-blur three-layer protection is load-bearing**: the 800 ms
-  programmatic-focus grace (`src/windows/translate/focus.ts`), the
-  `isFocused()` recheck before confirming a blur, and drag/focus cancel.
-  WebView2 oscillates focus on transparent borderless windows; a bare blur
-  timer closes the window under the user's hands.
-- **`tauri.windows.conf.json` `additionalBrowserArgs` must stay in sync with
-  `BROWSER_ARGS` in `src-tauri/src/window.rs`** (WebView2 shares one process
-  across windows). Never add `--disable-web-security` to the daemon window:
-  WebView2 then drops the `Origin` header and the IPC layer rejects every
-  invoke (white screen, `missing Origin header`).
-- **Plugin command "not found" triage order**: ① `generate_handler!`
-  registration, ② cargo feature gate (`tauri-plugin-fs` ships `watch`
-  behind a non-default feature), ③ capabilities coverage for the window
-  label.
-- **`tauri-plugin-log` timestamps use `TimezoneStrategy::UseLocal`** — do not
-  regress to UTC when touching the logger.
-
-## 8. Releases: tag-driven, automated
+## 6. Releases: tag-driven, automated
 
 - **Releases are tag-driven.** Pushing a `VX.Y.Z` tag triggers
   `.github/workflows/release.yml`, which extracts the release notes, creates
   the GitHub Release and attaches the installers for all six targets. The
   check chain alone runs on every `main` push (ci.yml); platform verification
-  without releasing is the Test build workflow (test-build.yml,
-  `workflow_dispatch` with a `ref` and platforms).
+  without releasing is the Test build workflow (§7).
 - Tag naming convention: **`VX.Y.Z`** with a capital `V` (e.g. `V4.3.0`);
   release.yml accepts `v*` as well.
 - `CHANGELOG` (no extension) is the **single source of release notes**:
   release.yml extracts the `# X.Y.Z` section matching the pushed tag. A
   missing or empty section **fails the release** — write the section before
-  tagging.
+  tagging. Never hand-edit release notes on GitHub; the changelog is the
+  source.
 - **Version bump ritual** (a dedicated `chore(release): vX.Y.Z — …` commit):
     1. `package.json`, `src-tauri/tauri.conf.json` (+ `Cargo.toml` /
        `Cargo.lock` if touched) agree on `X.Y.Z` — release.yml's upload job
@@ -239,18 +166,32 @@ code-level.**
     3. `com.pan.desktop.metainfo.xml` gains a `<release version="X.Y.Z" …>`
        entry (Linux package-manager metadata — without it users never see the
        new version);
-    4. push `main` first, wait for the verification build, then push the tag.
+    4. push `main` first, wait for CI, then push the tag.
 - **Tag-push policy: no casual release pushes.** Agents never create or push
   release tags on their own initiative — an explicit human request, version
   agreement, a `CHANGELOG` section, and a green `just check` must all hold.
   Re-tagging is allowed only to fix a failed release (delete the tag, fix,
   re-push).
 
-## 9. Day-to-day operations
+## 7. CD test builds: per-commit, per-platform artifacts
+
+- `.github/workflows/test-build.yml` builds **test installers** for chosen
+  platforms at an arbitrary commit without creating a release: dispatch it
+  from the Actions tab, choose a `ref` (commit SHA, branch, or tag) and
+  `targets` (`linux`, `macos`, `windows`), or
+  `gh workflow run test-build.yml -f ref=<sha> -f targets=windows`.
+- Artifacts are ephemeral (7-day retention) and are never a Release — do not
+  hand out release links for them, and do not reference them in the
+  changelog.
+- Typical uses: verifying that a commit compiles and packages on a platform
+  before tagging, and reproducing platform-specific issues on an exact
+  commit.
+
+## 8. Day-to-day operations
 
 - commit → fast gates; push to `main` → heavy gates + CI (check chain);
-  tag push → release (deliberate, §8); platform verification → Test build
-  dispatch. The remote keeps **only `main`** — push with
+  tag push → release (deliberate, §6); platform verification → Test build
+  dispatch (§7). The remote keeps **only `main`** — push with
   `git push pan HEAD:main`; do not recreate feature branches there.
 - Formatting: `just fmt` auto-fixes; `just check` rehearses the whole chain.
   Prettier also checks `AGENTS.md`, `README*.md`, `CHANGELOG`, `*.yml` and
@@ -265,7 +206,7 @@ code-level.**
 - Security reports go through GitHub's private vulnerability reporting
   (SECURITY.md), never public issues.
 
-## 10. Working discipline (daily rules)
+## 9. Working discipline (daily rules)
 
 - **Stage with eyes open.** Review `git status` and stage selectively
   (`git add -p`); never blanket `git add -A`. One commit = one logical
@@ -275,7 +216,7 @@ code-level.**
 - **No drive-by dependency upgrades.** Upgrades are Dependabot's job (or a
   dedicated commit); never bundle them into feature work — keep bisect clean.
 - **CHANGELOG as you go.** A user-visible change and its `CHANGELOG` entry
-  land in the same commit; never backfill at release time (§8).
+  land in the same commit; never backfill at release time (§6).
 - **Prove it, don't assume it.** Every "it works" claim must be backed by
   real command output from this session; no output, no claim.
 - **No corpses.** Commented-out code and `todo!()` stubs get removed, not
@@ -292,24 +233,30 @@ code-level.**
   `githooks/check-secrets`; a line that must carry a secret-shaped string
   takes a `security-scan:allow` marker with a reason.
 
-## 11. Windows debugging: start at the handbook
+## 10. Platform invariants: read before touching those paths
 
-Hotkey, focus, IME and window-lifetime problems on Windows have a
-symptom → root-cause map, a dual-layer logging method (native
-`on_window_event` + webview events) and a set of source-verified tao /
-global-hotkey / plugin conclusions, kept in
-[docs/windows-troubleshooting.md](docs/windows-troubleshooting.md). Read it
-before guessing; pull the log from
-`%LOCALAPPDATA%\com.pan.desktop\logs\pan.log` (local timestamps).
+The codebase's load-bearing rules — the config-store two-channel discipline,
+service-list sanitization, the legacy-pot-backup red line, Svelte 5
+reactivity traps, async-command / hotkey-starvation, focus and WebView2
+rules — are collected in
+[docs/invariants.md](docs/invariants.md). They are "fix the code, never the
+rule" cases; read the page before working on the related paths.
 
-## 12. Documentation map
+Windows hotkey / focus / IME problems have their own symptom → root-cause
+map and dual-layer logging method:
+[docs/windows-troubleshooting.md](docs/windows-troubleshooting.md); pull the
+log from `%LOCALAPPDATA%\com.pan.desktop\logs\pan.log` (local timestamps).
+
+## 11. Documentation map
 
 | Question                                       | Where                           |
 | ---------------------------------------------- | ------------------------------- |
 | What each gate runs, how to handle a block     | docs/checks.md                  |
 | Lint levels and waiver rules                   | docs/lint-policy.md             |
-| Release mechanics                              | docs/release.md                 |
+| Release mechanics, test builds                 | docs/release.md                 |
 | What every file in this repo is for            | docs/structure.md               |
+| Configuring services, WebDAV backup & sync     | docs/usage.md                   |
+| Load-bearing platform invariants               | docs/invariants.md              |
 | Windows hotkey / focus / IME debugging         | docs/windows-troubleshooting.md |
 | Rewrite design decisions                       | docs/rewrite/design.md          |
 | Legacy IPC / config contract to keep           | docs/rewrite/contract.md        |
@@ -317,7 +264,7 @@ before guessing; pull the log from
 
 Every `docs/*.md` page has a `*.zh.md` counterpart; §3 governs their sync.
 
-## 13. One-line summary
+## 12. One-line summary
 
 > Self-check the environment on entry; when a check blocks you, fix the code —
 > waive only as a last resort, locally, with a named reason; keep docs and

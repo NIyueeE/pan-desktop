@@ -46,6 +46,7 @@ just check
 | ------------------------------------------------------------------------ | ------------------------------------- |
 | [docs/checks.zh.md](docs/checks.zh.md)                                   | 十四道检查门、分层 hook、CI           |
 | [docs/lint-policy.zh.md](docs/lint-policy.zh.md)                         | 每条 lint 与级别、放行规则            |
+| [docs/invariants.zh.md](docs/invariants.zh.md)                           | 平台承重不变量 —— 改动相关路径前必读  |
 | [docs/release.zh.md](docs/release.zh.md)                                 | 打标签 → 多平台安装包                 |
 | [docs/structure.zh.md](docs/structure.zh.md)                             | 仓库里每个文件的用途                  |
 | [docs/usage.zh.md](docs/usage.zh.md)                                     | 服务配置、WebDAV 备份与同步           |
