@@ -2,8 +2,7 @@
 
 > English | [简体中文](release.zh.md)
 
-The pipeline follows the template's layering — three workflows, one job each
-direction:
+The pipeline has three layers — three workflows, one job each direction:
 
 | Workflow                                              | Trigger             | What it does                                                       |
 | ----------------------------------------------------- | ------------------- | ------------------------------------------------------------------ |

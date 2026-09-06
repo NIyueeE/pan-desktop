@@ -22,7 +22,7 @@ Details and the full gate tables: [docs/checks.md](docs/checks.md) (简体中文
 - **pre-push (heavy)**: eslint (zero warnings), svelte-check, webdav client
   tests, vitest, `cargo test`, `cargo audit`, `cargo deny check`,
   `cargo outdated`
-- **CI**: the same chain in the `lint` job of `package.yml`
+- **CI**: the same chain in the `check` job of `ci.yml`
 
 The full discipline — including when a lint waiver is acceptable — lives in
 [AGENTS.md](AGENTS.md). In short: fix code first; waivers are code-level,
