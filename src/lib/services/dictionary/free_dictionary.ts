@@ -8,7 +8,12 @@ export const info = { name: 'free_dictionary', icon: '' };
 const YOUDAO_BASE = 'https://dict.youdao.com/jsonapi';
 const WIKT_BASE = 'https://en.wiktionary.org/api/rest_v1/page/definition';
 const REQUEST_TIMEOUT_MS = 10_000;
-const USER_AGENT = 'pan-desktop/4.3 (github.com/NIyueeE/pan-desktop)';
+/** Wikimedia asks tools for a descriptive contact-bearing UA (keep). */
+const WIKT_USER_AGENT = 'pan-desktop/4.3 (github.com/NIyueeE/pan-desktop)';
+/** Youdao's risk control 403s non-browser requests (a custom tool UA is a
+ * strong bot signal), so the lookup masquerades as the site's own XHR. */
+const YOUDAO_USER_AGENT =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
 /** Target languages served by the Youdao web dictionary (the 英汉 `ec` dict
  * explains English words in Chinese, with bilingual examples). Every other
@@ -62,7 +67,10 @@ export function isSingleWord(text: string): boolean {
 }
 
 export function buildYoudaoUrl(word: string): string {
-    const dicts = JSON.stringify({ count: 99, dicts: [['ec'], ['blng_sents_part']] });
+    const dicts = JSON.stringify({
+        count: 99,
+        dicts: [['ec'], ['ee'], ['expand_ec'], ['blng_sents_part']],
+    });
     return `${YOUDAO_BASE}?jsonversion=2&client=mobile&q=${encodeURIComponent(word)}&dicts=${encodeURIComponent(dicts)}`;
 }
 
@@ -110,30 +118,31 @@ interface RawL {
 interface RawTr {
     tr?: unknown;
 }
+interface RawWfRow {
+    wf?: { name?: unknown; value?: unknown };
+}
+interface RawEeRow {
+    pos?: unknown;
+    tr?: unknown;
+}
 interface RawEcWord {
     usphone?: unknown;
     ukphone?: unknown;
     usspeech?: unknown;
     ukspeech?: unknown;
     trs?: unknown;
+    wfs?: unknown;
 }
 interface RawSentencePair {
     sentence?: unknown;
     'sentence-translation'?: unknown;
 }
 
-/** One `ec` translation row: `tr[0].l.i` mixes plain strings with link
- * objects; concatenated it reads "n. 中文释义一；中文释义二". */
-function youdaoTrText(tr: unknown): string {
-    if (typeof tr !== 'object' || tr === null || !Array.isArray((tr as RawTr).tr)) {
-        return '';
+/** Flatten an inline mix of plain strings and link objects into one string. */
+function inlineText(inner: unknown): string {
+    if (typeof inner === 'string') {
+        return inner;
     }
-    const rows = (tr as RawTr).tr as unknown[];
-    const first = rows[0];
-    if (typeof first !== 'object' || first === null) {
-        return '';
-    }
-    const inner = (first as RawL).l?.i;
     if (!Array.isArray(inner)) {
         return '';
     }
@@ -147,6 +156,118 @@ function youdaoTrText(tr: unknown): string {
         )
         .join('');
     return text.replace(/\s+/g, ' ').trim();
+}
+
+/** One `ec` translation row: `tr[0].l.i` mixes plain strings with link
+ * objects; concatenated it reads "n. 中文释义一；中文释义二". */
+function youdaoTrText(tr: unknown): string {
+    if (typeof tr !== 'object' || tr === null || !Array.isArray((tr as RawTr).tr)) {
+        return '';
+    }
+    const rows = (tr as RawTr).tr as unknown[];
+    const first = rows[0];
+    if (typeof first !== 'object' || first === null) {
+        return '';
+    }
+    return inlineText((first as RawL).l?.i);
+}
+
+/** `ec.word[0].wfs` → 词形变化 rows; the names arrive already localized
+ * (复数 / 过去分词 / …), so they render as-is. */
+function youdaoWordForms(entry: RawEcWord): Array<{ name: string; value: string }> {
+    if (!Array.isArray(entry.wfs)) {
+        return [];
+    }
+    return (entry.wfs as unknown[]).flatMap((row: unknown) => {
+        const wf = typeof row === 'object' && row !== null ? (row as RawWfRow).wf : undefined;
+        const name = typeof wf === 'object' && wf !== null ? asString(wf.name) : '';
+        const value = typeof wf === 'object' && wf !== null ? asString(wf.value) : '';
+        return name !== '' && value !== '' ? [{ name, value }] : [];
+    });
+}
+
+/** `ee` (WordNet) → POS-grouped English senses. `tr[].l.i` is a string for
+ * the ee dict; each sense may carry an `exam` example (not rendered). */
+function youdaoEeMeanings(ee: unknown): DictionaryMeaning[] {
+    if (typeof ee !== 'object' || ee === null) {
+        return [];
+    }
+    const word = (ee as Record<string, unknown>)['word'];
+    const trs = typeof word === 'object' && word !== null ? (word as Record<string, unknown>)['trs'] : undefined;
+    if (!Array.isArray(trs)) {
+        return [];
+    }
+    return trs.flatMap((row: unknown) => {
+        if (typeof row !== 'object' || row === null) {
+            return [];
+        }
+        const partOfSpeech = asString((row as RawEeRow).pos);
+        const items = (row as RawEeRow).tr;
+        if (!Array.isArray(items)) {
+            return [];
+        }
+        const definitions = items.flatMap((item: unknown) => {
+            const text = typeof item === 'object' && item !== null ? inlineText((item as RawL).l?.i) : '';
+            return text === '' ? [] : [{ definition: text, example: '' }];
+        });
+        return definitions.length === 0 ? [] : [{ partOfSpeech, definitions }];
+    });
+}
+
+/** `expand_ec` → deduplicated exam tags as lowercase display codes
+ * (e.g. ['cet4', 'cet6']). */
+function youdaoExamTags(expandEc: unknown): string[] {
+    if (typeof expandEc !== 'object' || expandEc === null) {
+        return [];
+    }
+    const words = (expandEc as Record<string, unknown>)['word'];
+    if (!Array.isArray(words)) {
+        return [];
+    }
+    const tags: string[] = [];
+    for (const word of words) {
+        const transList =
+            typeof word === 'object' && word !== null ? (word as Record<string, unknown>)['transList'] : undefined;
+        if (!Array.isArray(transList)) {
+            continue;
+        }
+        for (const trans of transList) {
+            const content =
+                typeof trans === 'object' && trans !== null ? (trans as Record<string, unknown>)['content'] : undefined;
+            const examType =
+                typeof content === 'object' && content !== null
+                    ? (content as Record<string, unknown>)['examType']
+                    : undefined;
+            if (!Array.isArray(examType)) {
+                continue;
+            }
+            for (const tag of examType) {
+                const code =
+                    typeof tag === 'object' && tag !== null
+                        ? asString((tag as Record<string, unknown>)['en'])
+                              .trim()
+                              .toLowerCase()
+                        : '';
+                if (code !== '' && !tags.includes(code)) {
+                    tags.push(code);
+                }
+            }
+        }
+    }
+    return tags;
+}
+
+/** The voice fields arrive as bare keys ("test&type=2"), not URLs — build
+ * the playable dictvoice URL; a full URL passes through unchanged. */
+function youdaoAudioUrl(word: string, voiceKey: unknown, type: 1 | 2): string {
+    const key = asString(voiceKey);
+    if (key === '') {
+        return '';
+    }
+    if (/^https?:\/\//.test(key)) {
+        return key;
+    }
+    return `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(word)}&type=${type}`;
 }
 
 export function parseYoudao(payload: unknown, word: string): DictionaryResult | null {
@@ -176,6 +297,9 @@ export function parseYoudao(payload: unknown, word: string): DictionaryResult | 
     if (meanings.length === 0) {
         return null;
     }
+    const englishMeanings = youdaoEeMeanings(box['ee']);
+    const wordForms = youdaoWordForms(entry);
+    const examTags = youdaoExamTags(box['expand_ec']);
     let examples: DictionaryExample[] | undefined;
     const blng = box['blng_sents_part'];
     if (
@@ -198,8 +322,11 @@ export function parseYoudao(payload: unknown, word: string): DictionaryResult | 
     return {
         word,
         phonetic: asString(entry.usphone) || asString(entry.ukphone),
-        audioUrl: asString(entry.usspeech) || asString(entry.ukspeech),
+        audioUrl: youdaoAudioUrl(word, entry.usspeech, 2) || youdaoAudioUrl(word, entry.ukspeech, 1),
         meanings,
+        ...(englishMeanings.length > 0 ? { englishMeanings } : {}),
+        ...(wordForms.length > 0 ? { wordForms } : {}),
+        ...(examTags.length > 0 ? { examTags } : {}),
         ...(examples !== undefined ? { examples } : {}),
         sourceUrl: `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`,
     };
@@ -208,7 +335,12 @@ export function parseYoudao(payload: unknown, word: string): DictionaryResult | 
 export async function lookupYoudao(word: string): Promise<DictionaryResult | null> {
     const response = await fetch(buildYoudaoUrl(word), {
         method: 'GET',
-        headers: { Accept: 'application/json', 'User-Agent': USER_AGENT },
+        headers: {
+            Accept: 'application/json, text/plain, */*',
+            'User-Agent': YOUDAO_USER_AGENT,
+            Referer: `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`,
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
@@ -282,7 +414,7 @@ export async function lookupWiktionary(word: string, language: string): Promise<
     }
     const response = await fetch(buildDefinitionsUrl(word), {
         method: 'GET',
-        headers: { Accept: 'application/json', 'User-Agent': USER_AGENT },
+        headers: { Accept: 'application/json', 'User-Agent': WIKT_USER_AGENT },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (response.status === 404) {

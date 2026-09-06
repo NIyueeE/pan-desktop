@@ -42,6 +42,24 @@ describe('language routing', () => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
+    it('sends browser-like headers to Youdao (the WAF 403s bot-shaped requests)', async () => {
+        fetchMock.mockResolvedValue(jsonOk({ simple: { query: 'test' } }));
+        await lookup('test', 'zh_cn');
+
+        const init = (fetchMock.mock.calls[0]?.[1] ?? {}) as { headers: Record<string, string> };
+        expect(init.headers['User-Agent']).toContain('Mozilla/5.0');
+        expect(init.headers['Referer']).toContain('dict.youdao.com');
+        expect(init.headers['Accept-Language']).toContain('zh-CN');
+    });
+
+    it('keeps the descriptive pan UA for Wiktionary (Wikimedia UA policy)', async () => {
+        fetchMock.mockResolvedValue(jsonOk({ en: [{ partOfSpeech: 'Noun', definitions: [{ definition: 'x' }] }] }));
+        await lookup('hello', 'en');
+
+        const init = (fetchMock.mock.calls[0]?.[1] ?? {}) as { headers: Record<string, string> };
+        expect(init.headers['User-Agent']).toContain('pan-desktop');
+    });
+
     it('routes other targets to the Wiktionary section in that language', async () => {
         fetchMock.mockResolvedValue(
             jsonOk({ fr: [{ partOfSpeech: 'Interjection', definitions: [{ definition: 'bonjour' }] }] })
@@ -90,24 +108,32 @@ describe('isSingleWord', () => {
 });
 
 describe('buildYoudaoUrl', () => {
-    it('encodes the word and requests the ec + bilingual-sentence dicts', () => {
+    it('encodes the word and requests the ec / ee / expand_ec / sentence dicts', () => {
         const url = buildYoudaoUrl('hello world');
         expect(url).toContain('https://dict.youdao.com/jsonapi?jsonversion=2&client=mobile&q=hello%20world&dicts=');
         const dicts = decodeURIComponent(/dicts=([^&]+)/.exec(url)?.[1] ?? '');
         expect(dicts).toContain('"ec"');
+        expect(dicts).toContain('"ee"');
+        expect(dicts).toContain('"expand_ec"');
         expect(dicts).toContain('"blng_sents_part"');
     });
 });
 
 describe('parseYoudao', () => {
-    // Fixture mirrors the live jsonapi shape for "test".
+    // Fixture mirrors the live jsonapi shape for "test" (usspeech arrives as
+    // a bare voice key like "test&type=2", not a full URL).
     const PAYLOAD = {
         ec: {
             word: [
                 {
                     usphone: 'test',
                     ukphone: 'test',
-                    usspeech: 'https://dict.youdao.com/dictvoice?audio=test&type=2',
+                    usspeech: 'test&type=2',
+                    wfs: [
+                        { wf: { name: '复数', value: 'tests' } },
+                        { wf: { name: '过去分词', value: 'tested' } },
+                        { wf: { name: '复数', value: '' } },
+                    ],
                     trs: [
                         {
                             tr: [
@@ -127,6 +153,38 @@ describe('parseYoudao', () => {
                 },
             ],
         },
+        ee: {
+            source: { name: 'WordNet', url: 'https://wordnet.princeton.edu' },
+            word: {
+                trs: [
+                    {
+                        pos: 'n.',
+                        tr: [
+                            { l: { i: 'any standardized procedure for measuring sensitivity or memory' } },
+                            { l: { i: 'a hard outer covering as of some amoebas and sea urchins' } },
+                        ],
+                    },
+                    { pos: 'v.', tr: [{ l: { i: 'put to the test, as for its quality' } }] },
+                ],
+            },
+        },
+        expand_ec: {
+            word: [
+                {
+                    transList: [
+                        {
+                            content: {
+                                examType: [
+                                    { en: 'CET4', zh: '四级' },
+                                    { en: 'CET6', zh: '六级' },
+                                    { en: 'CET4', zh: '四级' },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            ],
+        },
         blng_sents_part: {
             'sentence-pair': [
                 { sentence: 'He failed his driving test.', 'sentence-translation': '他驾驶执照考试不及格。' },
@@ -141,6 +199,7 @@ describe('parseYoudao', () => {
         expect(result).not.toBeNull();
         expect(result?.word).toBe('test');
         expect(result?.phonetic).toBe('test');
+        // The bare voice key must become a playable dictvoice URL.
         expect(result?.audioUrl).toBe('https://dict.youdao.com/dictvoice?audio=test&type=2');
         expect(result?.meanings).toEqual([
             {
@@ -151,6 +210,59 @@ describe('parseYoudao', () => {
         ]);
         expect(result?.examples).toEqual([{ source: 'He failed his driving test.', target: '他驾驶执照考试不及格。' }]);
         expect(result?.sourceUrl).toContain('dict.youdao.com/result?word=test');
+    });
+
+    it('extracts word forms, WordNet senses and deduplicated exam tags', () => {
+        const result = parseYoudao(PAYLOAD, 'test');
+
+        expect(result?.wordForms).toEqual([
+            { name: '复数', value: 'tests' },
+            { name: '过去分词', value: 'tested' },
+        ]);
+        expect(result?.englishMeanings).toEqual([
+            {
+                partOfSpeech: 'n.',
+                definitions: [
+                    { definition: 'any standardized procedure for measuring sensitivity or memory', example: '' },
+                    { definition: 'a hard outer covering as of some amoebas and sea urchins', example: '' },
+                ],
+            },
+            { partOfSpeech: 'v.', definitions: [{ definition: 'put to the test, as for its quality', example: '' }] },
+        ]);
+        expect(result?.examTags).toEqual(['cet4', 'cet6']);
+    });
+
+    it('omits the optional sections when the dicts are absent', () => {
+        const result = parseYoudao(
+            { ec: { word: [{ usphone: 'x', trs: [{ tr: [{ l: { i: ['n. 试验'] } }] }] }] } },
+            'x'
+        );
+        expect(result?.wordForms).toBeUndefined();
+        expect(result?.englishMeanings).toBeUndefined();
+        expect(result?.examTags).toBeUndefined();
+        // A UK-only voice key builds the type=1 dictvoice URL.
+        const uk = parseYoudao(
+            { ec: { word: [{ ukspeech: 'x&type=1', trs: [{ tr: [{ l: { i: ['n. 试验'] } }] }] }] } },
+            'x'
+        );
+        expect(uk?.audioUrl).toBe('https://dict.youdao.com/dictvoice?audio=x&type=1');
+    });
+
+    it('passes a full audio URL through unchanged', () => {
+        const result = parseYoudao(
+            {
+                ec: {
+                    word: [
+                        {
+                            usspeech: 'https://dict.youdao.com/dictvoice?audio=x&type=2',
+                            trs: [{ tr: [{ l: { i: ['n. 试验'] } }] }],
+                        },
+                    ],
+                },
+            },
+            'x'
+        );
+        expect(result?.audioUrl).toBe('https://dict.youdao.com/dictvoice?audio=x&type=2');
     });
 
     it('is a miss without ec entries or without any usable translation', () => {

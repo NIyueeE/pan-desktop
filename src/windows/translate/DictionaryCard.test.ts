@@ -22,6 +22,22 @@ const HIT: DictionaryResult = {
     sourceUrl: '',
 };
 
+const RICH: DictionaryResult = {
+    word: 'test',
+    phonetic: '/test/',
+    audioUrl: '',
+    meanings: [{ partOfSpeech: 'n.', definitions: [{ definition: '测验，考试', example: '' }] }],
+    englishMeanings: [
+        { partOfSpeech: 'n.', definitions: [{ definition: 'any standardized procedure for measuring', example: '' }] },
+    ],
+    wordForms: [
+        { name: '复数', value: 'tests' },
+        { name: '过去分词', value: 'tested' },
+    ],
+    examTags: ['cet4', 'cet6'],
+    sourceUrl: '',
+};
+
 const lookupMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../lib/services', async (importOriginal) => {
@@ -48,6 +64,24 @@ describe('DictionaryCard', () => {
         // The bilingual example pair renders below the definitions.
         expect(container.textContent).toContain('Hello, everyone.');
         expect(container.textContent).toContain('大家好。');
+    });
+
+    it('renders exam tags, WordNet senses and word forms like the legacy card', async () => {
+        await initConfigStore();
+        lookupMock.mockResolvedValue(RICH);
+        const { container } = render(DictionaryCard, { props: { word: 'test', language: 'zh_cn' } });
+
+        await waitFor(() => {
+            expect(container.textContent).toContain('测验，考试');
+        });
+        expect(container.textContent).toContain('Tags');
+        expect(container.textContent).toContain('cet4 · cet6');
+        expect(container.textContent).toContain('Definitions');
+        expect(container.textContent).toContain('Dictionary definitions');
+        expect(container.textContent).toContain('any standardized procedure for measuring');
+        expect(container.textContent).toContain('Word forms');
+        expect(container.textContent).toContain('复数: tests');
+        expect(container.textContent).toContain('过去分词: tested');
     });
 
     it('folds the body away on demand and expands it again', async () => {

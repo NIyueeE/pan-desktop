@@ -26,9 +26,9 @@ Runs on Windows, macOS, and Linux.
   accept any Chat Completions-compatible endpoint (OpenAI, DeepSeek,
   self-hosted gateways, …); prompts support `$text` / `$from` / `$to` /
   `$detect` variables.
-- **Dictionary & pronunciation** — dictionary cards with phonetics,
-  part-of-speech definitions, and audio; one-click reading of the source or
-  any result (system voice or OpenAI-compatible TTS).
+- **Dictionary & pronunciation** — dictionary cards with phonetics, exam
+  tags, POS definitions, WordNet senses, and word forms; one-click reading
+  of the source or any result (system voice or OpenAI-compatible TTS).
 - **Always-on translation window** — pre-created at launch, revealed by the
   hotkey with no cold start; mouse-following position and adjustable
   opacity.

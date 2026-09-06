@@ -468,6 +468,10 @@
             "retry": "重試",
             "dictionary_not_found": "未找到釋義",
             "dictionary_error": "查詢失敗",
+            "exam_tags": "標籤",
+            "meanings": "釋義",
+            "english_definitions": "詞典釋義",
+            "word_forms": "詞形變化",
             "delete_newline": "刪除換行",
             "translate_back": "翻譯回原文",
             "empty_result": "服務返回了空結果"

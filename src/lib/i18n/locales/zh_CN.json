@@ -480,6 +480,10 @@
             "retry": "重试",
             "dictionary_not_found": "未找到释义",
             "dictionary_error": "查询失败",
+            "exam_tags": "标签",
+            "meanings": "释义",
+            "english_definitions": "词典释义",
+            "word_forms": "词形变化",
             "delete_newline": "删除换行",
             "translate_back": "翻译回原文",
             "empty_result": "服务返回了空结果"

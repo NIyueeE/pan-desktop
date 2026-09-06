@@ -168,23 +168,58 @@
         <div class="overflow-hidden">
             {#if result !== null}
                 <div class="space-y-2 p-2">
-                    {#each result.meanings.slice(0, 4) as meaning, meaningIndex (meaningIndex)}
-                        <div>
-                            {#if meaning.partOfSpeech !== ''}
-                                <div class="text-xs text-default-400 italic">{meaning.partOfSpeech}</div>
-                            {/if}
-                            <ul class="list-disc pl-4">
-                                {#each meaning.definitions.slice(0, 3) as definition, definitionIndex (definitionIndex)}
-                                    <li class="text-sm">
-                                        {definition.definition}
-                                        {#if definition.example !== ''}
-                                            <div class="text-xs text-default-400 italic">{definition.example}</div>
-                                        {/if}
-                                    </li>
-                                {/each}
-                            </ul>
+                    {#if result.examTags !== undefined && result.examTags.length > 0}
+                        <div class="select-text text-sm text-primary">
+                            <span class="text-xs text-default-400">{t('translate.exam_tags')}:</span>
+                            {result.examTags.join(' · ')}
                         </div>
-                    {/each}
+                    {/if}
+                    {#if result.meanings.length > 0}
+                        <div class="text-xs text-default-400">{t('translate.meanings')}</div>
+                        {#each result.meanings.slice(0, 4) as meaning, meaningIndex (meaningIndex)}
+                            <div>
+                                {#if meaning.partOfSpeech !== ''}
+                                    <div class="text-xs text-default-400 italic">{meaning.partOfSpeech}</div>
+                                {/if}
+                                <ul class="list-disc pl-4">
+                                    {#each meaning.definitions.slice(0, 3) as definition, definitionIndex (definitionIndex)}
+                                        <li class="text-sm">
+                                            {definition.definition}
+                                            {#if definition.example !== ''}
+                                                <div class="text-xs text-default-400 italic">{definition.example}</div>
+                                            {/if}
+                                        </li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        {/each}
+                    {/if}
+                    {#if result.englishMeanings !== undefined && result.englishMeanings.length > 0}
+                        <div class="text-xs text-default-400">{t('translate.english_definitions')}</div>
+                        {#each result.englishMeanings.slice(0, 4) as meaning, englishIndex (englishIndex)}
+                            <div>
+                                {#if meaning.partOfSpeech !== ''}
+                                    <div class="text-xs text-default-400 italic">{meaning.partOfSpeech}</div>
+                                {/if}
+                                <ul class="list-disc pl-4">
+                                    {#each meaning.definitions.slice(0, 3) as definition, englishDefIndex (englishDefIndex)}
+                                        <li class="select-text text-sm">{definition.definition}</li>
+                                    {/each}
+                                </ul>
+                            </div>
+                        {/each}
+                    {/if}
+                    {#if result.wordForms !== undefined && result.wordForms.length > 0}
+                        <div class="text-xs text-default-400">{t('translate.word_forms')}</div>
+                        <div class="space-y-0.5">
+                            {#each result.wordForms.slice(0, 6) as form, formIndex (formIndex)}
+                                <div class="select-text text-sm">
+                                    <span class="text-default-400">{form.name}:</span>
+                                    {form.value}
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
                     {#if result.examples !== undefined && result.examples.length > 0}
                         <div class="space-y-1 border-t border-default-200 pt-2">
                             {#each result.examples.slice(0, 2) as example, exampleIndex (exampleIndex)}

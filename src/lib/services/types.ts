@@ -56,6 +56,12 @@ export interface DictionaryResult {
     /** First entry audio URL ('' when none) — the human pronunciation. */
     audioUrl: string;
     meanings: DictionaryMeaning[];
+    /** WordNet-style English senses grouped by POS (absent = none). */
+    englishMeanings?: DictionaryMeaning[];
+    /** Inflection rows with source-localized names, e.g. 复数 → tests. */
+    wordForms?: Array<{ name: string; value: string }>;
+    /** Exam tags as display codes, e.g. 'cet4' (absent = none). */
+    examTags?: string[];
     /** Bilingual example sentences (absent/empty = none). */
     examples?: DictionaryExample[];
     /** First source URL ('' when none), e.g. the dictionary page. */

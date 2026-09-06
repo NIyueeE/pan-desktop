@@ -3,6 +3,11 @@
 ## 修复
 
 -   **翻译卡片不再永久转圈**：未配置 API Key 时，公共端点立即显示「API key is not configured」并提供重试按钮，不再发出注定失败的请求；本地 / 内网端点（Ollama、LM Studio、NAS 网关等）仍允许空 Key 直连。所有翻译请求增加超时——响应头 30 秒、非流式响应体 5 分钟、流式响应 60 秒无数据即判死，超时显示「Response timed out」。OCR（VLM）与语音合成的 OpenAI 兼容服务同样补上缺 Key 快速失败。
+-   **词典卡修复**：Youdao 查询改用浏览器请求头（UA / Referer / Accept-Language）——此前自定义 UA 触发风控，词典卡显示「查询失败: Youdao API error: 403」；发音按钮同步修复（接口返回的是裸 voice 键而非 URL，现在构造 dictvoice 播放地址）。
+
+## 变更
+
+-   **词典卡内容对齐旧版体验**：在音标与中文释义之外，新增考试标签（CET4 / CET6 等，取自 expand_ec）、词典释义（WordNet 英文释义，取自 ee）与词形变化（复数 / 过去分词等，取自 wfs）；界面新增「标签 / 释义 / 词典释义 / 词形变化」文案（en / zh_CN / zh_TW，其余语言回落英文）。
 
 # 4.3.0
 

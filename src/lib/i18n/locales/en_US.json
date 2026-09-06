@@ -480,6 +480,10 @@
             "retry": "Try again",
             "dictionary_not_found": "No definitions found",
             "dictionary_error": "Lookup failed",
+            "exam_tags": "Tags",
+            "meanings": "Definitions",
+            "english_definitions": "Dictionary definitions",
+            "word_forms": "Word forms",
             "delete_newline": "Delete Newline",
             "translate_back": "Translation back to the original",
             "empty_result": "Service returned an empty result"
