@@ -3,8 +3,11 @@
 > English | [简体中文](checks.zh.md)
 
 Fast gates run before every commit, heavyweight gates before every push, and
-the `lint` job in [package.yml](../.github/workflows/package.yml) rehearses
-the same chain on every push / pull request.
+the `check` job in [ci.yml](../.github/workflows/ci.yml) rehearses
+the same chain on every push / pull request. Installers are built by
+[release.yml](../.github/workflows/release.yml) on tag pushes and by
+[test-build.yml](../.github/workflows/test-build.yml) on manual dispatch —
+see [Release](release.md).
 
 ## Tools
 
@@ -54,9 +57,12 @@ just check   # identical to hooks + CI
 
 ## CI
 
-[package.yml](../.github/workflows/package.yml) runs the same chain in its
-`lint` job (`bun run format` / `lint` / `typecheck` / `test:ui` / `build` /
-`cargo check` / `cargo test`) and builds the installers on every push.
+[ci.yml](../.github/workflows/ci.yml) runs the same chain in its `check` job
+(`bun run format` / `lint` / `typecheck` / `test:ui` / `build` / `cargo check` /
+`cargo test`) on every push to `main` and every pull request. Installers are
+built by [release.yml](../.github/workflows/release.yml) on tag pushes and by
+[test-build.yml](../.github/workflows/test-build.yml) on manual dispatch —
+see [Release](release.md).
 
 ## When a gate blocks you
 

@@ -76,9 +76,10 @@ code-level.**
   fixable; waive only as above when truly unfixable. Never delete, comment
   out, or bypass a check.
 - The chain has two layers: **fast gates** (`githooks/pre-commit`) run on
-  commit, **heavy gates** (`githooks/pre-push`) run on push; the `lint` job in
-  `package.yml` runs the same chain on CI. All three are "the checks" and
-  bound by this discipline. Gate tables: [docs/checks.md](docs/checks.md).
+  commit, **heavy gates** (`githooks/pre-push`) run on push; the `check` job
+  in `.github/workflows/ci.yml` runs the same chain on CI. All three are "the
+  checks" and bound by this discipline. Gate tables:
+  [docs/checks.md](docs/checks.md).
 
 ## 3. Before every commit: docs ↔ code alignment (every commit)
 
@@ -217,18 +218,22 @@ code-level.**
 
 ## 8. Releases: tag-driven, automated
 
-- **Releases are tag-driven.** Pushing any tag triggers
-  `.github/workflows/package.yml`; every `main` push runs the same pipeline
-  as a verification build (no Release). Only tag pushes upload assets.
-- Tag naming convention: **`VX.Y.Z`** with a capital `V` (e.g. `V4.3.0`).
-- `CHANGELOG` (no extension) is the **single source of release notes**: the
-  workflow extracts the first `# X.Y.Z` section via awk into
-  `RELEASE_NOTES.md`. A missing or empty section yields empty release notes —
-  write the section before tagging.
+- **Releases are tag-driven.** Pushing a `VX.Y.Z` tag triggers
+  `.github/workflows/release.yml`, which extracts the release notes, creates
+  the GitHub Release and attaches the installers for all six targets. The
+  check chain alone runs on every `main` push (ci.yml); platform verification
+  without releasing is the Test build workflow (test-build.yml,
+  `workflow_dispatch` with a `ref` and platforms).
+- Tag naming convention: **`VX.Y.Z`** with a capital `V` (e.g. `V4.3.0`);
+  release.yml accepts `v*` as well.
+- `CHANGELOG` (no extension) is the **single source of release notes**:
+  release.yml extracts the `# X.Y.Z` section matching the pushed tag. A
+  missing or empty section **fails the release** — write the section before
+  tagging.
 - **Version bump ritual** (a dedicated `chore(release): vX.Y.Z — …` commit):
     1. `package.json`, `src-tauri/tauri.conf.json` (+ `Cargo.toml` /
-       `Cargo.lock` if touched) agree on `X.Y.Z` — CI's `change-version` job
-       overwrites them from the latest tag anyway; `tauri.conf.json` is the
+       `Cargo.lock` if touched) agree on `X.Y.Z` — release.yml's upload job
+       overwrites them from the pushed tag anyway; `tauri.conf.json` is the
        effective installer-version source;
     2. `CHANGELOG` gains a top `# X.Y.Z` section;
     3. `com.pan.desktop.metainfo.xml` gains a `<release version="X.Y.Z" …>`
@@ -243,10 +248,10 @@ code-level.**
 
 ## 9. Day-to-day operations
 
-- commit → fast gates; push to `main` → heavy gates + CI + verification
-  builds; tag push → release (deliberate, §8). The remote keeps **only
-  `main`** — push with `git push pan HEAD:main`; do not recreate feature
-  branches there.
+- commit → fast gates; push to `main` → heavy gates + CI (check chain);
+  tag push → release (deliberate, §8); platform verification → Test build
+  dispatch. The remote keeps **only `main`** — push with
+  `git push pan HEAD:main`; do not recreate feature branches there.
 - Formatting: `just fmt` auto-fixes; `just check` rehearses the whole chain.
   Prettier also checks `AGENTS.md`, `README*.md`, `CHANGELOG`, `*.yml` and
   `*.json` — run `bun run format:fix` after touching any of them.

@@ -1,0 +1,73 @@
+name: 'Build Tauri (macOS / Windows)'
+branding:
+    icon: package
+    color: blue
+description: 'Shared build steps for the desktop bundles: bun + node + rust setup,
+    paddle asset cache and fetch, then `tauri build` for the requested
+    target. Linux goes through .github/actions/build-for-linux instead.'
+inputs:
+    target:
+        required: true
+        description: 'Rust target triple (aarch64/x86_64-apple-darwin, *-pc-windows-msvc)'
+runs:
+    using: 'composite'
+    steps:
+        - name: Cache paddle OCR assets
+          uses: actions/cache@v6
+          with:
+              # ModelScope rate-limits anonymous downloads; cache the
+              # fetched models + runtime so one success per script
+              # version is enough.
+              path: |
+                  src-tauri/resources/models/paddleocr
+                  src-tauri/resources/onnxruntime
+              key: paddle-assets-${{ hashFiles('scripts/fetch-onnxruntime.sh', 'scripts/fetch-paddle-models.sh') }}
+
+        - name: Setup Bun
+          uses: oven-sh/setup-bun@v2
+          with:
+              bun-version: latest
+
+        # Node runs the node-shebang bins invoked by `bun run` (tauri CLI, vite).
+        - name: Setup Node
+          uses: actions/setup-node@v7
+          with:
+              node-version: 22
+
+        # rust-toolchain.toml resolves the stable toolchain; the job adds the matrix target
+        - name: Setup Rust
+          uses: dtolnay/rust-toolchain@stable
+          with:
+              targets: ${{ inputs.target }}
+
+        - name: Rust cache
+          uses: Swatinem/rust-cache@v2
+          with:
+              workspaces: src-tauri
+              key: ${{ inputs.target }}
+
+        - name: Install dependencies
+          shell: bash
+          run: bun install --frozen-lockfile
+
+        - name: Fetch paddle OCR runtime assets
+          shell: bash
+          run: |
+              bash scripts/fetch-onnxruntime.sh ${{ inputs.target }}
+              bash scripts/fetch-paddle-models.sh
+
+        - name: Build and package
+          shell: bash
+          # Signing variables (TAURI_SIGNING_*, APPLE_*) arrive as job-level
+          # env from the calling workflow and are inherited here.
+          run: |
+              # Unset the whole Apple group when no certificate is configured;
+              # tauri then packages unsigned DMGs instead of failing.
+              if [ -z "${APPLE_CERTIFICATE:-}" ]; then
+                  unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_TEAM_ID APPLE_API_ISSUER APPLE_API_KEY APPLE_ID APPLE_PASSWORD
+              fi
+              BUNDLE_ARGS=''
+              if [ "$RUNNER_OS" = 'Windows' ]; then
+                  BUNDLE_ARGS='-b nsis'
+              fi
+              bun run tauri build $BUNDLE_ARGS --target ${{ inputs.target }}

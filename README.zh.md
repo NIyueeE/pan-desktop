@@ -2,7 +2,7 @@
 
 > 一个精简的划词 / 输入 / OCR 翻译桌面应用,Tauri 2 + Svelte 5。
 
-[![CI](https://github.com/NIyueeE/pan-desktop/actions/workflows/package.yml/badge.svg)](https://github.com/NIyueeE/pan-desktop/actions/workflows/package.yml)
+[![CI](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
@@ -19,8 +19,8 @@ OpenAI 兼容后端,严格 lint + 分层检查(pre-commit / pre-push / CI)。
   `-D warnings`(见 [Lint 策略](docs/lint-policy.zh.md))。
 - **分层检查门** —— 快门在每次提交前运行,重门在每次推送前运行,CI 强制同一套
   链(见 [检查](docs/checks.zh.md))。
-- **标签驱动的发布** —— 每次推送都构建 macOS / Windows / Linux 的 tauri
-  安装包;推送标签时产物挂到 GitHub Release(见 [发布](docs/release.zh.md))。
+- **分层 CI/CD** —— 每次推送跑检查链,标签推送出安装包,手动 dispatch 出
+  按平台测试构建(见 [发布](docs/release.zh.md))。
 - **Rust 2024 Edition**。
 
 ## 快速开始

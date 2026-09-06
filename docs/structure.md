@@ -22,7 +22,10 @@
 | `justfile`                                                           | `just setup` / `fmt` / `test` / `check`                                                                                             |
 | `deny.toml`                                                          | cargo-deny policy (licenses / bans / advisories / sources)                                                                          |
 | `rust-toolchain.toml`                                                | `channel = "stable"` + clippy/rustfmt components                                                                                    |
-| `.github/workflows/package.yml`                                      | the only pipeline: lint chain + platform builds + tag releases                                                                      |
+| `.github/workflows/ci.yml`                                           | CI: the check chain on pushes / PRs                                                                                                 |
+| `.github/workflows/release.yml`                                      | tag push (`V*`) → release notes + installers                                                                                        |
+| `.github/workflows/test-build.yml`                                   | manual test builds for chosen platforms at any commit                                                                               |
+| `.github/actions/build-tauri/`                                       | composite build steps for the macOS / Windows bundles                                                                               |
 | `.github/actions/build-for-linux/`                                   | docker composite action for deb / rpm / AppImage                                                                                    |
 | `CHANGELOG`                                                          | release notes source (first `# X.Y.Z` section is extracted)                                                                         |
 | `com.pan.desktop.metainfo.xml`                                       | Linux package-manager release metadata                                                                                              |

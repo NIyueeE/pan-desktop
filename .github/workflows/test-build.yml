@@ -1,0 +1,114 @@
+name: Test build
+
+# The test-build layer (template model): compile installers for chosen
+# platforms at an arbitrary commit WITHOUT creating a release. Dispatch it
+# manually from the Actions tab, pick a ref (commit SHA, branch, or tag)
+# and platforms; artifacts are ephemeral (7-day retention) and never a
+# Release — do not hand out release links for them.
+
+on:
+    workflow_dispatch:
+        inputs:
+            ref:
+                description: 'Commit SHA, branch, or tag to build'
+                required: false
+                default: 'main'
+            targets:
+                description: 'Platforms, comma-separated (linux, macos, windows)'
+                required: false
+                default: 'linux,macos,windows'
+
+run-name: Test build ${{ inputs.ref }} [${{ inputs.targets }}]
+
+permissions:
+    contents: read
+
+jobs:
+    plan:
+        name: plan matrix
+        runs-on: ubuntu-latest
+        outputs:
+            matrix: ${{ steps.plan.outputs.matrix }}
+        steps:
+            - name: Build matrix from requested platforms
+              id: plan
+              env:
+                  REQUESTED: ${{ inputs.targets }}
+              run: |
+                  MATRIX=$(printf '%s' "$REQUESTED" | tr ', ' '\n\n' | sed '/^$/d' | jq -Rsc '
+                    def platform:
+                      {
+                        "linux":   {os: "ubuntu-latest",  target: "x86_64-unknown-linux-gnu"},
+                        "macos":   {os: "macos-latest",   target: "aarch64-apple-darwin"},
+                        "windows": {os: "windows-latest", target: "x86_64-pc-windows-msvc"}
+                      }[.];
+                    split("\n")
+                    | map(select(length > 0)
+                        | platform
+                        | if . == null then error("unknown platform; use linux, macos, windows") else . end)
+                    | unique
+                    | {include: .}
+                  ')
+                  echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+    build:
+        name: build ${{ matrix.target }}
+        needs: plan
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 90
+        env:
+            TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+            TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        steps:
+            - name: Checkout the requested ref
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ inputs.ref }}
+
+            - name: Build for Linux
+              if: runner.os == 'Linux'
+              uses: ./.github/actions/build-for-linux
+              env:
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+              with:
+                  target: ${{ matrix.target }}
+
+            - name: Build for macOS and Windows
+              if: runner.os != 'Linux'
+              uses: ./.github/actions/build-tauri
+              with:
+                  target: ${{ matrix.target }}
+
+            - name: Upload macOS test artifact
+              if: runner.os == 'macOS'
+              uses: actions/upload-artifact@v7
+              with:
+                  name: test-build-${{ matrix.target }}-${{ github.sha }}
+                  path: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+                  if-no-files-found: error
+                  retention-days: 7
+
+            - name: Upload Windows test artifact
+              if: runner.os == 'Windows'
+              uses: actions/upload-artifact@v7
+              with:
+                  name: test-build-${{ matrix.target }}-${{ github.sha }}
+                  path: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
+                  if-no-files-found: error
+                  retention-days: 7
+
+            - name: Upload Linux test artifact
+              if: runner.os == 'Linux'
+              uses: actions/upload-artifact@v7
+              with:
+                  name: test-build-${{ matrix.target }}-${{ github.sha }}
+                  path: |
+                      src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage*
+                      src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+                      src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+                  if-no-files-found: error
+                  retention-days: 7

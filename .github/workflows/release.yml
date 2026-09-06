@@ -1,0 +1,139 @@
+name: Release
+
+# The release layer, tag-driven only (template model): pushing a VX.Y.Z tag
+# extracts its section from CHANGELOG, creates the GitHub Release, then the
+# upload matrix builds the installers for all six targets and attaches them.
+# Pushes to main never release (ci.yml runs the check chain instead), and
+# per-commit platform builds live in test-build.yml.
+
+on:
+    push:
+        tags: ['V*', 'v*']
+
+permissions:
+    contents: write
+
+jobs:
+    create-release:
+        name: create release
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            # Release notes come from CHANGELOG (the `# X.Y.Z` section matching
+            # the tag, extension-less file on purpose — see HANDOFF.md). A
+            # missing or empty section fails the release.
+            - name: Extract release notes from CHANGELOG
+              run: |
+                  TAG="$GITHUB_REF_NAME"
+                  VERSION="${TAG#v}"
+                  VERSION="${VERSION#V}"
+                  awk -v ver="$VERSION" '
+                      $0 ~ "^# " ver "([[:space:]].*)?$" {insec=1; next}
+                      insec && /^# / {exit}
+                      insec {print}
+                  ' CHANGELOG > release-notes.md
+                  if [ ! -s release-notes.md ]; then
+                      echo "::error::CHANGELOG has no '# $VERSION' section. Add it before tagging."
+                      exit 1
+                  fi
+
+            - name: Create the GitHub Release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TAG="$GITHUB_REF_NAME"
+                  if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+                      gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --notes-file release-notes.md
+                  else
+                      gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --notes-file release-notes.md
+                  fi
+
+    upload:
+        name: build ${{ matrix.target }}
+        needs: create-release
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - os: macos-latest
+                      target: aarch64-apple-darwin
+                    - os: macos-latest
+                      target: x86_64-apple-darwin
+                    - os: windows-latest
+                      target: x86_64-pc-windows-msvc
+                    - os: windows-latest
+                      target: i686-pc-windows-msvc
+                    - os: windows-latest
+                      target: aarch64-pc-windows-msvc
+                    - os: ubuntu-latest
+                      target: x86_64-unknown-linux-gnu
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 90
+        env:
+            TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+            TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+            APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+            APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+            APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+            APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+            APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+            APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+            APPLE_ID: ${{ secrets.APPLE_ID }}
+            APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        steps:
+            - name: Checkout the tag
+              uses: actions/checkout@v7
+
+            # The tag is the single version source: write it into the three
+            # manifests so the built installers carry the tag's version.
+            - name: Apply the tag version
+              shell: bash
+              run: |
+                  TAG="$GITHUB_REF_NAME"
+                  VERSION="${TAG#v}"
+                  VERSION="${VERSION#V}"
+                  sed -i "s/\"version\":.*/\"version\": \"${VERSION}\",/g" package.json
+                  sed -i "s/\"version\": *\"[^\"]*\"/\"version\": \"${VERSION}\"/g" src-tauri/tauri.conf.json
+                  sed -i "s/version = \"0.0.0\"/version = \"${VERSION}\"/g" src-tauri/Cargo.toml
+
+            - name: Build for Linux
+              if: runner.os == 'Linux'
+              uses: ./.github/actions/build-for-linux
+              env:
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+              with:
+                  target: ${{ matrix.target }}
+
+            - name: Build for macOS and Windows
+              if: runner.os != 'Linux'
+              uses: ./.github/actions/build-tauri
+              with:
+                  target: ${{ matrix.target }}
+
+            - name: Attach macOS installers to the release
+              if: runner.os == 'macOS'
+              uses: softprops/action-gh-release@v3
+              with:
+                  files: src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Attach Windows installers to the release
+              if: runner.os == 'Windows'
+              uses: softprops/action-gh-release@v3
+              with:
+                  files: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Attach Linux installers to the release
+              if: runner.os == 'Linux'
+              uses: softprops/action-gh-release@v3
+              with:
+                  files: |
+                      src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage*
+                      src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
+                      src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
+                  token: ${{ secrets.GITHUB_TOKEN }}

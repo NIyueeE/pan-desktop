@@ -2,7 +2,7 @@
 
 > A lean translation desktop app - selection / input / OCR translate, on Tauri 2 + Svelte 5.
 
-[![CI](https://github.com/NIyueeE/pan-desktop/actions/workflows/package.yml/badge.svg)](https://github.com/NIyueeE/pan-desktop/actions/workflows/package.yml)
+[![CI](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/NIyueeE/pan-desktop/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
 
 [English](README.md) | [简体中文](README.zh.md)
@@ -20,8 +20,8 @@ featuring a strict lint policy and an automated, layered check pipeline
   (see [Lint policy](docs/lint-policy.md)).
 - **Layered check gates** — fast gates before every commit, heavyweight gates
   before every push, CI enforcing the same chain (see [Checks](docs/checks.md)).
-- **Tag-driven releases** — tauri bundles for macOS / Windows / Linux on every
-  push; installers attach to the GitHub Release on a tag push
+- **Layered CI/CD** — the check chain on every push, installers on tag
+  pushes, per-platform test builds on manual dispatch
   (see [Release](docs/release.md)).
 - **Rust 2024 edition**.
 

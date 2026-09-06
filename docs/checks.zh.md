@@ -2,8 +2,11 @@
 
 > [English](checks.md) | 简体中文
 
-快门在每次提交前运行,重门在每次推送前运行;[package.yml](../.github/workflows/package.yml)
-的 `lint` job 在每次推送 / PR 时演练同一条链。
+快门在每次提交前运行,重门在每次推送前运行;[ci.yml](../.github/workflows/ci.yml)
+的 `check` job 在每次推送 / PR 时演练同一条链。安装包由
+[release.yml](../.github/workflows/release.yml)(标签推送)与
+[test-build.yml](../.github/workflows/test-build.yml)(手动 dispatch)构建
+—— 见 [发布](release.zh.md)。
 
 ## 工具
 
@@ -52,9 +55,12 @@ just check   # 与 hook + CI 完全一致
 
 ## CI
 
-[package.yml](../.github/workflows/package.yml) 在 `lint` job 中运行同一条链
-(`bun run format` / `lint` / `typecheck` / `test:ui` / `build` /
-`cargo check` / `cargo test`),并在每次推送时构建安装包。
+[ci.yml](../.github/workflows/ci.yml) 在 `check` job 中运行同一条链
+(`bun run format` / `lint` / `typecheck` / `test:ui` / `build` / `cargo check` /
+`cargo test`),触发于每次 `main` 推送与每个 PR。安装包由
+[release.yml](../.github/workflows/release.yml)(标签推送)与
+[test-build.yml](../.github/workflows/test-build.yml)(手动 dispatch)构建
+—— 见 [发布](release.zh.md)。
 
 ## 被检查门拦住时
 

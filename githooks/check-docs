@@ -65,15 +65,20 @@ for doc in checks lint-policy release structure usage windows-troubleshooting; d
   expect "README links docs/$doc.zh.md" README.zh.md "docs/$doc.zh.md"
 done
 
-# 9) CI must run the same chain and extract release notes from CHANGELOG
-if [ -f .github/workflows/package.yml ]; then
-  expect "CI checks formatting" .github/workflows/package.yml 'bun run format'
-  expect "CI runs strict lint" .github/workflows/package.yml 'bun run lint'
-  expect "CI typechecks the frontend" .github/workflows/package.yml 'bun run typecheck'
-  expect "CI runs the frontend tests" .github/workflows/package.yml 'bun run test:ui'
-  expect "release notes extracted from CHANGELOG" .github/workflows/package.yml 'CHANGELOG'
+# 9) CI must run the same chain; releases must extract notes from CHANGELOG
+if [ -f .github/workflows/ci.yml ]; then
+  expect "CI checks formatting" .github/workflows/ci.yml 'bun run format'
+  expect "CI runs strict lint" .github/workflows/ci.yml 'bun run lint'
+  expect "CI typechecks the frontend" .github/workflows/ci.yml 'bun run typecheck'
+  expect "CI runs the frontend tests" .github/workflows/ci.yml 'bun run test:ui'
 else
-  echo "  FAIL  .github/workflows/package.yml missing" >&2
+  echo "  FAIL  .github/workflows/ci.yml missing" >&2
+  errors=$((errors + 1))
+fi
+if [ -f .github/workflows/release.yml ]; then
+  expect "release notes extracted from CHANGELOG" .github/workflows/release.yml 'CHANGELOG'
+else
+  echo "  FAIL  .github/workflows/release.yml missing" >&2
   errors=$((errors + 1))
 fi
 

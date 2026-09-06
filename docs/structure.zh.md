@@ -22,7 +22,10 @@
 | `justfile`                                                           | `just setup` / `fmt` / `test` / `check`                                                                 |
 | `deny.toml`                                                          | cargo-deny 策略(licenses / bans / advisories / sources)                                                 |
 | `rust-toolchain.toml`                                                | `channel = "stable"` + clippy/rustfmt 组件                                                              |
-| `.github/workflows/package.yml`                                      | 唯一流水线:lint 链 + 多平台构建 + 标签发布                                                              |
+| `.github/workflows/ci.yml`                                           | CI:推送 / PR 时跑检查链                                                                                 |
+| `.github/workflows/release.yml`                                      | 标签推送(`V*`)→ 发布说明 + 安装包                                                                       |
+| `.github/workflows/test-build.yml`                                   | 任意提交按平台手动测试构建                                                                              |
+| `.github/actions/build-tauri/`                                       | macOS / Windows 安装包的复合构建步骤                                                                    |
 | `.github/actions/build-for-linux/`                                   | 构建 deb / rpm / AppImage 的 docker 复合 action                                                         |
 | `CHANGELOG`                                                          | 发布说明来源(提取首个 `# X.Y.Z` 段)                                                                     |
 | `com.pan.desktop.metainfo.xml`                                       | Linux 包管理器发布元数据                                                                                |

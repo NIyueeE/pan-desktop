@@ -30,8 +30,9 @@ something the next session needs to know.
   TypeScript strict + Vite 8 (four window entries) + Tailwind 4 + vitest 4;
   Bun as package manager / script entry, Node >= 22 as the bin runtime.
 - Gates: pre-commit fast gates and pre-push heavy gates live in `githooks/`;
-  `package.yml`'s `lint` job runs the same chain on CI and every push builds
-  the installers (release upload only on tags).
+  `ci.yml` runs the same chain on every push / PR. The pipeline follows the
+  template's layering: ci.yml (checks) / release.yml (tag-driven installers)
+  / test-build.yml (manual per-platform builds, 7-day artifacts).
 - OCR: PaddleOCR PP-OCRv5 (ONNX via `ort`, models fetched at build time by
   `scripts/fetch-paddle-models.sh`) → system OCR → optional OpenAI-compatible
   VLM, degrading in order.
@@ -39,10 +40,9 @@ something the next session needs to know.
 ## Decision log (why things are the way they are)
 
 - **GPL-3.0-only**, inherited from the pot-desktop lineage — do not relicense.
-- **`CHANGELOG` stays extension-less** and `package.yml` untouched: the
-  release-notes awk extraction and the `# X.Y.Z` section format are coupled to
-  CI. This is the one deliberate divergence from the template's
-  Keep-a-Changelog `CHANGELOG.md` convention.
+- **`CHANGELOG` stays extension-less** with `# X.Y.Z` sections: release.yml
+  extracts the section matching the pushed tag. This is the one deliberate
+  divergence from the template's Keep-a-Changelog `CHANGELOG.md` convention.
 - **Bilingual docs** (`*.md` + `*.zh.md`) — user preference; mechanically
   enforced by `check-docs` for top-level docs pages.
 - clippy `pedantic` at `deny` plus `-D warnings` — the strict variant was

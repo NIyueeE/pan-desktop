@@ -2,17 +2,15 @@
 
 > [English](release.md) | 简体中文
 
-`.github/workflows/package.yml` 是唯一流水线。触发:每次 `main` 推送、
-PR,以及**每一次标签推送**:
+流水线沿用模板的分层 —— 三条 workflow,各管一个方向:
 
-- **推送 `main`** → `lint` job(完整检查链)+ 全平台验证性构建。不创建
-  Release —— 这是打标签前的演练。
-- **推送标签** → 同一流水线,外加 `Upload release` 步骤把安装包挂到
-  GitHub Release。
+| Workflow                                              | 触发            | 职责                                             |
+| ----------------------------------------------------- | --------------- | ------------------------------------------------ |
+| [ci.yml](../.github/workflows/ci.yml)                 | 推送 `main`、PR | 只跑检查链 —— 不出安装包                         |
+| [release.yml](../.github/workflows/release.yml)       | 标签推送(`V*`)  | 六个 target 的安装包 + 发布说明 → GitHub Release |
+| [test-build.yml](../.github/workflows/test-build.yml) | 手动 dispatch   | 任意提交按平台出安装包,临时产物                  |
 
-标签命名约定:大写 **`VX.Y.Z`**(如 `V4.3.0`)。
-
-## 产物
+## 产物(release.yml)
 
 | 平台                        | Runner             | 产物                          |
 | --------------------------- | ------------------ | ----------------------------- |
@@ -20,35 +18,47 @@ PR,以及**每一次标签推送**:
 | Windows(x64、i686、aarch64) | `windows-latest`   | NSIS 安装包                   |
 | Linux(x86_64)               | docker 复合 action | `.deb` / `.rpm` / `.AppImage` |
 
-Linux 一侧在 `build-for-linux` docker action 内构建(rust 镜像 + bun +
-Node tarball),因为 `bun run tauri build` 同时需要两个运行时和
-webkit/gtk 系统库。
-
-Paddle OCR 资产在构建期由 `scripts/fetch-onnxruntime.sh` 与
-`scripts/fetch-paddle-models.sh` 拉取并缓存,永不入库。
+共享构建步骤在 `.github/actions/build-tauri`(macOS / Windows)与
+`.github/actions/build-for-linux`(带 webkit/gtk 系统库的 docker 镜像)。
+Paddle OCR 资产在构建期拉取并缓存,永不入库。
 
 ## 版本号与发布说明
 
-- `change-version` job 从最新标签解析版本号(`git describe --tags`,
-  去掉 `v`/`V`;无标签时回退 `package.json`),写回
-  `package.json` / `tauri.conf.json` / `Cargo.toml` —— 构建出的安装包使用
-  标签的版本号。安装包版本的实际来源是 `src-tauri/tauri.conf.json`。
-- 发布说明从 `CHANGELOG` 提取(首个 `# X.Y.Z` 段,awk)生成
-  `RELEASE_NOTES.md` 作为 Release 正文。段落缺失或为空会得到空的发布说明
-  —— 打标签前先写好该段。
+- 标签推送时,**标签即版本来源**:每个 upload job 去掉 `V`/`v` 前缀,构建前
+  写入 `package.json` / `src-tauri/tauri.conf.json` / `src-tauri/Cargo.toml`,
+  安装包携带标签的版本号。
+- `create-release` 从 `CHANGELOG`(无扩展名 —— 刻意为之,见 HANDOFF.md)提取
+  与标签匹配的 `# X.Y.Z` 段并创建 GitHub Release。段落缺失或为空
+  **发布直接失败**。
 
 ## 发版步骤
 
-1. 版本号仪式,独立成一个 `chore(release): vX.Y.Z — …` 提交:
-   `package.json` + `src-tauri/tauri.conf.json`(+ 需要时 `Cargo.toml` /
-   `Cargo.lock`)一致,`CHANGELOG` 顶部新增 `# X.Y.Z` 段,
-   `com.pan.desktop.metainfo.xml` 增加 `<release>` 条目。
-2. `git push pan HEAD:main` —— 等验证性构建跑完(lint 必须绿;用
-   `gh run watch` 盯)。
-3. `git tag VX.Y.Z && git push pan VX.Y.Z` —— 流水线把全部安装包挂上
+1. 版本号仪式,独立成一个 `chore(release): vX.Y.Z — …` 提交:三个清单一致,
+   `CHANGELOG` 顶部新增 `# X.Y.Z` 段,`com.pan.desktop.metainfo.xml` 增加
+   `<release>` 条目。
+2. `git push pan HEAD:main` —— `check` job 必须绿。
+3. `git tag VX.Y.Z && git push pan VX.Y.Z` —— release.yml 把全部安装包挂上
    Release。
 4. `gh release view VX.Y.Z --repo NIyueeE/pan-desktop --json assets --jq
 '.assets[].name'` 核对产物。
 
 重新打标签只允许用于修复失败的发布(删标签、修、重推)。没有明确的人类
 请求,代理绝不创建或推送发布标签 —— 见 [AGENTS.md](../AGENTS.md) §8。
+
+## 测试构建(非发布)
+
+在 Actions 页 dispatch [test-build.yml](../.github/workflows/test-build.yml)
+(**Test build → Run workflow**),选 `ref`(提交 SHA、分支或标签)与
+`targets`(`linux`、`macos`、`windows`,逗号分隔):
+
+```bash
+gh workflow run test-build.yml --repo NIyueeE/pan-desktop \
+    -f ref=main -f targets=windows
+```
+
+产物(NSIS / DMG / deb+rpm+AppImage)保留 7 天,永不作为 Release 发布:
+
+```bash
+gh run download <run-id> --repo NIyueeE/pan-desktop \
+    --name test-build-x86_64-pc-windows-msvc-<sha> -D ./ci-artifacts
+```

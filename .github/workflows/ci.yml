@@ -1,0 +1,77 @@
+name: CI
+
+# The fast layer of the pipeline: the full check chain (identical to the
+# git hooks) on every push to main and every pull request. Installers are
+# NOT built here — releases are tag-driven (release.yml) and per-commit
+# platform builds live in test-build.yml.
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    check:
+        name: full check chain
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+
+            # `bun run <script>` shells out to node-shebang bins (vite, vitest,
+            # svelte-check, the tauri CLI): Node is their runtime, not Bun.
+            - name: Setup Node
+              uses: actions/setup-node@v7
+              with:
+                  node-version: 22
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: rustfmt, clippy
+
+            - name: Rust cache
+              uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: src-tauri
+
+            - name: Install Linux dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Check formatting and lint
+              run: |
+                  bun run format
+                  bun run lint
+
+            - name: Typecheck frontend
+              run: bun run typecheck
+
+            - name: WebDAV client tests
+              run: bun run test:webdav
+
+            - name: Frontend unit tests
+              run: bun run test:ui
+
+            - name: Build frontend and check Rust
+              run: |
+                  bun run build
+                  cargo check --manifest-path src-tauri/Cargo.toml
+                  cargo test --manifest-path src-tauri/Cargo.toml
