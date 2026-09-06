@@ -1,0 +1,12 @@
+# cargo-audit policy — wired into githooks/pre-push (run from src-tauri).
+# Temporary waivers live here with a reason; see HANDOFF.md "Open threads".
+
+[advisories]
+ignore = [
+    # quick-xml 0.28.2 (RUSTSEC-2026-0194/0195, DoS-class) is pinned by the
+    # linux screenshot stack (screenshots -> libwayshot -> wayland-scanner);
+    # no 0.28.x patch release exists. Input comes from the wayland protocol,
+    # not arbitrary files. Remove both entries when upstream moves.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+]

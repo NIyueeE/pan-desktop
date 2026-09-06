@@ -59,15 +59,16 @@ warnings`) because nursery noise fluctuates between rustc releases.
 
 ## Open threads
 
-- **Pre-push audit/deny gate is red on 2 pre-existing RustSec advisories**:
-  quick-xml 0.28.2 (RUSTSEC-2026-0194/0195, DoS-class) — pinned by the Linux
-  screenshot stack (`screenshots` → `libwayshot` → `wayland-scanner`); no
-  0.28.x patch release exists, so only an upstream bump fixes it. Input comes
-  from the wayland protocol, not arbitrary files, so practical risk is low.
-  Resolution needs a decision: a dedicated dependency-bump commit when
-  upstream moves, or an explicit audit/deny ignore with a justification
-  (AGENTS.md §2). `cargo outdated` lists routine minor bumps — Dependabot's
-  territory, not drive-by material.
+- **quick-xml 0.28.2 advisories waived (temporary)**: RUSTSEC-2026-0194/0195
+  (DoS-class) — pinned by the Linux screenshot stack (`screenshots` →
+  `libwayshot` → `wayland-scanner`); no 0.28.x patch release exists, and the
+  input comes from the wayland protocol, not arbitrary files. Waived via
+  `src-tauri/.cargo/audit.toml` (cargo audit) and the `deny.toml` [advisories]
+  ignore; `unmaintained = "none"` keeps the unmaintained class at warning
+  severity (everything flagged is tauri-transitive with no safe upgrade).
+  Both waiver sites carry removal notes — drop them when upstream moves.
+  `cargo outdated` lists routine minor bumps — Dependabot's territory, not
+  drive-by material.
 - cargo-deny license allow-list: extended with BSL-1.0, NCSA,
   CDLA-Permissive-2.0 and GPL-3.0-only (all present in pan's dependency
   graph; GPL is compatible with pan's own GPL-3.0-only, inherited from
